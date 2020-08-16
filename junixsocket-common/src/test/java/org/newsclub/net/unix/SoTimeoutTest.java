@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,21 @@ public class SoTimeoutTest extends SocketTestBase {
   /**
    * Triggers a case where {@link Socket#setSoTimeout(int)} fails on some platforms: when the socket
    * is closed.
+   * 
+   * @throws IOException on error.
    */
   @Test
-  public void issue14Fail() throws Exception {
+  public void issue14Fail() throws IOException {
     final ServerThread serverThread = new ServerThread() {
 
       @Override
       protected void handleConnection(final Socket sock) throws IOException {
         stopAcceptingConnections();
+      }
+
+      @Override
+      protected void handleException(Exception e) {
+        // do not print stacktrace
       }
     };
 
@@ -59,14 +66,16 @@ public class SoTimeoutTest extends SocketTestBase {
         // expected, as the socket is actually closed
       }
     }
-    serverThread.getServerSocket().close();
+    serverThread.shutdown();
   }
 
   /**
    * Triggers a regular case where {@link Socket#setSoTimeout(int)} should work.
+   * 
+   * @throws IOException on error.
    */
   @Test
-  public void issue14Pass() throws Exception {
+  public void issue14Pass() throws IOException {
     final ServerThread serverThread = new ServerThread() {
 
       @Override
@@ -88,6 +97,6 @@ public class SoTimeoutTest extends SocketTestBase {
     try (AFUNIXSocket sock = connectToServer()) {
       sock.setSoTimeout((int) TimeUnit.SECONDS.toMillis(12));
     }
-    serverThread.getServerSocket().close();
+    serverThread.shutdown();
   }
 }

@@ -5,7 +5,7 @@
 #
 # prepare-target-sdk is to be run on the target platform
 #
-# Copyright 2019 Christian Kohlschütter
+# Copyright 2019, 2020 Christian Kohlschütter
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,14 +51,14 @@ EOT
     exit 1
 fi
 
-compiler="$(PATH=/usr/bin:$PATH which ${compiler[@]} 2>/dev/null | head -n 1)"
+compiler="$(PATH=/usr/bin:$PATH which ${compiler[@]} 2>/dev/null | grep -e "^/" | head -n 1)"
 if [ -z "$compiler" ]; then
     echo "clang/gcc not available; configuration may not be accurate" >&2
 else
     echo "Using compiler: $compiler"
 fi
 
-linkerBinary="$(PATH=/usr/bin:$PATH which ${linkerBinary[@]} 2>/dev/null | head -n 1)"
+linkerBinary="$(PATH=/usr/bin:$PATH which ${linkerBinary[@]} 2>/dev/null | grep -e "^/" | head -n 1)"
 if [ -z "$linkerBinary" ]; then
     echo "Linker not available; configuration may not be accurate" >&2
 else
@@ -202,12 +202,30 @@ for lang in c c++; do
     done
 done
 
+if [[ /bin/true ]]; then
+  libPaths="$(LANG=C "$compiler" -print-search-dirs | grep "^libraries: " | head -n 1)"
+  libPaths="${libPaths#libraries: }"
+  library_path+=($(
+      IFS=:
+      for f in $libPaths; do
+        # strip optional leading "="
+        f=${f#=}
+
+        echo $f
+      done
+  ))
+fi
+
+
 if [[ "$includeInstallLibs" -eq 1 ]]; then
   installPaths="$(LANG=C "$compiler" -print-search-dirs | grep "^install: " | head -n 1)"
   installPaths="${installPaths#install: }"
   library_path+=($(
       IFS=:
       for f in $installPaths; do
+        # strip optional leading "="
+        f=${f#=}
+
         echo $f
       done
   ))
@@ -217,6 +235,22 @@ if [[ "$triple" == *"-darwin"* ]]; then
     library_path+=(
         /usr/lib
         /usr/lib/system
+    )
+fi
+
+# Add /lib when missing but likely required
+haveUsrLib=0
+haveLib=0
+for f in ${library_path[@]}; do
+  if [[ "$f" == "/usr/lib" ]]; then
+    haveUsrLib=1
+  elif [[ "$f" == "/lib" ]]; then
+    haveLib=1
+  fi
+done
+if [[ $haveUsrLib -eq 1 && $haveLib -eq 0 ]]; then
+    library_path+=(
+        /lib
     )
 fi
 

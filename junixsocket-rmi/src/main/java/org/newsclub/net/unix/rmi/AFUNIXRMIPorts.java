@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package org.newsclub.net.unix.rmi;
  * 
  * @author Christian Kohlschütter
  * @see AFUNIXRMISocketFactory
- * @see PortAssigner
+ * @see AFUNIXRMIService
  */
 final class AFUNIXRMIPorts {
   /**
@@ -37,13 +37,13 @@ final class AFUNIXRMIPorts {
   /**
    * This is the port reserved for the port assigner.
    * 
-   * @see PortAssigner
+   * @see AFUNIXRMIService
    */
-  public static final int PORT_ASSIGNER_PORT = 100002;
+  public static final int RMI_SERVICE_PORT = 100002;
   /**
    * This is the base for anonymous ports. Any anonymous port will be higher than this number.
    * 
-   * @see PortAssigner
+   * @see AFUNIXRMIService
    */
   public static final int ANONYMOUS_PORT_BASE = 110000;
 
@@ -52,4 +52,8 @@ final class AFUNIXRMIPorts {
    * points to a socket <em>file</em>, not a directory.
    */
   static final int PLAIN_FILE_SOCKET = Integer.MAX_VALUE;
+
+  private AFUNIXRMIPorts() {
+    throw new UnsupportedOperationException("No instances");
+  }
 }

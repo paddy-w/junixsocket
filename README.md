@@ -13,10 +13,14 @@ junixsocket is a Java/JNI library that allows the use of [Unix Domain Sockets](h
 * Supports [peer credentials](https://kohlschutter.github.io/junixsocket/peercreds.html).
 * Supports sending and receiving [file descriptors](https://kohlschutter.github.io/junixsocket/filedescriptors.html).
 * Supports the abstract namespace on Linux.
-* Supports Java 8, 9, 10, 11, 12.
-* Comes with pre-built native libraries for macOS, Linux and Windows; custom libraries can be built using Maven.
+* Supports HTTP over unix socket (using [NanoHTTPD](https://github.com/NanoHttpd/nanohttpd))
+* Supports Java 7*, 8, 9, 10, 11, 12, 13, 14, 15.
+* Comes with pre-built native libraries for several operating systems and platforms, including
+  macOS, Linux, FreeBSD, Solaris and Windows; custom libraries can be built using Maven.
 * Supports JPMS/Jigsaw modules.
 * Apache 2.0 licensed.
+
+`*` (basic support for Java 7 only, no RMI, no Demos).
 
 ## Quick links
 
@@ -50,3 +54,14 @@ junixsocket is a Java/JNI library that allows the use of [Unix Domain Sockets](h
 junixsocket is released under the Apache 2.0 License.
 
 Commercial support is available through [Kohlschütter Search Intelligence](http://www.kohlschutter.com/).
+
+## Self-test
+
+To verify that the software works as expected on your platform, you can run the selftest program,
+which is located in the "junixsocket-dist" distribution package:
+
+```
+java -jar junixsocket-selftest-VERSION-jar-with-dependencies.jar 
+```
+
+(with VERSION being the corresponding junixsocket version).

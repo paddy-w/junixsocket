@@ -8,13 +8,14 @@
   <parent>
     <groupId>com.kohlschutter.junixsocket</groupId>
     <artifactId>junixsocket-parent</artifactId>
-    <version>2.2.1-SNAPSHOT</version>
+    <version>2.3.2</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <name>junixsocket-demo</name>
   <properties>
     <kohlschutter.project.base.directory>${project.parent.basedir}</kohlschutter.project.base.directory>
     <kohlschutter.parent.directory>${project.parent.parent.basedir}</kohlschutter.parent.directory>
+    <junixsocket.java8.release>8</junixsocket.java8.release>
   </properties>
 
   <description>Some example code to demo junixsocket's features</description>
@@ -46,22 +47,7 @@
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>8.0.14</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>${log4j.version}</version>
+      <version>8.0.18</version>
     </dependency>
     <dependency>
       <!-- NOTE: Due to this dependency, maven-project-info-reports-plugin
@@ -70,13 +56,18 @@
       <!-- https://issues.apache.org/jira/browse/MPIR-374 -->
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.2.5</version>
+      <version>42.2.8</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jdt</groupId>
       <artifactId>org.eclipse.jdt.annotation</artifactId>
-      <version>2.2.200</version>
+      <version>2.2.300</version>
+    </dependency>
+    <dependency>
+      <groupId>org.nanohttpd</groupId>
+      <artifactId>nanohttpd</artifactId>
+      <version>2.3.1</version>
     </dependency>
   </dependencies>
 
@@ -87,6 +78,13 @@
         <artifactId>forbiddenapis</artifactId>
         <configuration>
           <failOnMissingClasses>false</failOnMissingClasses>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <configuration>
+          <failOnViolation>false</failOnViolation>
         </configuration>
       </plugin>
     </plugins>

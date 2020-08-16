@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.rmi.registry.Registry;
 
 import org.newsclub.net.unix.demo.rmi.services.HelloWorld;
 import org.newsclub.net.unix.rmi.AFUNIXNaming;
+import org.newsclub.net.unix.rmi.RemotePeerInfo;
 
 /**
  * A simple RMI client. Locates the RMI registry via AF_UNIX sockets and calls
@@ -36,10 +37,14 @@ public final class SimpleRMIClient {
     final Registry registry = naming.getRegistry();
     System.out.println(registry);
     System.out.println();
+
     HelloWorld obj = (HelloWorld) registry.lookup("helloWorld");
-    System.out.println("HelloWorld instance: " + obj);
+    System.out.println("HelloWorld instance:");
+    System.out.println("    " + obj);
+    System.out.println("    " + RemotePeerInfo.remotePeerCredentials(obj));
     System.out.println();
-    System.out.println("Calling HelloWorld#hello()...");
-    System.out.println(obj.hello());
+
+    System.out.println("Calling HelloWorld...");
+    System.out.println(obj.hello() + " " + obj.world());
   }
 }

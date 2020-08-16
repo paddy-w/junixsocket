@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # junixsocket
 #
-# Copyright (c) 2009-2018 Christian Kohlschütter
+# Copyright (c) 2009-2020 Christian Kohlschütter
 #
 # The author licenses this file to You under the Apache License, Version 2.0
 # (the "License"); you may not use this file except in compliance with
@@ -68,6 +68,10 @@ postgresqlJar="$HOME/.m2/repository/org/postgresql/postgresql/42.2.5/postgresql-
 if [ ! -f "$postgresqlJar" ]; then
   postgresqlJar="<path-to-postgresql-jar>"
 fi
+nanohttpdJar="$HOME/.m2/repository/org/nanohttpd/nanohttpd/2.3.1/nanohttpd-2.3.1.jar"
+if [ ! -f "$nanohttpdJar" ]; then
+  nanohttpdJar="<path-to-nanohttpd-jar>"
+fi
 
 if [[ $# -eq 0 || $printHelp -eq 1 ]]; then
   cat >&2 <<EOT
@@ -94,6 +98,10 @@ $0 -j "$mysqlJar" -- -DmysqlSocket=/tmp/mysql.sock org.newsclub.net.mysql.demo.A
 
 # Runs the PostgreSQL demo
 $0 -j "$postgresqlJar" -- -DsocketPath=/tmp/.s.PGSQL.5432 org.newsclub.net.unix.demo.jdbc.PostgresDemo
+
+# Runs the HTTP Server 
+$0 -j "$nanohttpdJar" -- org.newsclub.net.unix.demo.nanohttpd.NanoHttpdServerDemo
+
 
 Other flags:
  -m Use the Java module-path instead of the classpath (Java 9 or higher)

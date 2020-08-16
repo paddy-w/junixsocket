@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
  */
 package org.newsclub.net.unix;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.rmi.server.RemoteServer;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -24,6 +27,12 @@ import java.util.UUID;
  * AF_UNIX socket credentials.
  */
 public final class AFUNIXSocketCredentials {
+  /**
+   * Special instance, indicating that there is no remote peer, but the referenced object is from
+   * the same process.
+   */
+  public static final AFUNIXSocketCredentials SAME_PROCESS = new AFUNIXSocketCredentials();
+
   private long pid = -1; // NOPMD -- Set in native code
   private long uid = -1; // NOPMD -- Set in native code
   private long[] gids = null;
@@ -91,14 +100,18 @@ public final class AFUNIXSocketCredentials {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
     sb.append('[');
+    if (this == SAME_PROCESS) {
+      sb.append("(same process)]");
+      return sb.toString();
+    }
+    if (pid != -1) {
+      sb.append("pid=" + pid + ";");
+    }
     if (uid != -1) {
       sb.append("uid=" + uid + ";");
     }
     if (gids != null) {
       sb.append("gids=" + Arrays.toString(gids) + ";");
-    }
-    if (pid != -1) {
-      sb.append("pid=" + pid + ";");
     }
     if (uuid != null) {
       sb.append("uuid=" + uuid + ";");
@@ -143,5 +156,38 @@ public final class AFUNIXSocketCredentials {
     } else if (!uuid.equals(other.uuid))
       return false;
     return true;
+  }
+
+  /**
+   * Returns the {@link AFUNIXSocketCredentials} for the currently active remote session, or
+   * {@code null} if it was not possible to retrieve these credentials.
+   * 
+   * NOTE: For now, only RMI remote sessions are supported (RemoteServer sessions during a remote
+   * method invocation).
+   * 
+   * If you want to retrieve the peer credentials for an RMI server, see junixsocket-rmi's
+   * RemotePeerInfo.
+   *
+   * @return The credentials, or {@code null} if unable to retrieve.
+   */
+  @SuppressWarnings("resource")
+  public static AFUNIXSocketCredentials remotePeerCredentials() {
+    try {
+      RemoteServer.getClientHost();
+    } catch (Exception e) {
+      return null;
+    }
+
+    Socket sock = NativeUnixSocket.currentRMISocket();
+    if (!(sock instanceof AFUNIXSocket)) {
+      return null;
+    }
+    AFUNIXSocket socket = (AFUNIXSocket) sock;
+
+    try {
+      return socket.getPeerCredentials();
+    } catch (IOException e) {
+      return null;
+    }
   }
 }

@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
  * See https://code.google.com/p/junixsocket/issues/detail?id=20
  */
 @SuppressFBWarnings("RANGE_ARRAY_LENGTH")
+// CPD-OFF - Skip code-duplication checks
 public class BufferOverflowTest {
   private File socketFile;
   private ServerSocket server;

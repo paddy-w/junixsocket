@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.newsclub.net.unix;
 
+import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +40,7 @@ public final class AFUNIXSocket extends Socket {
   AFUNIXSocketAddress addr;
 
   private final AFUNIXSocketFactory socketFactory;
+  private final Closeables closeables = new Closeables();
 
   private AFUNIXSocket(final AFUNIXSocketImpl impl, AFUNIXSocketFactory factory)
       throws IOException {
@@ -125,6 +127,16 @@ public final class AFUNIXSocket extends Socket {
 
   @Override
   public void connect(SocketAddress endpoint, int timeout) throws IOException {
+    if (endpoint == null) {
+      throw new IllegalArgumentException("connect: The address can't be null");
+    }
+    if (timeout < 0) {
+      throw new IllegalArgumentException("connect: timeout can't be negative");
+    }
+    if (isClosed()) {
+      throw new SocketException("Socket is closed");
+    }
+
     if (!(endpoint instanceof AFUNIXSocketAddress)) {
       if (socketFactory != null) {
         if (endpoint instanceof InetSocketAddress) {
@@ -165,6 +177,22 @@ public final class AFUNIXSocket extends Socket {
    */
   public static boolean isSupported() {
     return NativeUnixSocket.isLoaded();
+  }
+
+  /**
+   * Returns the version of the junixsocket library, as a string, for debugging purposes.
+   * 
+   * NOTE: Do not rely on the format of the version identifier, use socket capabilities instead.
+   * 
+   * @return String The version identfier, or {@code null} if it could not be determined.
+   * @see #supports(AFUNIXSocketCapability)
+   */
+  public static String getVersion() {
+    try {
+      return NativeLibraryLoader.getJunixsocketVersion();
+    } catch (IOException e) {
+      return null;
+    }
   }
 
   /**
@@ -220,13 +248,22 @@ public final class AFUNIXSocket extends Socket {
   }
 
   /**
+   * Ensures a minimum ancillary receive buffer size.
+   * 
+   * @param minSize The minimum size (in bytes).
+   */
+  public void ensureAncillaryReceiveBufferSize(int minSize) {
+    impl.ensureAncillaryReceiveBufferSize(minSize);
+  }
+
+  /**
    * Retrieves an array of incoming {@link FileDescriptor}s that were sent as ancillary messages,
    * along with a call to {@link InputStream#read()}, etc.
    * 
    * NOTE: Another call to this method will not return the same file descriptors again (most likely,
    * {@code null} will be returned).
    * 
-   * @return The file decriptors, or {@code null} if none were available.
+   * @return The file descriptors, or {@code null} if none were available.
    * @throws IOException if the operation fails.
    */
   public FileDescriptor[] getReceivedFileDescriptors() throws IOException {
@@ -250,16 +287,7 @@ public final class AFUNIXSocket extends Socket {
    * @throws IOException if the operation fails.
    */
   public void setOutboundFileDescriptors(FileDescriptor... fdescs) throws IOException {
-    if (fdescs == null || fdescs.length == 0) {
-      impl.setOutboundFileDescriptors(null);
-    } else {
-      int[] fds = new int[fdescs.length];
-      for (int i = 0, n = fdescs.length; i < n; i++) {
-        FileDescriptor fdesc = fdescs[i];
-        fds[i] = NativeUnixSocket.getFD(fdesc);
-      }
-      impl.setOutboundFileDescriptors(fds);
-    }
+    impl.setOutboundFileDescriptors(fdescs);
   }
 
   private static synchronized int getCapabilities() {
@@ -282,5 +310,53 @@ public final class AFUNIXSocket extends Socket {
    */
   public static boolean supports(AFUNIXSocketCapability capability) {
     return (getCapabilities() & capability.getBitmask()) != 0;
+  }
+
+  @Override
+  public synchronized void close() throws IOException {
+    IOException superException = null;
+    try {
+      super.close();
+    } catch (IOException e) {
+      superException = e;
+    }
+    closeables.close(superException);
+  }
+
+  /**
+   * Registers a {@link Closeable} that should be closed when this socket is closed.
+   * 
+   * @param closeable The closeable.
+   */
+  public void addCloseable(Closeable closeable) {
+    closeables.add(closeable);
+  }
+
+  /**
+   * Unregisters a previously registered {@link Closeable}.
+   * 
+   * @param closeable The closeable.
+   */
+  public void removeCloseable(Closeable closeable) {
+    closeables.remove(closeable);
+  }
+
+  /**
+   * Very basic self-test function.
+   * 
+   * Prints "supported" and "capabilities" status to System.out.
+   * 
+   * @param args ignored.
+   */
+  public static void main(String[] args) {
+    System.out.print("AFUNIXSocket.isSupported(): ");
+    System.out.flush();
+    System.out.println(AFUNIXSocket.isSupported());
+
+    for (AFUNIXSocketCapability cap : AFUNIXSocketCapability.values()) {
+      System.out.print(cap + ": ");
+      System.out.flush();
+      System.out.println(AFUNIXSocket.supports(cap));
+    }
   }
 }

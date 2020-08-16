@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,8 +61,8 @@ class AFUNIXSocketImpl extends SocketImpl {
   private volatile boolean closedInputStream = false;
   private volatile boolean closedOutputStream = false;
 
-  private final AFUNIXInputStream in = new AFUNIXInputStream();
-  private final AFUNIXOutputStream out = new AFUNIXOutputStream();
+  private final AFUNIXInputStream in = newInputStream();
+  private final AFUNIXOutputStream out = newOutputStream();
 
   private final AtomicInteger pendingAccepts = new AtomicInteger(0);
 
@@ -70,17 +70,26 @@ class AFUNIXSocketImpl extends SocketImpl {
 
   private ByteBuffer ancillaryReceiveBuffer = ByteBuffer.allocateDirect(0);
   private final List<FileDescriptor[]> receivedFileDescriptors = Collections.synchronizedList(
-      new LinkedList<>());
+      new LinkedList<FileDescriptor[]>());
   private int[] pendingFileDescriptors = null;
 
   private final Map<FileDescriptor, Integer> closeableFileDescriptors = Collections.synchronizedMap(
-      new HashMap<>());
+      new HashMap<FileDescriptor, Integer>());
 
   private int timeout = 0;
 
   protected AFUNIXSocketImpl() {
     super();
     this.fd = new FileDescriptor();
+    this.address = InetAddress.getLoopbackAddress();
+  }
+
+  protected AFUNIXInputStream newInputStream() {
+    return new AFUNIXInputStream();
+  }
+
+  protected AFUNIXOutputStream newOutputStream() {
+    return new AFUNIXOutputStream();
   }
 
   FileDescriptor getFD() {
@@ -144,6 +153,8 @@ class AFUNIXSocketImpl extends SocketImpl {
     }
     si.socketAddress = socketAddress;
     si.connected = true;
+    si.port = socketAddress.getPort();
+    si.address = socketAddress.getAddress();
   }
 
   @Override
@@ -162,6 +173,7 @@ class AFUNIXSocketImpl extends SocketImpl {
     }
 
     this.socketAddress = (AFUNIXSocketAddress) addr;
+    this.address = socketAddress.getAddress();
 
     this.inode = NativeUnixSocket.bind(socketAddress.getBytes(), fd, options);
     validFdOrException();
@@ -294,8 +306,9 @@ class AFUNIXSocketImpl extends SocketImpl {
         pendingFileDescriptors);
   }
 
-  private final class AFUNIXInputStream extends InputStream {
+  private class AFUNIXInputStream extends InputStream {
     private volatile boolean streamClosed = false;
+    private boolean eofReached = false;
 
     @Override
     public int read(byte[] buf, int off, int len) throws IOException {
@@ -315,9 +328,13 @@ class AFUNIXSocketImpl extends SocketImpl {
 
     @Override
     public int read() throws IOException {
+      if (eofReached) {
+        return -1;
+      }
       final byte[] buf1 = new byte[1];
       final int numRead = read(buf1, 0, 1);
       if (numRead <= 0) {
+        eofReached = true;
         return -1;
       } else {
         return buf1[0] & 0xFF;
@@ -347,12 +364,12 @@ class AFUNIXSocketImpl extends SocketImpl {
     }
   }
 
-  private final class AFUNIXOutputStream extends OutputStream {
+  private class AFUNIXOutputStream extends OutputStream {
     private volatile boolean streamClosed = false;
 
     @Override
     public void write(int oneByte) throws IOException {
-      final byte[] buf1 = new byte[] {(byte) oneByte};
+      final byte[] buf1 = {(byte) oneByte};
       write(buf1, 0, 1);
     }
 
@@ -587,7 +604,16 @@ class AFUNIXSocketImpl extends SocketImpl {
     this.ancillaryReceiveBuffer = ByteBuffer.allocateDirect(size);
   }
 
-  FileDescriptor[] getReceivedFileDescriptors() {
+  public final void ensureAncillaryReceiveBufferSize(int minSize) {
+    if (minSize <= 0) {
+      return;
+    }
+    if (ancillaryReceiveBuffer.capacity() < minSize) {
+      setAncillaryReceiveBufferSize(minSize);
+    }
+  }
+
+  public final FileDescriptor[] getReceivedFileDescriptors() {
     if (receivedFileDescriptors.isEmpty()) {
       return null;
     }
@@ -612,18 +638,19 @@ class AFUNIXSocketImpl extends SocketImpl {
     return oneArray;
   }
 
-  void clearReceivedFileDescriptors() {
+  public final void clearReceivedFileDescriptors() {
     receivedFileDescriptors.clear();
   }
 
   // called from native code
-  void receiveFileDescriptors(int[] fds) throws IOException {
+  final void receiveFileDescriptors(int[] fds) throws IOException {
     if (fds == null || fds.length == 0) {
       return;
     }
-    FileDescriptor[] descriptors = new FileDescriptor[fds.length];
-    for (int i = 0, n = fds.length; i < n; i++) {
-      FileDescriptor fdesc = new FileDescriptor();
+    final int fdsLength = fds.length;
+    FileDescriptor[] descriptors = new FileDescriptor[fdsLength];
+    for (int i = 0; i < fdsLength; i++) {
+      final FileDescriptor fdesc = new FileDescriptor();
       NativeUnixSocket.initFD(fdesc, fds[i]);
       descriptors[i] = fdesc;
 
@@ -644,7 +671,21 @@ class AFUNIXSocketImpl extends SocketImpl {
   }
 
   // called from native code, too (but only with null)
-  void setOutboundFileDescriptors(int... fds) {
+  final void setOutboundFileDescriptors(int... fds) {
     this.pendingFileDescriptors = (fds == null || fds.length == 0) ? null : fds;
+  }
+
+  public final void setOutboundFileDescriptors(FileDescriptor... fdescs) throws IOException {
+    if (fdescs == null || fdescs.length == 0) {
+      this.setOutboundFileDescriptors((int[]) null);
+    } else {
+      final int numFdescs = fdescs.length;
+      final int[] fds = new int[numFdescs];
+      for (int i = 0; i < numFdescs; i++) {
+        FileDescriptor fdesc = fdescs[i];
+        fds[i] = NativeUnixSocket.getFD(fdesc);
+      }
+      this.setOutboundFileDescriptors(fds);
+    }
   }
 }

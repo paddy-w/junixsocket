@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,13 @@ import org.junit.jupiter.api.Test;
  * 
  * @author Christian Kohlschütter
  */
+@AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_PEER_CREDENTIALS)
 public class PeerCredentialsTest extends SocketTestBase {
   public PeerCredentialsTest() throws IOException {
     super();
   }
 
   @Test
-  @AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_PEER_CREDENTIALS)
   public void testSameProcess() throws Exception {
     assertTimeout(Duration.ofSeconds(2), () -> {
       final CompletableFuture<AFUNIXSocketCredentials> clientCredsFuture =
@@ -62,8 +62,13 @@ public class PeerCredentialsTest extends SocketTestBase {
 
         assertEquals(clientCreds, serverCreds,
             "Since our tests run in the same process, the peer credentials must be identical");
-        assertEquals(ProcessHandle.current().pid(), clientCreds.getPid(),
-            "The returned PID must be the one of our process");
+
+        if (clientCreds.getPid() == -1) {
+          // PID information is unvailable on this platform
+        } else {
+          assertEquals(/* ProcessHandle.current().pid() */ TestUtils.getPid(), clientCreds.getPid(),
+              "The returned PID must be the one of our process");
+        }
       }
 
       serverThread.checkException();

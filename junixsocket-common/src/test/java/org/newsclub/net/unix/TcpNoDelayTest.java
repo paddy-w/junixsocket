@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,8 @@ import java.net.SocketException;
 import java.nio.file.Files;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TcpNoDelayTest extends SocketTestBase {
-
-  private static final Logger LOG = LoggerFactory.getLogger(TcpNoDelayTest.class);
-
   public TcpNoDelayTest() throws IOException {
     super();
   }
@@ -59,7 +54,7 @@ public class TcpNoDelayTest extends SocketTestBase {
         gotException = true;
       }
       if (!gotException) {
-        LOG.info("Did not expected SocketException (but that's implementation-specific)");
+        // Did not expected SocketException (but that's implementation-specific)
         assertTrue(sock.getTcpNoDelay());
       }
     }

@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.newsclub.net.unix;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.SocketAddress;
@@ -30,6 +31,7 @@ import java.net.SocketException;
 public class AFUNIXServerSocket extends ServerSocket {
   private final AFUNIXSocketImpl implementation;
   private AFUNIXSocketAddress boundEndpoint;
+  private final Closeables closeables = new Closeables();
 
   /**
    * Constructs a new, unconnected instance.
@@ -53,8 +55,7 @@ public class AFUNIXServerSocket extends ServerSocket {
    * @throws IOException if the operation fails.
    */
   public static AFUNIXServerSocket newInstance() throws IOException {
-    AFUNIXServerSocket instance = new AFUNIXServerSocket();
-    return instance;
+    return new AFUNIXServerSocket();
   }
 
   /**
@@ -69,6 +70,25 @@ public class AFUNIXServerSocket extends ServerSocket {
     AFUNIXServerSocket socket = newInstance();
     socket.bind(addr);
     return socket;
+  }
+
+  /**
+   * Returns a new, <em>unbound</em> AF_UNIX {@link ServerSocket} that will always bind to the given
+   * address, regardless of any socket address used in a call to <code>bind</code>.
+   * 
+   * @param forceAddr The address to use.
+   * @return The new, yet unbound {@link AFUNIXServerSocket}.
+   * @throws IOException if an exception occurs.
+   */
+  public static AFUNIXServerSocket forceBindOn(final AFUNIXSocketAddress forceAddr)
+      throws IOException {
+    return new AFUNIXServerSocket() {
+
+      @Override
+      public void bind(SocketAddress ignored, int backlog) throws IOException {
+        super.bind(forceAddr, backlog);
+      }
+    };
   }
 
   @Override
@@ -105,11 +125,15 @@ public class AFUNIXServerSocket extends ServerSocket {
     if (isClosed()) {
       throw new SocketException("Socket is closed");
     }
-    AFUNIXSocket as = AFUNIXSocket.newInstance();
+    AFUNIXSocket as = newSocketInstance();
     implementation.accept(as.impl);
     as.addr = boundEndpoint;
     NativeUnixSocket.setConnected(as);
     return as;
+  }
+
+  protected AFUNIXSocket newSocketInstance() throws IOException {
+    return AFUNIXSocket.newInstance();
   }
 
   @Override
@@ -121,13 +145,47 @@ public class AFUNIXServerSocket extends ServerSocket {
   }
 
   @Override
-  public void close() throws IOException {
+  public synchronized void close() throws IOException {
     if (isClosed()) {
       return;
     }
 
-    super.close();
-    implementation.close();
+    IOException superException = null;
+    try {
+      super.close();
+    } catch (IOException e) {
+      superException = e;
+    }
+    if (implementation != null) {
+      try {
+        implementation.close();
+      } catch (IOException e) {
+        if (superException == null) {
+          superException = e;
+        } else {
+          superException.addSuppressed(e);
+        }
+      }
+    }
+    closeables.close(superException);
+  }
+
+  /**
+   * Registers a {@link Closeable} that should be closed when this socket is closed.
+   * 
+   * @param closeable The closeable.
+   */
+  public void addCloseable(Closeable closeable) {
+    closeables.add(closeable);
+  }
+
+  /**
+   * Unregisters a previously registered {@link Closeable}.
+   * 
+   * @param closeable The closeable.
+   */
+  public void removeCloseable(Closeable closeable) {
+    closeables.remove(closeable);
   }
 
   /**
@@ -137,5 +195,18 @@ public class AFUNIXServerSocket extends ServerSocket {
    */
   public static boolean isSupported() {
     return NativeUnixSocket.isLoaded();
+  }
+
+  @Override
+  public SocketAddress getLocalSocketAddress() {
+    return boundEndpoint;
+  }
+
+  @Override
+  public int getLocalPort() {
+    if (boundEndpoint == null) {
+      return -1;
+    }
+    return boundEndpoint.getPort();
   }
 }

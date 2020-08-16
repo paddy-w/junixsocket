@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
  */
 package org.newsclub.net.unix;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 
@@ -42,21 +42,24 @@ public class AcceptTimeoutTest extends SocketTestBase {
 
   @Test
   public void testCatchTimeout() throws Exception {
-    final int timeoutMillis = 100;
+    final int timeoutMillis = 500;
     assertTimeoutPreemptively(Duration.ofMillis(5 * timeoutMillis), () -> {
       try (AFUNIXServerSocket sock = startServer()) {
         long time = System.currentTimeMillis();
         sock.setSoTimeout(timeoutMillis);
-        assertEquals(timeoutMillis, sock.getSoTimeout(),
-            "We should get the same timeout back that we set before");
+        long actualTimeout = sock.getSoTimeout();
+        assertTrue(Math.abs(timeoutMillis - actualTimeout) <= 10,
+            "We should roughly get the same timeout back that we set before, but was "
+                + actualTimeout + " instead of " + timeoutMillis);
         try {
           sock.accept();
           fail("Did not receive " + SocketTimeoutException.class.getName());
-        } catch (SocketTimeoutException e) {
+        } catch (SocketException | SocketTimeoutException e) {
           // expected
           time = System.currentTimeMillis() - time;
 
-          assertTrue(time >= timeoutMillis && (time - timeoutMillis) <= TIMING_INACCURACY_MILLIS,
+          assertTrue(time >= (timeoutMillis - 25) && (time
+              - timeoutMillis) <= TIMING_INACCURACY_MILLIS,
               "Timeout not properly honored. Exception thrown after " + time + "ms vs. expected "
                   + timeoutMillis + "ms");
         }
@@ -66,13 +69,16 @@ public class AcceptTimeoutTest extends SocketTestBase {
 
   @Test
   public void testTimeoutAfterDelay() throws Exception {
-    final int timeoutMillis = 250;
+    final int timeoutMillis = 500;
     assertTimeoutPreemptively(Duration.ofMillis(2 * timeoutMillis), () -> {
       try (AFUNIXServerSocket sock = startServer()) {
         final int connectDelayMillis = 50;
         sock.setSoTimeout(timeoutMillis);
-        assertEquals(timeoutMillis, sock.getSoTimeout(),
-            "We should get the same timeout back that we set before");
+
+        long actualTimeout = sock.getSoTimeout();
+        assertTrue(Math.abs(timeoutMillis - actualTimeout) <= 10,
+            "We should roughly get the same timeout back that we set before, but was "
+                + actualTimeout + " instead of " + timeoutMillis);
 
         new Thread() {
           private final AFUNIXSocket socket = AFUNIXSocket.newInstance();
@@ -102,8 +108,8 @@ public class AcceptTimeoutTest extends SocketTestBase {
         sock.accept();
         time = System.currentTimeMillis() - time;
 
-        assertTrue(time >= connectDelayMillis && (time
-            - connectDelayMillis) <= TIMING_INACCURACY_MILLIS,
+        assertTrue(time >= connectDelayMillis && (time < timeoutMillis || (time
+            - connectDelayMillis) <= TIMING_INACCURACY_MILLIS),
             "Timeout not properly honored. Accept succeeded after " + time + "ms vs. expected "
                 + timeoutMillis + "ms");
       }

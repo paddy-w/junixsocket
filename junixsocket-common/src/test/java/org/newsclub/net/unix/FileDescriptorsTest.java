@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,13 +40,14 @@ import org.junit.jupiter.api.Test;
  * 
  * @author Christian Kohlschütter
  */
+@AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_FILE_DESCRIPTORS)
+// CPD-OFF - Skip code-duplication checks
 public class FileDescriptorsTest extends SocketTestBase {
   public FileDescriptorsTest() throws IOException {
     super();
   }
 
   @Test
-  @AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_FILE_DESCRIPTORS)
   public void testSendRecvFileDescriptors() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
       final ServerThread serverThread = new ServerThread() {
@@ -93,7 +94,6 @@ public class FileDescriptorsTest extends SocketTestBase {
   }
 
   @Test
-  @AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_FILE_DESCRIPTORS)
   public void testBadFileDescriptor() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
       final ServerThread serverThread = new ServerThread() {
@@ -161,7 +161,6 @@ public class FileDescriptorsTest extends SocketTestBase {
   }
 
   @Test
-  @AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_FILE_DESCRIPTORS)
   public void testAncillaryReceiveBufferTooSmall() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
       final ServerThread serverThread = new ServerThread() {
@@ -196,7 +195,6 @@ public class FileDescriptorsTest extends SocketTestBase {
   }
 
   @Test
-  @AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_FILE_DESCRIPTORS)
   public void testFileInputStream() throws Exception {
     final File tmpFile = File.createTempFile("junixsocket", "test");
     tmpFile.deleteOnExit();
@@ -249,7 +247,6 @@ public class FileDescriptorsTest extends SocketTestBase {
   }
 
   @Test
-  @AFUNIXSocketCapabilityRequirement(AFUNIXSocketCapability.CAPABILITY_FILE_DESCRIPTORS)
   public void testFileInputStreamPartiallyConsumed() throws Exception {
     final File tmpFile = File.createTempFile("junixsocket", "test");
     tmpFile.deleteOnExit();

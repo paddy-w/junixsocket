@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.newsclub.net.unix;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.charset.Charset;
@@ -87,7 +88,7 @@ public final class AFUNIXSocketAddress extends InetSocketAddress {
    * @see AFUNIXSocketAddress#inAbstractNamespace(String,int)
    */
   public AFUNIXSocketAddress(final byte[] socketAddress, int port) throws IOException {
-    super(0);
+    super(InetAddress.getLoopbackAddress(), 0);
     if (port != 0) {
       NativeUnixSocket.setPort1(this, port);
     }
@@ -138,8 +139,9 @@ public final class AFUNIXSocketAddress extends InetSocketAddress {
   }
 
   private static String prettyPrint(byte[] data) {
-    StringBuilder sb = new StringBuilder(data.length + 16);
-    for (int i = 0, n = data.length; i < n; i++) {
+    final int dataLength = data.length;
+    StringBuilder sb = new StringBuilder(dataLength + 16);
+    for (int i = 0; i < dataLength; i++) {
       byte c = data[i];
       if (c >= 32 && c < 127) {
         sb.append((char) c);
@@ -153,6 +155,37 @@ public final class AFUNIXSocketAddress extends InetSocketAddress {
 
   @Override
   public String toString() {
-    return getClass().getName() + "[port=" + getPort() + ";address=" + prettyPrint(bytes) + "]";
+    return getClass().getName() + "[port=" + getPort() + ";path=" + prettyPrint(bytes) + "]";
+  }
+
+  /**
+   * Returns the path to the UNIX domain socket, as a human-readable string.
+   * 
+   * Zero-bytes are converted to '@', other non-printable bytes are converted to '.'
+   * 
+   * @return The path.
+   * @see #getPathAsBytes()
+   */
+  public String getPath() {
+    byte[] by = getPathAsBytes();
+    for (int i = 1; i < by.length; i++) {
+      byte b = by[i];
+      if (b == 0) {
+        by[i] = '@';
+      } else if (b < 32 || b == 127) {
+        by[i] = '.';
+      }
+    }
+    return new String(by, Charset.defaultCharset());
+  }
+
+  /**
+   * Returns the path to the UNIX domain socket, as bytes.
+   * 
+   * @return The path.
+   * @see #getPath()
+   */
+  public byte[] getPathAsBytes() {
+    return this.bytes.clone();
   }
 }

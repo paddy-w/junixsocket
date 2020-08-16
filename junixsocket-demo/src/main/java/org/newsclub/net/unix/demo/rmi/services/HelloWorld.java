@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,18 @@ import java.rmi.Remote;
  */
 public interface HelloWorld extends Remote {
   /**
-   * Returns "Hello world".
+   * Returns "Hello".
    * 
-   * @return "Hello world"
+   * @return "Hello"
    * @throws IOException if the operation fails.
    */
   String hello() throws IOException;
+
+  /**
+   * Returns "World" (or something else?).
+   * 
+   * @return "World" (usually)
+   * @throws IOException if the operation fails.
+   */
+  String world() throws IOException;
 }

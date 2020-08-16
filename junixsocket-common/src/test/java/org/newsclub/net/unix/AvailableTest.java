@@ -1,7 +1,7 @@
 /**
  * junixsocket
  *
- * Copyright 2009-2019 Christian Kohlschütter
+ * Copyright 2009-2020 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class AvailableTest extends SocketTestBase {
    * blocking. Then, we try the opposite direction.
    */
   @Test
-  public void testAvailableAtClient() throws Exception {
+  public void testAvailableAtClient() {
     assertTimeout(Duration.ofSeconds(2), () -> {
       final ServerThread serverThread = new ServerThread() {
 
@@ -118,7 +118,7 @@ public class AvailableTest extends SocketTestBase {
    * blocking. Then, we try the opposite direction.
    */
   @Test
-  public void testAvailableAtServer() throws Exception {
+  public void testAvailableAtServer() {
     assertTimeout(Duration.ofSeconds(2), () -> {
 
       final ServerThread serverThread = new ServerThread() {

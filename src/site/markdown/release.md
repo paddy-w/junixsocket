@@ -4,6 +4,18 @@ NOTE: This is probably not interesting unless you're the project admin or going 
 
 ## Prerequisites
 
+### llvm and mingw-w64
+
+In order to build for all supported target platforms included in the release, our development
+machine (the one where we do the compilation), needs to have clang and llvm, as well as
+x86_64-w64-mingw32-gcc, a GCC compiler binary to allow building for Windows.
+
+On Mac, run the following command.
+
+    brew install llvm mingw-w64
+    
+If you don't have Homebrew, obtain it from [here](https://brew.sh/) first.
+
 ### github.com credentials
 
 1. On github.com, create an OAuth token with write permissions to the repo.
@@ -56,7 +68,7 @@ install Java, Maven and junixsocket, and you should be good to go.
 ### Bump project version
 
     cd junixsocket
-    mvn versions:set -DnewVersion=2.1.0
+    mvn versions:set -DnewVersion=2.3.2
     # git add / commit here...
     
 ### Build native libraries on other supported, common platforms
@@ -74,8 +86,8 @@ The platform-dependent nar files should now be available in the local maven repo
 Use the provided script to copy the corresponding nar to a project folder:
 
     cd junixsocket
-    # replace 2.1.0 with the desired version number
-    junixsocket-native-prebuilt/bin/copy-nar-from-m2repo.sh 2.1.0
+    # replace 2.3.2 with the desired version number
+    junixsocket-native-prebuilt/bin/copy-nar-from-m2repo.sh 2.3.2
 
 Now copy the nar files from the target machine to your development computer (from where you do the release).
 By convention, copy the files to the same folder as on the target machine (*junixsocket/junixsocket-native-prebuilt/bin*)
@@ -92,13 +104,12 @@ a script to run the demo classes from the command-line.
 
     cd junixsocket
     mvn clean install -Pstrict -Prelease
-    ( cd junixsocket-dist ; mvn assembly:single -Prelease -Pstrict )
 
 The files can be found in
 
-   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.1.0-bin`
-   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.1.0-bin.tar.gz`
-   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.1.0-bin.zip`
+   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.3.2-bin`
+   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.3.2-bin.tar.gz`
+   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.3.2-bin.zip`
 
 ### Deploy code to Maven central
 
@@ -153,7 +164,7 @@ NOTE: There can be quite a delay (30 minutes?) until the artifact is deployed in
 
 2. Select the newly created tag (= search for the version).
 
-3. Release title = "junixsocket" + version>, e.g., "junixsocket 2.2.0"
+3. Release title = "junixsocket" + version>, e.g., "junixsocket 2.3.2"
 
 4. Hit "Publish release"    
 
