@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,18 @@ package org.newsclub.net.unix.demo.rmi.services;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
+/**
+ * A very simple "world" service.
+ *
+ * @author Christian Kohlschütter
+ * @see HelloWorld
+ */
 public interface World extends Remote {
+  /**
+   * Returns "World" (or something else?).
+   *
+   * @return "World" (usually)
+   * @throws RemoteException if the operation fails.
+   */
   String world() throws RemoteException;
 }

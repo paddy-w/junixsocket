@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.io.ObjectInput;
 
 /**
  * A generic (unspecific) {@link FileDescriptor} reference.
- * 
+ *
  * @author Christian Kohlschütter
  * @see RemoteFileInput
  * @see RemoteFileOutput
@@ -34,7 +34,7 @@ public final class RemoteFileDescriptor extends RemoteFileDescriptorBase<Void> {
 
   /**
    * Creates an uninitialized instance; used for externalization.
-   * 
+   *
    * @see #readExternal(ObjectInput)
    */
   public RemoteFileDescriptor() {
@@ -44,7 +44,7 @@ public final class RemoteFileDescriptor extends RemoteFileDescriptorBase<Void> {
   /**
    * Creates a new {@link RemoteFileOutput} instance, encapsulating a generic {@link FileDescriptor}
    * so that it can be shared with other processes via RMI.
-   * 
+   *
    * @param socketFactory The socket factory.
    * @param fd The {@link FileDescriptor}.
    */
@@ -56,7 +56,9 @@ public final class RemoteFileDescriptor extends RemoteFileDescriptorBase<Void> {
   public synchronized void close() throws IOException {
     FileDescriptor fd = getFileDescriptor();
     if (fd != null && fd.valid()) {
-      new FileInputStream(fd).close();
+      try (FileInputStream fin = new FileInputStream(fd)) {
+        // should succeed
+      }
     }
   }
 }

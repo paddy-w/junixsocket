@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.net.Socket;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.conf.RuntimeProperty;
 import com.mysql.cj.protocol.ExportControlled;
@@ -39,10 +40,14 @@ public class AFUNIXDatabaseSocketFactoryCJ implements SocketFactory {
   private AFUNIXSocket rawSocket;
   private Socket sslSocket;
 
+  /**
+   * Creates a new instance.
+   */
   public AFUNIXDatabaseSocketFactoryCJ() {
   }
 
   @SuppressWarnings({"unchecked", "exports"})
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   @Override
   public <T extends Closeable> T connect(String hostname, int portNumber, PropertySet props,
       int loginTimeout) throws IOException {
@@ -58,17 +63,18 @@ public class AFUNIXDatabaseSocketFactoryCJ implements SocketFactory {
     }
     final File socketFile = new File(sock);
 
-    this.rawSocket = AFUNIXSocket.connectTo(new AFUNIXSocketAddress(socketFile));
+    this.rawSocket = AFUNIXSocket.connectTo(AFUNIXSocketAddress.of(socketFile));
     this.sslSocket = rawSocket;
     return (T) rawSocket;
   }
 
   @SuppressWarnings({"unchecked", "exports"})
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   @Override
   public <T extends Closeable> T performTlsHandshake(SocketConnection socketConnection,
       ServerSession serverSession) throws IOException {
     this.sslSocket = ExportControlled.performTlsHandshake(this.rawSocket, socketConnection,
-        serverSession == null ? null : serverSession.getServerVersion());
+        serverSession == null ? null : serverSession.getServerVersion(), null);
     return (T) this.sslSocket;
   }
 }

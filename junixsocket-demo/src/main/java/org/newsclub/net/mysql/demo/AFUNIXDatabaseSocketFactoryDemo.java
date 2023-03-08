@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
@@ -30,11 +31,11 @@ import org.newsclub.net.unix.demo.DemoHelper;
 
 /**
  * Demonstrates how to connect to a local MySQL server.
- * 
+ *
  * @author Christian Kohlschuetter
  */
 public class AFUNIXDatabaseSocketFactoryDemo {
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws ClassNotFoundException, SQLException {
     DemoHelper.initJDBCDriverClass("mysqlDriver", "", "com.mysql.jdbc.Driver");
     System.out.println();
 
@@ -62,23 +63,20 @@ public class AFUNIXDatabaseSocketFactoryDemo {
 
     System.out.println();
 
-    // with SSL enabled, closing the Connection will throw a stupid exception
-    // see https://bugs.mysql.com/bug.php?id=93590
-    @SuppressWarnings("resource")
-    Connection conn = DriverManager.getConnection(connectionUrl, props);
+    try (Connection conn = DriverManager.getConnection(connectionUrl, props)) {
+      System.out.println("Connection: " + conn);
 
-    System.out.println("Connection: " + conn);
+      DatabaseMetaData metadata = conn.getMetaData();
+      System.out.println("Database version: " + metadata.getDatabaseProductName() + " " + metadata
+          .getDatabaseProductVersion());
 
-    DatabaseMetaData metadata = conn.getMetaData();
-    System.out.println("Database version: " + metadata.getDatabaseProductName() + " " + metadata
-        .getDatabaseProductVersion());
-
-    String sql = "SHOW DATABASES";
-    System.out.println(sql);
-    try (Statement stmt = conn.createStatement(); //
-        ResultSet rs = stmt.executeQuery(sql)) {
-      while (rs.next()) {
-        System.out.println("* " + rs.getString(1));
+      String sql = "SHOW DATABASES";
+      System.out.println(sql);
+      try (Statement stmt = conn.createStatement(); //
+          ResultSet rs = stmt.executeQuery(sql)) {
+        while (rs.next()) {
+          System.out.println("* " + rs.getString(1));
+        }
       }
     }
   }

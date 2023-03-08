@@ -127,10 +127,9 @@ For junixsocket, specifically, you can speed-up your porting development by dire
 the JNI code as follows:
 
     cd junixsocket/junixsocket-native
-    crossclang/bin/clang src/main/c/org_newsclub_net_unix_NativeUnixSocket.c \
+    crossclang/bin/clang src/main/c/*.c \
         -target (target-platform) \
-        -I /(path-to-java-jdk)/include/ \
-        -I /(path-to-java-jdk)/include/(platform-specific)/ \
+        -Isrc/main/c -Isrc/main/c/jni \
         -shared (additional flags) \
         -olibjunixtest.so
 

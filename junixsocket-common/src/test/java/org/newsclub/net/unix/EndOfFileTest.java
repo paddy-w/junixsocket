@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Files;
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -40,21 +39,27 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * See http://code.google.com/p/junixsocket/issues/detail?id=9
- * 
+ *
  * @author Derrick Rice (April, 2010)
  */
-public class EndOfFileTest {
-  private File socketFile;
+@SuppressFBWarnings({
+    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
+public abstract class EndOfFileTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected ServerSocket server;
   protected ExecutorService executor;
 
+  protected EndOfFileTest(AddressSpecifics<A> asp) {
+    super(asp);
+  }
+
   @BeforeEach
   public void setUp() throws IOException {
-    server = AFUNIXServerSocket.newInstance();
-    this.socketFile = SocketTestBase.initSocketFile();
-    server.bind(new AFUNIXSocketAddress(socketFile));
+    server = newServerSocket();
+    bindServerSocket(server, getServerBindAddress());
 
     executor = Executors.newFixedThreadPool(2);
   }
@@ -69,18 +74,13 @@ public class EndOfFileTest {
       // ignore
     }
 
-    if (socketFile != null) {
-      Files.delete(socketFile.toPath());
-    }
-
     if (executor != null) {
       executor.shutdown();
     }
   }
 
-  @SuppressWarnings("resource")
-  Socket[] connectToServer() throws Exception {
-    AFUNIXSocket clientSocket = AFUNIXSocket.newInstance();
+  protected Socket[] connect() throws Exception {
+    Socket clientSocket = newSocket();
 
     Future<Socket> serverAcceptFuture = executor.submit(new Callable<Socket>() {
       @Override
@@ -91,9 +91,9 @@ public class EndOfFileTest {
 
     Thread.sleep(100);
 
-    clientSocket.connect(new AFUNIXSocketAddress(socketFile));
+    connectSocket(clientSocket, server.getLocalSocketAddress());
 
-    Socket serverSocket = serverAcceptFuture.get(100, TimeUnit.MILLISECONDS);
+    Socket serverSocket = serverAcceptFuture.get(5, TimeUnit.SECONDS);
 
     return new Socket[] {serverSocket, clientSocket};
   }
@@ -101,11 +101,11 @@ public class EndOfFileTest {
   @Test
   public void bidirectionalSanity() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+      Socket[] sockets = connect();
       try (Socket serverSocket = sockets[0]; //
           Socket clientSocket = sockets[1]) {
-        String input = null;
-        String output = null;
+        String input;
+        String output;
 
         OutputStreamWriter clientOutWriter = new OutputStreamWriter(clientSocket.getOutputStream(),
             "UTF-8");
@@ -136,7 +136,7 @@ public class EndOfFileTest {
   @Test
   public void serverReadEof() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+      Socket[] sockets = connect();
       Socket serverSocket = sockets[0];
       Socket clientSocket = sockets[1];
       clientSocket.close();
@@ -164,7 +164,7 @@ public class EndOfFileTest {
   public void clientReadEof() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
 
-      Socket[] sockets = connectToServer();
+      Socket[] sockets = connect();
       Socket serverSocket = sockets[0];
       Socket clientSocket = sockets[1];
 
@@ -192,7 +192,7 @@ public class EndOfFileTest {
   @SuppressWarnings("resource")
   public void serverWriteToSocketClosedByServer() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+      Socket[] sockets = connect();
       Socket serverSocket = sockets[0];
       Socket clientSocket = sockets[1];
 
@@ -222,7 +222,7 @@ public class EndOfFileTest {
   @SuppressWarnings("resource")
   public void serverWriteToSocketClosedByClient() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+      Socket[] sockets = connect();
       Socket serverSocket = sockets[0];
       Socket clientSocket = sockets[1];
 
@@ -234,11 +234,11 @@ public class EndOfFileTest {
       try {
         /*
          * http://www.unixguide.net/network/socketfaq/2.1.shtml http://www.faqs.org/rfcs/rfc793.html
-         * 
+         *
          * The TCP RFC allows the open side to continue sending data. In most (all?)
          * implementations, the closed side will respond with a RST. For this reason, it takes two
          * writes to cause an IOException with TCP sockets. (or more, if there is latency)
-         * 
+         *
          * However, it is expected that the write give an IOException as soon as possible - which
          * means it is OK for our socket implementation to give an IOException on the first write.
          */
@@ -264,7 +264,7 @@ public class EndOfFileTest {
   @SuppressWarnings("resource")
   public void clientWriteToSocketClosedByClient() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+      Socket[] sockets = connect();
       Socket serverSocket = sockets[0];
       Socket clientSocket = sockets[1];
 
@@ -294,7 +294,7 @@ public class EndOfFileTest {
   @SuppressWarnings("resource")
   public void clientWriteToSocketClosedByServer() throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+      Socket[] sockets = connect();
       Socket serverSocket = sockets[0];
       Socket clientSocket = sockets[1];
 

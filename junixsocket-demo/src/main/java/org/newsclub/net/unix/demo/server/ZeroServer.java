@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@ import java.net.SocketAddress;
 /**
  * A multi-threaded unix socket server that simply writes null-bytes, and does not attempt to read
  * anything.
- * 
+ *
  * @author Christian Kohlschütter
  */
+// CPD-OFF
 public final class ZeroServer extends DemoServerBase {
   public ZeroServer(SocketAddress listenAddress) {
     super(listenAddress);

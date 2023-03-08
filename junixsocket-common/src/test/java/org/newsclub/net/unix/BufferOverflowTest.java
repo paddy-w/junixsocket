@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@
 package org.newsclub.net.unix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -38,28 +38,33 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * See https://code.google.com/p/junixsocket/issues/detail?id=20
  */
-@SuppressFBWarnings("RANGE_ARRAY_LENGTH")
+@SuppressFBWarnings({
+    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
+    "RANGE_ARRAY_LENGTH"})
 // CPD-OFF - Skip code-duplication checks
-public class BufferOverflowTest {
-  private File socketFile;
+public abstract class BufferOverflowTest<A extends SocketAddress> extends SocketTestBase<A> {
   private ServerSocket server;
   private ExecutorService executor;
 
+  protected BufferOverflowTest(AddressSpecifics<A> asp) {
+    super(asp);
+  }
+
   @BeforeEach
   public void setUp() throws IOException {
-    this.socketFile = SocketTestBase.initSocketFile();
-
-    server = AFUNIXServerSocket.newInstance();
-    server.bind(new AFUNIXSocketAddress(socketFile));
+    server = newServerSocket();
+    bindServerSocket(server, getServerBindAddress());
 
     executor = Executors.newFixedThreadPool(2);
   }
 
   @AfterEach
-  public void tearDown() {
+  public void tearDown() throws IOException {
     try {
       if (server != null) {
         server.close();
@@ -73,9 +78,8 @@ public class BufferOverflowTest {
     }
   }
 
-  @SuppressWarnings("resource")
-  Socket[] connectToServer() throws Exception {
-    AFUNIXSocket clientSocket = AFUNIXSocket.newInstance();
+  Socket[] connect() throws Exception {
+    Socket clientSocket = newSocket();
 
     Future<Socket> serverAcceptFuture = executor.submit(new Callable<Socket>() {
       @Override
@@ -86,7 +90,7 @@ public class BufferOverflowTest {
 
     Thread.sleep(100);
 
-    clientSocket.connect(new AFUNIXSocketAddress(socketFile));
+    connectSocket(clientSocket, server.getLocalSocketAddress());
 
     Socket serverSocket = serverAcceptFuture.get(100, TimeUnit.MILLISECONDS);
 
@@ -95,8 +99,8 @@ public class BufferOverflowTest {
 
   @Test
   public void readOutOfBounds() throws Exception {
-    assertTimeout(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+    assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+      Socket[] sockets = connect();
       try (Socket serverSocket = sockets[0]; //
           Socket clientSocket = sockets[1];) {
 
@@ -119,8 +123,8 @@ public class BufferOverflowTest {
 
   @Test
   public void readUpTo() throws Exception {
-    assertTimeout(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+    assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+      Socket[] sockets = connect();
       try (Socket serverSocket = sockets[0]; //
           Socket clientSocket = sockets[1];) {
 
@@ -139,8 +143,8 @@ public class BufferOverflowTest {
 
   @Test
   public void writeOverflow() throws Exception {
-    assertTimeout(Duration.ofSeconds(2), () -> {
-      Socket[] sockets = connectToServer();
+    assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+      Socket[] sockets = connect();
       try (Socket serverSocket = sockets[0]; //
           Socket clientSocket = sockets[1];) {
 

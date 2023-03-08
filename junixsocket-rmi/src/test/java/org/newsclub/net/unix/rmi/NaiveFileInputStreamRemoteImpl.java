@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.util.IOUtil;
+
 public final class NaiveFileInputStreamRemoteImpl extends FileInputStream implements
     NaiveFileInputStreamRemote {
   private final RemoteFileInput rfd;
@@ -31,7 +34,7 @@ public final class NaiveFileInputStreamRemoteImpl extends FileInputStream implem
     super(file);
     this.rfd = new RemoteFileInput(socketFactory, this);
 
-    AFUNIXNaming.exportObject(this, socketFactory);
+    AFNaming.exportObject(this, socketFactory);
   }
 
   public NaiveFileInputStreamRemoteImpl(AFUNIXRMISocketFactory socketFactory, FileDescriptor fd)
@@ -39,22 +42,23 @@ public final class NaiveFileInputStreamRemoteImpl extends FileInputStream implem
     super(fd);
     this.rfd = new RemoteFileInput(socketFactory, this);
 
-    AFUNIXNaming.exportObject(this, socketFactory);
+    AFNaming.exportObject(this, socketFactory);
   }
 
   @Override
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   public RemoteFileInput getRemoteFileDescriptor() {
     return rfd;
   }
 
   @Override
   public void close() throws IOException {
-    AFUNIXNaming.unexportObject(this);
+    AFNaming.unexportObject(this);
     super.close();
   }
 
   @Override
   public byte[] readAllBytes() throws IOException {
-    return TestUtils.readAllBytes(this);
+    return IOUtil.readAllBytesNaively(this);
   }
 }

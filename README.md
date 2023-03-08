@@ -1,53 +1,48 @@
 # junixsocket
 
-junixsocket is a Java/JNI library that allows the use of [Unix Domain Sockets](https://en.wikipedia.org/wiki/Unix_domain_socket) (AF_UNIX sockets) from Java.
+junixsocket is a Java/JNI library that allows the use of
+[Unix Domain Sockets](https://en.wikipedia.org/wiki/Unix_domain_socket) (AF_UNIX sockets), and
+other address/protocol families (such as [AF_TIPC](http://tipc.io/) and AF_VSOCK), from Java.
 
-## Why it's cool
+## Unix sockets API, in Java, AF.
 
-* junixsocket is a small, modular library. Install only what you need.
-* In contrast to other implementations, *junixsocket* extends the Java Sockets API (`java.net.Socket`, `java.net.SocketAddress`, etc.)
-* Supports *RMI over AF_UNIX*.
-* Database support (connect to a local database server via Unix sockets and JDBC).
-    * MySQL (provides a custom *AFUNIXDatabaseSocketFactory* for Connector/J).
-    * PostgreSQL and others (provides a generic *AFUNIXSocketFactory* with a variety of configuration options).
+* *junixsocket* is the most complete implementation of AF_UNIX sockets for the Java ecosystem.
+* Supports other socket types, such as TIPC (on Linux) and VSOCK (on Linux, and certain macOS VMs), as well!
+* Comes with pre-built native libraries for most operating systems and platforms, including
+  macOS, Linux, Windows, Solaris, FreeBSD, NetBSD, OpenBSD, DragonFlyBSD, AIX, IBM i.
+* Additionally, you can build and run junixsocket natively on IBM z/OS (experimental).
+* Supports all Java versions since Java 8*
+* Supports both the Java Socket API and NIO (`java.net.Socket`, `java.net.SocketChannel`, etc.)
+* Supports streams and datagrams.
+* Supports Remote Method Invocation (RMI) over AF_UNIX.
+* Supports JDBC database connectors (connect to a local database server via Unix sockets).
+    * Generic *AFUNIXSocketFactory* for databases like PostgreSQL
+    * Custom socket factory for MySQL Connector/J, as [recommended by Oracle](https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-unix-socket.html)
 * Supports [peer credentials](https://kohlschutter.github.io/junixsocket/peercreds.html).
 * Supports sending and receiving [file descriptors](https://kohlschutter.github.io/junixsocket/filedescriptors.html).
 * Supports the abstract namespace on Linux.
-* Supports HTTP over unix socket (using [NanoHTTPD](https://github.com/NanoHttpd/nanohttpd))
-* Supports Java 7*, 8, 9, 10, 11, 12, 13, 14, 15.
-* Comes with pre-built native libraries for several operating systems and platforms, including
-  macOS, Linux, FreeBSD, Solaris and Windows; custom libraries can be built using Maven.
-* Supports JPMS/Jigsaw modules.
+* Supports socketpair, and instantiating socket classes from file descriptors.
+* Supports [HTTP over UNIX sockets](https://kohlschutter.github.io/junixsocket/http.html) (using [NanoHTTPD](https://github.com/NanoHttpd/nanohttpd), [OkHttp](https://github.com/square/okhttp), and [jetty](https://github.com/eclipse/jetty.project/)).
+* Supports JPMS/Jigsaw modules. The project is modularized so you can install only what you need.
+* Supports GraalVM native-image AOT/ahead-of-time compilation (since 2.6.0)
+* Provides a selftest package with 100+ tests to ensure compatibility with any target platform.
 * Apache 2.0 licensed.
 
-`*` (basic support for Java 7 only, no RMI, no Demos).
+`*` (Tested up to Java 19; support for Java 7 was dropped in version 2.5.0).
 
 ## Quick links
 
- * [Project website](https://kohlschutter.github.io/junixsocket/)
- * [Github project](https://github.com/kohlschutter/junixsocket/)
+ * [Project website](https://kohlschutter.github.io/junixsocket/) and [Github project](https://github.com/kohlschutter/junixsocket/)
  * [Changelog](https://kohlschutter.github.io/junixsocket/changelog.html)
  * [Getting started](https://kohlschutter.github.io/junixsocket/quickstart.html)
  * [Demo code](https://kohlschutter.github.io/junixsocket/demo.html) ([Java source](https://kohlschutter.github.io/junixsocket/junixsocket-demo/xref/index.html))
     - Sockets (`org.newsclub.net.unix.demo`)
     - RMI over Unix Sockets (`org.newsclub.net.unix.demo.rmi` and `org.newsclub.net.unix.demo.rmi.services`)
     - MySQL over Unix Sockets  (`org.newsclub.net.mysql.demo`)
-
-  * API Javadocs
-    - [The core (common) API](https://kohlschutter.github.io/junixsocket/junixsocket-common/apidocs/org.newsclub.net.unix/org/newsclub/net/unix/package-summary.html)
-    - [The RMI-over-Unix-Socket API](https://kohlschutter.github.io/junixsocket/junixsocket-rmi/apidocs/org.newsclub.net.unix.rmi/org/newsclub/net/unix/rmi/package-summary.html)
-    
+  * [API Javadocs](https://kohlschutter.github.io/junixsocket/apidocs/)
   * [Unix Domain Socket Reference](https://kohlschutter.github.io/junixsocket/unixsockets.html)
-
-## Feature Comparison Matrix
-
-| Project  | License | Java Sockets API | Supports MySQL | Supports RMI | Comments |
-| ------------- | --------- | ------------- | ------------- | ------------- | ------------- |
-| junixsocket | Apache 2.0 | ✅ Yes | ✅ Yes | ✅ Yes | This project |
-| [netty](https://github.com/netty/netty) | Apache 2.0 | ✅ Yes | ❌ No | ❌ No |  |
-| [JUDS](http://code.google.com/p/juds/)  | LGPL | ❌ No | ❌ No | ❌ No | |
-| J-BUDS  | LGPL | ❌ No | ❌ No | ❌ No | orphaned |
-| [gnu.net.local](http://web.archive.org/web/20060702213439/http://www.nfrese.net/software/gnu_net_local/overview.html) | GPL with Classpath exception | ❌ No | ❌ No | ❌ No | orphaned |
+  * [TIPC documentation](https://kohlschutter.github.io/junixsocket/junixsocket-tipc/index.html)
+  * [VSOCK documentation](https://kohlschutter.github.io/junixsocket/junixsocket-vsock/index.html)
 
 ## Licensing
 
@@ -57,11 +52,50 @@ Commercial support is available through [Kohlschütter Search Intelligence](http
 
 ## Self-test
 
-To verify that the software works as expected on your platform, you can run the selftest program,
-which is located in the "junixsocket-dist" distribution package:
+To verify that the software works as expected on your platform, you can run the
+[junixsocket-selftest](https://kohlschutter.github.io/junixsocket/selftest.html) program, which is
+located in the "junixsocket-dist" distribution package, and also released on GitHub.
 
 ```
-java -jar junixsocket-selftest-VERSION-jar-with-dependencies.jar 
+java -jar junixsocket-selftest-VERSION-jar-with-dependencies.jar
 ```
 
 (with VERSION being the corresponding junixsocket version).
+
+## Maven dependency
+
+To include the core junixsocket functionality in your project, add the following Maven dependency
+
+> **NOTE** Since version 2.4.0, `junixsocket-core` is POM-only (that's why you need to specify `<type>pom</type>`)
+
+```
+<dependency>
+  <groupId>com.kohlschutter.junixsocket</groupId>
+  <artifactId>junixsocket-core</artifactId>
+  <version>2.6.2</version>
+  <type>pom</type>
+</dependency>
+```
+
+While you should definitely pin your dependency to a specific version, you are very much encouraged to always update to the most recent version. Check back frequently.
+
+For more, optional packages (RMI, MySQL, Jetty, TIPC, VSOCK, server, GraalVM, etc.) and Gradle instructions see
+[here](https://kohlschutter.github.io/junixsocket/dependency.html)
+
+If you're testing a `-SNAPSHOT` version, make sure that the Sonatype snapshot repository is enabled in your POM:
+
+```
+<repositories>
+    <repository>
+        <id>sonatype.snapshots</id>
+        <name>Sonatype snapshot repository</name>
+        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        <layout>default</layout>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
+> **NOTE** Never rely on -SNAPSHOT builds. They can break any time.

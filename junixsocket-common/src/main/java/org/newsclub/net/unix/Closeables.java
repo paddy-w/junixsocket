@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,24 @@ import java.util.List;
 
 /**
  * A set of {@link Closeables} that can be closed at once.
- * 
+ *
  * @author Christian Kohlschütter
  */
 public final class Closeables implements Closeable {
   private List<WeakReference<Closeable>> list;
 
+  /**
+   * Creates a new {@link Closeables} instance.
+   */
   public Closeables() {
   }
 
+  /**
+   * Creates a new {@link Closeables} instance, populating it with the given {@link Closeable}
+   * objects.
+   *
+   * @param closeable The {@link Closeable}s to add.
+   */
   public Closeables(Closeable... closeable) {
     for (Closeable cl : closeable) {
       this.list.add(new HardReference<Closeable>(cl));
@@ -48,7 +57,7 @@ public final class Closeables implements Closeable {
 
   /**
    * Closes all registered closeables.
-   * 
+   *
    * @param superException If set, any exceptions thrown in here will be chained to the given
    *          exception via addSuppressed, and then thrown.
    * @throws IOException if an exception occurs.
@@ -83,7 +92,8 @@ public final class Closeables implements Closeable {
   private static final class HardReference<V> extends WeakReference<V> {
     private final V strongRef;
 
-    private HardReference(final V referent) {
+    @SuppressWarnings("null")
+    HardReference(final V referent) {
       super(null);
       this.strongRef = referent;
     }
@@ -96,12 +106,11 @@ public final class Closeables implements Closeable {
 
   /**
    * Adds the given closeable, but only using a weak reference.
-   * 
+   *
    * @param closeable The closeable.
    * @return {@code true} iff the closeable was added, {@code false} if it was {@code null} or
    *         already added before.
    */
-  @SuppressWarnings("resource")
   public synchronized boolean add(WeakReference<Closeable> closeable) {
     Closeable cl = closeable.get();
     if (cl == null) {
@@ -112,7 +121,7 @@ public final class Closeables implements Closeable {
       list = new ArrayList<>();
     } else {
       for (WeakReference<Closeable> ref : list) {
-        if (ref.get() == cl) {
+        if (cl.equals(ref.get())) {
           return false;
         }
       }
@@ -124,7 +133,7 @@ public final class Closeables implements Closeable {
 
   /**
    * Adds the given closeable.
-   * 
+   *
    * @param closeable The closeable.
    * @return {@code true} iff the closeable was added, {@code false} if it was {@code null} or
    *         already added before.
@@ -135,7 +144,7 @@ public final class Closeables implements Closeable {
 
   /**
    * Removes the given closeable.
-   * 
+   *
    * @param closeable The closeable.
    * @return {@code true} iff the closeable was removed, {@code fale} if it was {@code null} or not
    *         previously added.
@@ -145,7 +154,7 @@ public final class Closeables implements Closeable {
       return false;
     }
     for (Iterator<WeakReference<Closeable>> it = list.iterator(); it.hasNext();) {
-      if (it.next().get() == closeable) {
+      if (closeable.equals(it.next().get())) {
         it.remove();
         return true;
       }

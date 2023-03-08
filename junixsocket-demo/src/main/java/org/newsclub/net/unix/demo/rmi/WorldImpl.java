@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,19 @@ import java.rmi.RemoteException;
 
 import org.newsclub.net.unix.demo.rmi.services.World;
 
+/**
+ * The implementation of the very simple {@link World} service.
+ *
+ * @author Christian Kohlschütter
+ */
 public class WorldImpl implements World {
-
   private final String text;
 
+  /**
+   * Creates a new {@link World} instance.
+   *
+   * @param text The text to return upon calling {@link #world()}.
+   */
   public WorldImpl(String text) {
     this.text = text;
   }

@@ -7,22 +7,44 @@ database via unix sockets.
 
 ## Maven dependencies
 
+### Common dependency
+
 Add the following dependency to your Maven project
 
     <dependency>
       <groupId>com.kohlschutter.junixsocket</groupId>
       <artifactId>junixsocket-core</artifactId>
-      <version>2.3.2</version>
+      <version>2.6.2</version>
+      <type>pom</type>
     </dependency>
 
-[See here](customarch.html) how to add support for custom architectures that aren't supported out of the box.
+> **IMPORTANT:** Make sure to include the `<type>pom</type>` line (this has changed in junixsocket 2.4.0).
+
+Some applications may have problems with this POM dependency.  You can also manually specify the
+following two dependencies instead:
+
+    <dependency>
+      <groupId>com.kohlschutter.junixsocket</groupId>
+      <artifactId>junixsocket-common</artifactId>
+      <version>2.6.2</version>
+    </dependency>
+
+and
+
+    <dependency>
+      <groupId>com.kohlschutter.junixsocket</groupId>
+      <artifactId>junixsocket-native-common</artifactId>
+      <version>2.6.2</version>
+    </dependency>
+ 
+### Optional dependencies
     
 If you're going to use AFUNIXSocketServer code, add the following dependency:
     
     <dependency>
       <groupId>com.kohlschutter.junixsocket</groupId>
       <artifactId>junixsocket-server</artifactId>
-      <version>2.3.2</version>
+      <version>2.6.2</version>
     </dependency>
     
 If you're going to use RMI over Unix sockets, add the following dependency:
@@ -30,7 +52,7 @@ If you're going to use RMI over Unix sockets, add the following dependency:
     <dependency>
       <groupId>com.kohlschutter.junixsocket</groupId>
       <artifactId>junixsocket-rmi</artifactId>
-      <version>2.3.2</version>
+      <version>2.6.2</version>
     </dependency>
 
 If you're going to use the mySQL Connector for Unix sockets, add the following dependency:
@@ -38,22 +60,110 @@ If you're going to use the mySQL Connector for Unix sockets, add the following d
     <dependency>
       <groupId>com.kohlschutter.junixsocket</groupId>
       <artifactId>junixsocket-mysql</artifactId>
-      <version>2.3.2</version>
+      <version>2.6.2</version>
     </dependency>
  
+If you're going to use TIPC, add the following dependency:
+
+    <dependency>
+      <groupId>com.kohlschutter.junixsocket</groupId>
+      <artifactId>junixsocket-tipc</artifactId>
+      <version>2.6.2</version>
+    </dependency>
+ 
+If you're going to use VSOCK, add the following dependency:
+
+    <dependency>
+      <groupId>com.kohlschutter.junixsocket</groupId>
+      <artifactId>junixsocket-vsock</artifactId>
+      <version>2.6.2</version>
+    </dependency>
+  
+If you're going to use the Jetty connectors, add the following dependency:
+
+    <dependency>
+      <groupId>com.kohlschutter.junixsocket</groupId>
+      <artifactId>junixsocket-jetty</artifactId>
+      <version>2.6.2</version>
+    </dependency>
+
+
+### Custom architectures (usually not required)
+
+[See here](customarch.html) how to add support for custom architectures that aren't supported out of
+the box.
+
+### Snapshot versions
+
+If you're testing a `-SNAPSHOT` version, make sure that the Sonatype snapshot repository is enabled
+in your POM:
+
+```
+<repositories>
+    <repository>
+        <id>sonatype.snapshots</id>
+        <name>Sonatype snapshot repository</name>
+        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        <layout>default</layout>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
 ## Gradle
+
+Add the following statements to `build.gradle`; if you have existing dependencies, append to the `dependencies` clause accordingly.
  
- Minimum requirement:
+For the common Java code and common native libraries, add:
+
+	dependencies {
+		implementation 'com.kohlschutter.junixsocket:junixsocket-core:2.6.2'
+	}
+
+Some older Gradle versions require `compile` instead of `implementation`, and some older versions have trouble resolving the `junixsocket-core` POM artifact. If you're running into problems (and only then), try the following:
+
+	dependencies {
+		implementation 'com.kohlschutter.junixsocket:junixsocket-common:2.6.2'
+		implementation 'com.kohlschutter.junixsocket:junixsocket-native-scommon:2.6.2'
+	}
  
-    compile 'com.kohlschutter.junixsocket:junixsocket-core:2.3.2'
+For RMI support, add:
  
- For RMI support, add:
+		implementation 'com.kohlschutter.junixsocket:junixsocket-rmi:2.6.2'
  
-    compile 'com.kohlschutter.junixsocket:junixsocket-rmi:2.3.2'
+For MySQL support, add:
  
- For MySQL support, add:
+		implementation 'com.kohlschutter.junixsocket:junixsocket-mysql:2.6.2'
  
-    compile 'com.kohlschutter.junixsocket:junixsocket-mysql:2.3.2'
+For TIPC support, add:
+ 
+		implementation 'com.kohlschutter.junixsocket:junixsocket-tipc:2.6.2'
+ 
+For VSOCK support, add:
+ 
+		implementation 'com.kohlschutter.junixsocket:junixsocket-vsock:2.6.2'
+ 
+For Jetty support, add:
+ 
+		implementation 'com.kohlschutter.junixsocket:junixsocket-jetty:2.6.2'
+
+### Snapshot versions
+
+Add the following "maven" line to `settings.gradle`, or update accordingly:
+
+```
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        repositories {
+			  maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        }
+    }
+}
+```
 
 ## jars only
 
@@ -72,16 +182,16 @@ databases such as PostgreSQL.
 
 ### MySQL
 
-Make sure that the following jars are on your classpath:
+If you can't use Maven (instructions above), make sure that the following jars are on your classpath:
 
- * junixsocket-core-2.3.2.jar
- * junixsocket-common-2.3.2.jar
- * junixsocket-mysql-2.3.2.jar
- * mysql-connector-java-8.0.14.jar (earlier versions should work, too)
- * (typically, omit if you use the custom library below) junixsocket-native-common-2.3.2.jar
- * (optionally, if you have a custom architecture) junixsocket-native-custom-2.3.2.jar
+ * junixsocket-common-2.6.2.jar
+ * junixsocket-mysql-2.6.2.jar
+ * mysql-connector-j-8.0.31.jar (or newer)
+ * (typically required; can be skipped if you use the custom library below) junixsocket-native-common-2.6.2.jar
+ * (optionally, if you have a custom architecture) junixsocket-native-custom-2.6.2.jar
 
-Use the following connection properties (along with `user`, `password`, and other properties you may have).
+Use the following connection properties (along with `user`, `password`, and other properties you may
+have).
 
 | property name | value | remarks |
 | ------------- | ----- | ------- |
@@ -107,20 +217,28 @@ to disable SSL with older versions of Connector/J.
 
 Make sure that the following jars are on your classpath:
 
- * junixsocket-core-2.3.2.jar
- * junixsocket-common-2.3.2.jar
- * postgresql-42.2.5.jar (earlier versions should work, too)
- * (typically, omit if you use the custom library below) junixsocket-native-common-2.3.2.jar
- * (optionally, if you have a custom architecture) junixsocket-native-custom-2.3.2.jar
+ * junixsocket-common-2.6.2.jar
+ * postgresql-42.2.5.jar (or newer; earlier versions should work, too)
+ * (typically, omit if you use the custom library below) junixsocket-native-common-2.6.2.jar
+ * (optionally, if you have a custom architecture) junixsocket-native-custom-2.6.2.jar
 
 
-Use the following connection properties (along with `user`, `password`, and other properties you may have).
+Use the following connection properties (along with `user`, `password`, and other properties you may
+have).
 
-There are currently three distinct ways (socket factories) how to configure the connection to your database:
+There are currently three distinct ways (socket factories) how to configure the connection to your
+database:
+
+> *NOTE* When specifying these class names from the command line, you may need to put them in single
+quotes (or escape the `$` sign), otherwise your shell may erroneously interpret `$FactoryArg` etc.
+as a variable and fail with `java.lang.ClassNotFoundException:
+org.newsclub.net.unix.AFUNIXSocketFactory`
 
  1. **org.newsclub.net.unix.AFUNIXSocketFactory$FactoryArg**
  
     You provide the socket path via the `socketFactoryArg` JDBC property.
+
+    > *NOTE*    This is the recommended way for graphical database applications.
 
     The connection hostname must be set to "localhost", any other value will not work.
     
@@ -130,9 +248,8 @@ There are currently three distinct ways (socket factories) how to configure the 
     | ------------- | ----- | ------- |
     | `socketFactory` | `org.newsclub.net.unix.AFUNIXSocketFactory$FactoryArg` | |
     | `socketFactoryArg` | `/tmp/.s.PGSQL.5432` | (1) |
-    | `sslMode` | `disable` | (2) |
+    | `sslmode` | `disable` | (2) |
 
-    
  2. **org.newsclub.net.unix.AFUNIXSocketFactory$SystemProperty**
  
     You provide the socket path via the system property `org.newsclub.net.unix.socket.default`
@@ -156,8 +273,8 @@ There are currently three distinct ways (socket factories) how to configure the 
     somehow to pacify PostgreSQL's connection parser. This can be achieved using URL encoding:
     If the plain URL is `file:///tmp/.s.PGSQL.5432`, then the URL-encoded version is `file%3A%2F%2F%2Ftmp%2F.s.PGSQL.5432`.
     
-    **Performance trick:** By placing a square bracket (`[`) in front of the host name, we can prevent
-    any attempt to lookup the hostname in DNS. This is trick not necessary, however.
+    **Performance trick:** By placing a square bracket (`[`) in front of the host name, we can
+    prevent any attempt to lookup the hostname in DNS.  However, this is not mandatory.
     
     Connection URL: `jdbc:postgresql://[file%3A%2F%2F%2Ftmp%2F.s.PGSQL.5432/postgres`
     
@@ -166,6 +283,7 @@ There are currently three distinct ways (socket factories) how to configure the 
     | `socketFactory` | `org.newsclub.net.unix.AFUNIXSocketFactory$URIScheme` | |
     | `sslMode` | `disable` | (2) |
 
+#### Remarks
 
 (1) This is the full path to the PostgreSQL socket. The location on your system may be different.
     Try `/var/run/postgresql/.s.PGSQL.5432` if you can't find it in /tmp.
@@ -173,8 +291,28 @@ There are currently three distinct ways (socket factories) how to configure the 
 (2) This is optional, and forcibly disables the use of SSL. Since the connection is local, there's
 no point in encrypting the communication. Disabling SSL may improve performance.
 
+## Specifying dependencies in third-party apps
+
+### DBeaver
+
+[DBeaver](https://dbeaver.io) is an Open-Source universal database tool.  To use junixsocket with
+DBeaver, for example to connect to PostgreSQL or MySQL databases, add junixsocket to the
+corresponding driver settings.
+
+DBeaver has [problems](https://github.com/kohlschutter/junixsocket/issues/120) with the POM-only
+`junixsocket-core` artifact, so we have to specify both `junixsocket-common` and
+`junixsocket-native-common`:
+
+Select "Connect by URL" (not Host), then specify a JDBC URL from the variants above.  Click "Driver
+properties" and adjust the driver properties as instructed above.
+
+In the "Connect to a database" dialog, click "Edit Driver Settings".  Under the "Libraries" tab,
+then add both `junixsocket-common` and `junixsocket-native-common` dependencies via "Add Artifact"
+each; make sure to copy the full `<dependency>...</dependency>` XML fragment from the _Common
+dependency_ section above.  Afterwards, click "Download/Update" to ensure the drivers are
+accessible.
 
 # Compatibility of future versions
- 
+
 We have documented some [Compatibility Considerations](compatibility.html), please keep them
 in mind before updating your dependencies.

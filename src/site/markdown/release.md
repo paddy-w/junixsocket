@@ -1,6 +1,6 @@
 # How to release junixsocket
 
-NOTE: This is probably not interesting unless you're the project admin or going to fork it.
+This is mostly relevant only if you're the project admin or going to fork the project.
 
 ## Prerequisites
 
@@ -29,51 +29,75 @@ Instructions for macOS
 
     brew install gpg gpg2 gpg-agent pinentry-mac
 
-
  * Enable pinentry-mac
  
-   This gives a nice GUI for the passphrase, and allows us to store the GPG key passphrase in the macOS keychain)
+   This gives a nice GUI for the passphrase, and allows us to store the GPG key passphrase in the
+   macOS keychain)
 
-    # open or create ~/.gnupg/gpg-agent.conf 
-    # then add the following line if it doesn't exist yet:
-    pinentry-program /usr/local/bin/pinentry-mac
+ * Open or create `~/.gnupg/gpg-agent.conf`
+   then add the following line if it doesn't exist yet:
+
+		pinentry-program /usr/local/bin/pinentry-mac
     
- * Generate GPG key
+ * Generate a GPG key
  
- 
-    gpg2 --generate-key 
+		gpg2 --generate-key
    
    Follow on-screen instructions. Use a long, memorable passphrase.
    
-   Remember the GPG key ID. Publish the corresponding GPG public key on the GPG keyservers:
+ * Remember the GPG key ID. Publish the corresponding GPG public key on the GPG keyservers:
    
-    gpg2 --send-keys THEKEYID
+		gpg2 --send-key THEKEYID
     
 ### Build environment for other platforms
 
 Currently, the easiest way to build for other platforms is to have a working Java 9 (or later)
-environment, Maven 3+ and the junixsocket project ready. Just spin up a virtual machine (or emulator),
-install Java, Maven and junixsocket, and you should be good to go.
+environment, Maven 3+ and the junixsocket project ready.  Just spin up a virtual machine (or
+emulator), install Java, Maven and junixsocket, and you should be good to go.
     
 ## Common tasks
 
+### Update changelog, website, README.md
+
+Update `junixsocket/src/site/markdown/changelog.md` with a section for the new version and all
+noteworthy changes.
+
+Check all mentions (execpet for `changelog.md`) of the current junixsocket under
+`junixsocket/src/site/markdown`, and replace accordingly:
+`grep X.Y.Z src/site/markdown/* | grep -v changelog.md:`
+
+Also update the dependency statement in `junixsocket/README.md`.
+
+> **NOTE:** (Replace X.Y.Z with the current version)
+
+### Ensure GraalVM native configs are still up-to-date
+
+Run `junixsocket-native-graalvm/bin/with-graalvm junixsocket-native-graalvm/bin/build-selftest`
+
+If, at the end, you see changes to the json files in `junixsocket-native-graalvm/output`, review
+them, modify the json files in
+`junixsocket-{common,tipc,vsock,selftest,...}/src/main/resources/META-INF/native-image` accordingly,
+and add/commit both sets of changes.
+
 ### Ensure the code is properly formatted and licenses are in place
 
+First, view the `LICENSE` file and verify that it's up to date. Then run the code formatters and commit.
+
     cd junixsocket
-    # review LICENSE file and verify that it's up-to-date
-    mvn formatter:format
-    mvn license:format
+    mvn process-sources -Preformat
     # git add / commit here...
 
 ### Bump project version
 
     cd junixsocket
-    mvn versions:set -DnewVersion=2.3.2
+    mvn versions:set -DnewVersion=X.Y.Z
     # git add / commit here...
     
+> **NOTE:** (Replace X.Y.Z with the actual new version)
+
 ### Build native libraries on other supported, common platforms
 
-This currently means amd64-Linux-gpp in addition to our default x86_64-MacOSX-gpp environment. 
+> *NOTE:* This section can presently be skipped since all targets shipped in `junixsocket-native-common` cross-compile with `-Prelease`.
 
 On the target machine, install junixsocket. Make sure you use the very same version as on your
 development machine from where you do the release!
@@ -86,8 +110,9 @@ The platform-dependent nar files should now be available in the local maven repo
 Use the provided script to copy the corresponding nar to a project folder:
 
     cd junixsocket
-    # replace 2.3.2 with the desired version number
-    junixsocket-native-prebuilt/bin/copy-nar-from-m2repo.sh 2.3.2
+    junixsocket-native-prebuilt/bin/copy-nar-from-m2repo.sh X.Y.Z
+
+> **NOTE:** (Replace X.Y.Z with the actual version)
 
 Now copy the nar files from the target machine to your development computer (from where you do the release).
 By convention, copy the files to the same folder as on the target machine (*junixsocket/junixsocket-native-prebuilt/bin*)
@@ -107,17 +132,41 @@ a script to run the demo classes from the command-line.
 
 The files can be found in
 
-   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.3.2-bin`
-   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.3.2-bin.tar.gz`
-   * `junixsocket/junixsocket-dist/target/junixsocket-dist-2.3.2-bin.zip`
+   * `junixsocket/junixsocket-dist/target/junixsocket-dist-X.Y.Z-bin`
+   * `junixsocket/junixsocket-dist/target/junixsocket-dist-X.Y.Z-bin.tar.gz`
+   * `junixsocket/junixsocket-dist/target/junixsocket-dist-X.Y.Z-bin.zip`
+
+> **NOTE:** (Replace X.Y.Z with the actual version)
+
+### Verify that Selftest works
+
+Run `java -jar junixsocket-selftest/target/junixsocket-selftest-X.Y.Z-jar-with-dependencies.jar`. It should end with `Selftest PASSED`.
+
+Also run the selftest with Java 8, e.g.:
+
+	/Library/Java/JavaVirtualMachines/1.8.0.jdk/Contents/Home/bin/java -jar junixsocket-selftest/target/junixsocket-selftest-2.6.2-jar-with-dependencies.jar
+
+Run `junixsocket-native-graalvm/bin/with-graalvm mvn package -pl junixsocket-selftest-native-image -Pnative`
+(on all native-image supported platforms) to build the GraalVM native-image.  Test the native-image
+by running `junixsocket-selftest-native-image/target/junixsocket-selftest-native-image-X.Y.Z`.
+
+> **NOTE:** (Replace X.Y.Z with the actual version)
 
 ### Deploy code to Maven central
 
-#### 1. Deploy to staging
+#### Tag the release, push to upstream (i.e., GitHub)
+
+    mvn scm:tag
+
+If you need to make a revision afterwards, retag with `git tag -f TAG` and `git push origin TAG --force`.
+
+#### Deploy to staging
   
     cd junixsocket
     mvn clean install -Pstrict -Prelease
-    mvn deploy -Pstrict -Prelease -Psigned
+
+    # after gpgkeyname, specify the key you want to use for signing
+    mvn deploy -Pstrict -Prelease -Psigned -Dgpgkeyname=$(git config --get user.email) -Dgpg.executable=$(which gpg)
     
 ##### Notes
 
@@ -136,27 +185,49 @@ servers. Try to manually push to the ones mentioned in the error message, and tr
 
 For example:
 
-    gpg2 --keyserver http://keyserver.ubuntu.com:11371 --send-keys THEKEYID
-    
-#### 2. Review the deployed artifacts
+    gpg2 --keyserver http://keyserver.ubuntu.com:11371 --send-key THEKEYID
+
+If you get an error `Remote staging failed: A message body reader for Java class
+com.sonatype.nexus.staging.api.dto.StagingProfileRepositoryDTO, and Java type class
+com.sonatype.nexus.staging.api.dto.StagingProfileRepositoryDTO, and MIME media type text/html was
+not found`, then simply try again; see [OSSRH-51097](https://issues.sonatype.org/browse/OSSRH-51097).
+
+#### Review the deployed artifacts
   
 The URL of the staging repository is `https://oss.sonatype.org/content/groups/staging`.
-The artifacts can be found [here](https://oss.sonatype.org/content/groups/staging/com/kohlschutter/junixsocket/).
+The artifacts can be found [here](https://oss.sonatype.org/content/groups/staging/com/kohlschutter/).
 
-**IMPORTANT** Double-check that the staged junixsocket-native-common artifact contains both macOS
-and Linux 64-bit libraries. 
+If you're deploying a `-SNAPSHOT` version, you can find the artifacts
+[here](https://oss.sonatype.org/content/repositories/snapshots/com/kohlschutter/junixsocket/).
 
-#### 3. Release artifact to Maven Central
+**IMPORTANT** Double-check that the staged junixsocket-native-common artifact contains all required
+library binaries (macOS, Linux 64-bit, etc.).
+
+#### Review selftest on all supported platforms
+
+Download `junixsocket-selftest-X.Y.Z-jar-with-dependencies.jar` from staging to all supported platforms:
+
+```
+https://oss.sonatype.org/content/groups/staging/com/kohlschutter/junixsocket/junixsocket-selftest/X.Y.Z/junixsocket-selftest-X.Y.Z-jar-with-dependencies.jar
+```
+
+Run `java -jar junixsocket-selftest-X.Y.Z-jar-with-dependencies.jar` on all supported platforms and supported JDK combinations.
+
+Depending on the platform, it should end with `Selftest PASSED` or `Selftest PASSED WITH ISSUES`.
+
+Also check the header, especially the `Git properties` at the beginning of the output:
+
+* The version numbers (`junixsocket selftest version` and `git.build.version`) should match the expected version number
+* `git.dirty` should be `false`
+* `git.commit.id.describe` should match the new git tag.
+
+#### Release artifact to Maven Central
   
 **IMPORTANT** Once released, it cannot be undone! Make sure you verify the staged artifact first!
   
-    mvn nexus-staging:release     
+    MAVEN_OPTS="--add-opens java.base/java.util=ALL-UNNAMED" mvn nexus-staging:release -Prelease
 
 NOTE: There can be quite a delay (30 minutes?) until the artifact is deployed in Maven Central.
-
-### Tag the release, push to upstream (i.e., GitHub)
-
-    mvn scm:tag
 
 ### Release on GitHub
     
@@ -164,23 +235,43 @@ NOTE: There can be quite a delay (30 minutes?) until the artifact is deployed in
 
 2. Select the newly created tag (= search for the version).
 
-3. Release title = "junixsocket" + version>, e.g., "junixsocket 2.3.2"
+3. Release title = "junixsocket" + version>, e.g., "junixsocket X.Y.Z"
 
-4. Hit "Publish release"    
+4. Paste changelog contents to text field
+
+5. Upload binaries: `junixsocket-dist/target/junixsocket-dist-X.Y.Z-bin.tar.gz` /
+   `junixsocket-dist-X.Y.Z-bin.zip` as well as
+   `junixsocket-selftest/target/junixsocket-selftest-X.Y.Z-jar-with-dependencies.jar`
+
+6. Hit "Publish release"
+
+> **NOTE:** (Replace X.Y.Z with the actual version)
 
 ### Publish website 
 
-This builds the Maven site and publishes it to [https://kohlschutter.github.io/junixsocket/](https://kohlschutter.github.io/junixsocket/).
+This builds the Maven site 
 
-    cd junixsocket 
-    mvn clean install -Pstrict -Prelease
-    mvn site site:stage scm-publish:publish-scm
+    cd junixsocket
+    mvn clean && \
+      mvn install site -Pstrict,release && \
+      mvn javadoc:aggregate -P '!with-native,!with-non-modularized,strict,release' && \
+      mvn jxr:aggregate jxr:test-aggregate -P strict,release && \
+      mvn site:stage -Pstrict,release
 
-NOTE: There can be a 10-minute delay until the pages get updated automatically in your browser cache.
-Hit refresh to expedite.
+The website should now be inspected at `junixsocket/target/staging/index.html`
+
+If everything looks good, we can publish it to
+[https://kohlschutter.github.io/junixsocket/](https://kohlschutter.github.io/junixsocket/):
+   
+    mvn scm-publish:publish-scm -Pstrict,release
+
+> **NOTE:** There can be a 10-minute delay until the pages get updated.
+
+> **FIXME:** We currently don't aggregate code coverage from all platforms. Therefore, especially for `TIPC` and `VSOCK` support, the coverage reported is misleading.
 
 ### Prepare next version
 
     mvn versions:set -DnewVersion=X.Y.Z-SNAPSHOT
     mvn clean install
     
+> **NOTE:** (Replace X.Y.Z with the actual version)

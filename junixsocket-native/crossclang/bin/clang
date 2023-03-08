@@ -25,33 +25,27 @@
 #     and add custom options to clang to simplify cross-compilation
 # if you specify an invalid value to -target, the set of available targets is shown as an error message
 
+## debugging
+# echo PWD $(pwd)
+# echo CROSSCLANG $0 $@
+# set -x
+
+# Make sure to include all paths that may contain custom linkers etc.
+PATH="$PATH":/usr/bin:/opt/crossclang/local/bin:/opt/homebrew/bin:/usr/local/bin
+export PATH
+
 currentDir=$(cd "$(dirname $0)"; pwd)
-clangDir=$(cd "$(dirname $(which clang))"; pwd)
-findOtherClang=0
-if [ "$currentDir" == "$clangDir" ]; then
-    # looks like we're in the PATH
-    findOtherClang=1
-fi
 
-if [[ -z "$(which llvm-ar)" || $findOtherClang -gt 0 ]]; then
-  # let's add the latest LLVM to the path
-  latestLLVM=$(for f in /usr/local/Cellar/llvm/*/bin; do echo $f; done | sort -r -n | head -n 1)
-  if [[ -n "$latestLLVM" && -d "$latestLLVM" ]]; then
-      export PATH="$latestLLVM:$PATH"
-  fi
-fi
-
-clangDir=$(cd "$(dirname $(which clang))"; pwd)
-if [ "$currentDir" == "$clangDir" ]; then
-    export PATH="/usr/bin:/usr/local/bin:$PATH"
-    clangDir=$(cd "$(dirname $(which clang))"; pwd)
-    if [ "$currentDir" == "$clangDir" ]; then
-        echo "crossclang detected in PATH. Can't find real clang, giving up" >&2
-        exit 1
-    fi
+gccMode=0
+compiler=clang
+basename=$(basename $0)
+if [ $basename == "gcc" ]; then
+  gccMode=2
+  compiler="gcc"
 fi
 
 clangArgs=()
+gccArgs=()
 libsArgs=()
 target=""
 sdkroot=
@@ -74,9 +68,22 @@ withAndWithoutLC=0
 hasO=0
 outputFile=
 useLdShim=0
-gccMode=0
-compiler=clang
 outputStripLibPrefix=0
+serializeDiagnosticsOut=
+
+llvmName=llvm
+fileList=
+# ld64_sdk_version=10.9
+ld64_sdk_version=
+hideUnknownWarningWarnings=0
+
+hasExportDynamic=0
+ignoreExportDynamic=0
+
+skipGccArg=0
+analyze=0
+
+extraVersionArgs=()
 
 while [ $# -gt 0 ]; do
   v="$1"
@@ -86,23 +93,54 @@ while [ $# -gt 0 ]; do
 
   case "$previous" in
       -isdkroot ) sdkroot="$v" ;;
+      -o ) outputFile="$v" ; skipArg=1 ;;
+      --serialize-diagnostics ) serializeDiagnosticsOut="$v" ;;
   esac
-  
+
   case "$v" in 
       -E ) needLinker=0 ;;
       -fsyntax-only ) needLinker=0 ;;
       -c ) needLinker=0 ;;
       -S ) needLinker=0 ;;
-      -bundle ) isShared=1 ;;
+      -bundle ) isShared=1 ; skipArg=1 ;;
       -dynamic ) isShared=1 ;;
       -dynamiclib ) isShared=1 ;;
       -shared ) isShared=1; hasShared=1 ;;
       -nostdlib ) nostdlib=1 ;;
       -Xcrossclang-with-and-without-lc ) withAndWithoutLC=1; skipArg=1 ;;
+      -Xcrossclang-llvm-name ) llvmName="$1"; shift ; skipArg=1 ;;
       -Xcrossclang-use-ldshim ) useLdShim=1 ; skipArg=1 ;;
       -Xcrossclang-use-gcc=* ) gccMode=1 ; compiler="${v#-Xcrossclang-use-gcc=}" ; skipArg=1 ;;
       -Xcrossclang-output-strip-lib-prefix ) outputStripLibPrefix=1 ; skipArg=1 ;;
+      -Xcrossclang-ld64-sdk-version ) ld64_sdk_version="$1"; shift ; skipArg=1 ;;
+      -Xcrossclang-hide-unknown-warning-warnings ) hideUnknownWarningWarnings=1 ; skipArg=1 ;;
+      -Xcrossclang-ignore-export-dynamic) ignoreExportDynamic=1 ; skipArg=1 ;;
+      # -index-store-path ) shift ; skipArg=1 ;; # if you're hitting this, set "Enable Index-While-Building Functionality=No" in Xcode build settings instead
+      -filelist ) fileList="$1" ; shift; skipArg=1 ;;
+      -current_version ) shift ; skipArg=1 ;;
+      -compatibility_version ) shift ; skipArg=1 ;;
       -o ) hasO=1; skipArg=1 ;;
+      -Weverything ) skipGccArg=1 ;;
+      -Wcomma ) skipGccArg=1 ;;
+      -Wblock-capture-autoreleasing ) skipGccArg=1 ;;
+      -Winfinite-recursion ) skipGccArg=1 ;;
+      -Wshorten-64-to-32 ) skipGccArg=1 ;;
+      -Wobjc-literal-conversion ) skipGccArg=1 ;;
+      -Wnon-literal-null-conversion ) skipGccArg=1 ;;
+      -Wno-c++11-extensions ) skipGccArg=1 ;;
+      -Wno-declaration-after-statement ) skipGccArg=1 ;;
+      -Wbool-conversion ) skipGccArg=1 ;;
+      -Wconstant-conversion ) skipGccArg=1 ;;
+      -Wquoted-include-in-framework-header ) skipGccArg=1 ;;
+      -fno-c++-static-destructors ) skipGccArg=1 ;;
+      -fmacro-backtrace-limit=0 ) skipGccArg=1 ;;
+      -fdiagnostics-show-note-include-stack ) skipGccArg=1 ;;
+      -Xclang ) skipGccArg=2 ;; # has an argument
+      --analyze ) analyze=1 ;;
+      -install_name ) skipGccArg=2 ;; # has an argument
+      -iquote ) skipGccArg=2 ;; # has an argument
+      -iframework ) skipGccArg=2 ;; # has an argument
+      --serialize-diagnostics ) skipGccArg=2 ;; # has an argument
       *.cc ) looksLikeCPP=1 ;;
       *.cpp ) looksLikeCPP=1 ;;
       *.cxx ) looksLikeCPP=1 ;;
@@ -113,28 +151,135 @@ while [ $# -gt 0 ]; do
       -l* ) libsArgs+=("$v") ; skipArg=1 ;; # for compatibility, libs will be added last
       -target ) v="$1"; target="$v"; shift; skipArg=1 ;;
       c++ ) if [ "$previous" == "-x" ]; then looksLikeCPP=1; fi ;;
+      -m64 ) extraVersionArgs+=("$v") ;;
+      -Xlinker )
+            if [[ "$1" == "-export_dynamic" ]]; then
+                hasExportDynamic=1
+            elif [[ -n "$1" ]]; then
+                clangArgs+=("-Xlinker" "$1")
+                gccArgs+=("-Xlinker" "$1")
+            fi
+            shift
+            skipArg=1
+            ;;
       - ) hasFiles=1 ;;
   esac
   
   if [[ $hasFiles -eq 0 && -n "$v" && "${v:0:1}" != "-" && -e "$v" ]]; then
       hasFiles=1
   fi
-  
-  if [[ "$previous" == "-o" ]]; then
-      outputFile="$v"
-      skipArg=1
-  fi
 
   if [[ "$skipArg" -eq 0 ]]; then
       clangArgs+=("$v")
+      if [[ "$skipGccArg" -le 0 ]]; then
+          gccArgs+=("$v")
+      else
+          skipGccArg=$(( $skipGccArg - 1 ))
+      fi
   fi
 
   previous="$v"
 done
 
+if [[ $hasExportDynamic -eq 1 && $ignoreExportDynamic -eq 0 ]]; then
+    clangArgs+=("-Xlinker" "-export_dynamic")
+    gccArgs+=("-Xlinker" "-export_dynamic")
+fi
+
+if [[ $analyze -gt 0 && $gccMode -gt 0 ]]; then
+    # When using the static code analyzer, switch back to clang
+    compiler=clang
+    gccMode=0
+fi
+
+if [[ $gccMode -eq 2 ]]; then
+    case "$target" in
+        ""|default|unspecified)
+            ;;
+        *)
+            compiler=clang
+            gccMode=0
+    esac
+fi
+
+if [[ $gccMode -gt 0 ]]; then
+    if [[ -n "$serializeDiagnosticsOut" ]]; then
+        # Create fake diagnostics file
+        xxd -r -ps -- >"$serializeDiagnosticsOut" <<EOT
+4449414701080000300000000701b240b44239d043383c20812d94833ccc
+433abc833b1c04886280407110240b0429a443389cc3432290423a84c339
+a4823b98c33b3c24c32cc8c338c84238b8c33994c303528c4238d0832b84
+433b94c3434290423a84c33998023b84c3393c248629a4033b94832b8443
+3b94c3837198423ae0432ad0c34190a80ac810255008140285285104834a
+16080c82d47440944021500814a2040a8142a09024102530a8a681288142
+a01018d4f540944021500814a2040a8142a0101814000000210c00000200
+00001400000000000000
+EOT
+    fi
+fi
+
+clangDir=
+whichComp=$(which "$compiler" 2>/dev/null)
+[[ -n "$whichComp" ]] && clangDir=$(dirname "$whichComp")
+[[ -n "$clangDir" ]] && clangDir=$(cd "$clangDir"; pwd)
+[[ "$currentDir" == "$clangDir" ]] && clangDir=
+
+if [[ -z "$clangDir" && $gccMode -eq 0 ]]; then
+  if [[ "$target" == "default" || -z "$target" ]]; then
+    clangDir=
+    comp=$(which gcc)
+    [[ -n "$comp" ]] && clangDir=$(dirname "$comp") && clangDir=$(cd "$clangDir" && pwd)
+    if [ -n "$clangDir" ]; then
+      echo "Warning: No clang found, trying native gcc: $comp" >&2
+      gccMode=1
+      compiler="$comp"
+    fi
+  fi
+fi
+
+findOtherClang=0
+if [[ "$currentDir" == "$clangDir" || -z "$clangDir" ]]; then
+    # looks like we're in the PATH
+    findOtherClang=1
+fi
+
+llvmPath=
+if [[ -z "$(which llvm-ar 2>/dev/null)" || $findOtherClang -gt 0 ]]; then
+  # let's add the latest LLVM to the path
+  latestLLVM=$(shopt -u failglob ; for f in {/usr/local,/opt/homebrew}/Cellar/"$llvmName"/*/bin; do [[ -d "$f" ]] && echo $f; done | sort -r -n | head -n 1)
+  if [[ -n "$latestLLVM" && -d "$latestLLVM" ]]; then
+      llvmPath="$latestLLVM"
+  fi
+fi
+
+if [ -n "$llvmPath" ]; then
+    export PATH="$llvmPath:/usr/bin:/usr/local/bin:$PATH"
+else
+    export PATH="/usr/bin:/usr/local/bin:$PATH"
+fi
+
+if [[ $gccMode -gt 0 ]]; then
+    clangArgs=( ${gccArgs[@]} )
+fi
+
+whichComp=$(which $compiler)
+if [[ -z "$whichComp" ]]; then
+    echo "crossclang could not find compiler $compiler in path $PATH, giving up" >&2
+    exit 1
+fi
+
+clangDir=$(cd $(dirname "$whichComp"); pwd)
+if [ "$currentDir" == "$clangDir" ]; then
+    echo "crossclang detected in PATH. Can't find real clang, giving up" >&2
+    exit 1
+fi
+
 output_args=()
 clangLinkerArgs=()
 isystem_decls=()
+
+isCompile=0
+[[ "$outputFile" == *.o ]] && isCompile=1
 
 if [ $hasO -gt 0 ]; then
     if [[ $outputStripLibPrefix -eq 1 ]]; then
@@ -147,23 +292,29 @@ if [ $hasFiles -eq 0 ]; then
     needLinker=0
 fi
 
+
 if [ "$target" == "default" ]; then
     defaultFallback=1
-    target=""
+    if [[ $gccMode -gt 0 ]]; then
+      target=unspecified
+    else
+      target=""
+    fi
 elif [ "$target" == "current" ]; then
+    defaultFallback=2
     target=
-elif [[ -z "$target" && $gccMode -eq 1 ]]; then
+elif [[ -z "$target" && $gccMode -gt 0 ]]; then
     target=unspecified
 fi
 
 if [[ "$target" != "unspecified" ]]; then
     currentTarget=
     if [[ -z "$target" ]]; then
-        if [ $defaultFallback -gt 0 ]; then
+        if [ $defaultFallback -eq 0 ]; then
             PATH=/usr/bin:$PATH
         fi
-    
-        target=$($(which $compiler) --version | grep "^Target: " | head -n 1)
+
+        target=$($(which $compiler) --version ${extraVersionArgs[@]} | grep "^Target: " | head -n 1)
         target=${target##* }
         if [ -z "$target" ]; then
             echo "Could not determine target" >&2
@@ -171,7 +322,11 @@ if [[ "$target" != "unspecified" ]]; then
         fi
         currentTarget="$target"
     
-        if [ $defaultFallback -gt 0 ]; then
+        if [ $defaultFallback -eq 1 ]; then
+            if [[ -n "$fileList" ]]; then
+                    clangArgs+=("-filelist" "$fileList")
+            fi
+
             exec clang ${output_args[@]} ${clangArgs[@]}
         fi
     fi
@@ -206,7 +361,56 @@ if [[ "$target" != "unspecified" ]]; then
                 echo "Warning: crossclang has an incomplete configuration for target \"$target\" -- you need to run sync-target-sdk first!" >&2
             fi
         elif [[ "$defaultFallback" -eq 0 ]]; then
-            echo "Error: crossclang not yet configured for target \"$target\" -- you need to run prepare-target-sdk first!" >&2
+            platformTarget=$($(which $compiler) --version ${extraVersionArgs[@]} | grep "^Target: " | head -n 1)
+            platformTarget=${platformTarget##* }
+
+            tryPlatformClang=0
+            case "$target" in
+                arm64-apple-macos11)
+                    case "$platformTarget" in
+                    arm64-apple-darwin*)
+                        tryPlatformClang=1
+                        ;;
+                    esac
+                ;;
+                x86_64-apple-macos11)
+                    case "$platformTarget" in
+                    arm64-apple-darwin*|x86_64-apple-darwin2*)
+                        tryPlatformClang=1
+                        ;;
+                    esac
+                ;;
+                x86_64-apple-macos)
+                    case "$platformTarget" in
+                    arm64-apple-darwin*|x86_64-apple-darwin*)
+                        tryPlatformClang=1
+                        ;;
+                    esac
+                ;;
+            esac
+
+            if [[ $tryPlatformClang -eq 1 ]]; then
+                export PATH=/usr/bin:$PATH
+                if [[ -n "$fileList" ]]; then
+                        clangArgs+=("-filelist" "$fileList")
+                fi
+                if ! (clang -v 2>&1 | grep -q "^Target: $target\$"); then
+                    echo "Warning: crossclang not configured for target \"$target\" -- you need to run prepare-target-sdk first. Trying native clang now." >&2
+                fi
+                exec clang ${output_args[@]} ${clangArgs[@]} -target "$target"
+            fi
+
+            echo "Error: crossclang not configured for target \"$target\" -- you need to run prepare-target-sdk first!" >&2
+        elif [[ "$defaultFallback" -eq 2 ]]; then
+            export PATH=/usr/bin:$PATH
+            if [[ -n "$fileList" ]]; then
+                    clangArgs+=("-filelist" "$fileList")
+            fi
+            if ! (clang -v 2>&1 | grep -q "^Target: $target\$"); then
+                echo "Warning: crossclang not configured for target \"$target\" -- you need to run prepare-target-sdk first. Trying native clang now." >&2
+            fi
+
+            exec clang ${output_args[@]} ${clangArgs[@]} -target "$target"
         fi
     fi
     
@@ -243,7 +447,7 @@ if [[ "$target" != "unspecified" ]]; then
     triple="$target"
     if [ -n "$target_triple" ]; then
         triple="$target_triple"
-        if [[ $gccMode -eq 1 ]]; then
+        if [[ $gccMode -gt 0 ]]; then
             # do not add -target
             true
         else
@@ -257,7 +461,7 @@ if [[ "$target" != "unspecified" ]]; then
     fi
     
     for include in ${target_include_cpp_path[@]}; do
-        if [[ $gccMode -eq 1 ]]; then
+        if [[ $gccMode -gt 0 ]]; then
             isystem_decls+=("-isystem" "$sdkroot/$include")
         else
             isystem_decls+=("-cxx-isystem" "$sdkroot/$include")
@@ -295,10 +499,11 @@ if [ $needLinker -gt 0 ]; then
     if [ -z "$target_linker" ]; then
         target_linker=ld
     fi
-    
+
     case "$target_linker" in
         ld)
         ldPath=$(which ld.lld)
+
         if [ $nostdlib -gt 0 ]; then
             clangLinkerArgs+=("-fPIC")
         fi
@@ -308,7 +513,7 @@ if [ $needLinker -gt 0 ]; then
                 clangLinkerArgs+=("-shared")
             fi
         fi
-        
+
         if [ -n "$sdkroot" ]; then
             clangLinkerArgs+=("-Wl,--sysroot=$sdkroot")
             for path in ${target_library_path[@]}; do
@@ -317,11 +522,14 @@ if [ $needLinker -gt 0 ]; then
                 fi
             done
         fi
-        
+
         ;;
         ld64)
-        ldPath=$(which ld64.lld)
-        clangLinkerArgs+=("-Wl,-sdk_version,10.9")
+        ldPath=$currentDir/ld64shim
+        if [[ -n "$ld64_sdk_version" ]]; then
+            clangLinkerArgs+=("-Wl,-sdk_version,$ld64_sdk_version")
+        fi
+
         #if [ $nostdlib -gt 0 ]; then
         #  clangLinkerArgs+=("-Wl,-undefined,dynamic_lookup")
         #fi
@@ -343,7 +551,7 @@ if [ $needLinker -gt 0 ]; then
         ;;
         "")
             # No linker specified
-            if [ $gccMode -eq 1 ]; then
+            if [ $gccMode -gt 0 ]; then
                 # OK
                 true
             else
@@ -361,12 +569,16 @@ if [ $needLinker -gt 0 ]; then
         echo "Warning: Unknown target linker: $target_linker" >&2
         ;; 
     esac
-    
+
     if [[ -n "$target_linker_binary" ]]; then
       ldPath=$(which "$target_linker_binary")
+      if [[ -z "$ldPath" ]]; then
+        echo "Error: Could not find custom target linker in path: $target_linker_binary" >&2
+        exit 1
+      fi
     fi
     
-    if [[ $gccMode -eq 1 ]]; then
+    if [[ $gccMode -gt 0 ]]; then
         # ignore -fuse-ld
         true
     else
@@ -379,6 +591,13 @@ if [ $needLinker -gt 0 ]; then
     fi
 fi
 
+if [[ -n "$fileList" ]]; then
+    if [[ "$target_linker" == "ld64" ]]; then
+        clangLinkerArgs+=("-filelist" "$fileList")
+    else
+        clangLinkerArgs+=($(cat "$fileList"))
+    fi
+fi
 
 if [[ "$triple" == *"-w64-"* ]]; then
     clangArgsNew=()
@@ -393,7 +612,7 @@ if [[ "$triple" == *"-w64-"* ]]; then
     done
     clangArgs=(${clangArgsNew[@]})
 fi
-if [[ $gccMode -eq 1 ]]; then
+if [[ $gccMode -gt 0 ]]; then
     clangArgsNew=()
     for arg in ${clangArgs[@]}; do
         case "$arg" in
@@ -416,9 +635,27 @@ fi
 
 # set -x
 if [[ $withAndWithoutLC -eq 1 ]]; then
-  nodepsOut="${outputFile%.*}.nodeps.${outputFile##*.}"
-  "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} -lc ${output_args[@]} ${clangArgs[@]} ${libsArgs[@]} && \
-  "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} -nostdlib -o "$nodepsOut" ${clangArgs[@]} ${libsArgs[@]}
+    nodepsOut="${outputFile%.*}.nodeps.${outputFile##*.}"
+
+    wwoArgs=(${output_args[@]})
+    wwoArgsNoDeps=(-D__CROSSCLANG_NODEPS__=1 -o "$nodepsOut")
+    if [ $isCompile -eq 0 ]; then
+        # linking phase
+        wwoArgs+=(-lc)
+        wwoArgsNoDeps+=(-nostdlib)
+    fi
+    clangArgsNoDeps=()
+    for arg in ${clangArgs[@]}; do
+        if [[ $arg != -* && $arg == *.o ]]; then
+	    arg="${arg%.*}.nodeps.${arg##*.}"
+        fi
+        clangArgsNoDeps+=($arg)
+    done
+
+    "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${wwoArgs[@]} ${clangArgs[@]} ${libsArgs[@]} && \
+    "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${wwoArgsNoDeps[@]} ${clangArgsNoDeps[@]} ${libsArgs[@]}
+elif [[ $hideUnknownWarningWarnings -eq 1 ]]; then
+    exec "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${output_args[@]} ${clangArgs[@]} ${libsArgs[@]} 2> >(grep -v -E "unrecognized command-line option .* may have been intended to silence")
 else
-  exec "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${output_args[@]} ${clangArgs[@]} ${libsArgs[@]}
+    exec "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${output_args[@]} ${clangArgs[@]} ${libsArgs[@]}
 fi

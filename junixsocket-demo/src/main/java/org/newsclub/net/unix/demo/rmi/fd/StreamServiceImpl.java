@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,23 @@ import org.newsclub.net.unix.rmi.RemoteCloseableImpl;
 import org.newsclub.net.unix.rmi.RemoteFileInput;
 import org.newsclub.net.unix.rmi.RemoteFileOutput;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
+/**
+ * An implementation of {@link StreamService}.
+ *
+ * @author Christian Kohlschütter
+ */
 public class StreamServiceImpl implements StreamService, Closeable {
   private final AFUNIXRMISocketFactory socketFactory;
 
+  /**
+   * Creates a new instance.
+   *
+   * @param socketFactory The socket factory to use.
+   * @throws RemoteException on error.
+   */
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   public StreamServiceImpl(AFUNIXRMISocketFactory socketFactory) throws RemoteException {
     this.socketFactory = socketFactory;
   }
@@ -42,7 +56,6 @@ public class StreamServiceImpl implements StreamService, Closeable {
   public void close() throws IOException {
   }
 
-  @SuppressWarnings("resource")
   @Override
   public RemoteCloseableImpl<RemoteFileInput> openForReading(File path) throws IOException {
     boolean permitted = mayRead(path);
@@ -51,10 +64,10 @@ public class StreamServiceImpl implements StreamService, Closeable {
       throw new AccessDeniedException("Not permitted");
     }
     FileInputStream fin = new FileInputStream(path);
-    return new RemoteCloseableImpl<>(socketFactory, new RemoteFileInput(socketFactory, fin));
+    return new RemoteCloseableImpl<RemoteFileInput>(socketFactory, new RemoteFileInput(
+        socketFactory, fin));
   }
 
-  @SuppressWarnings("resource")
   @Override
   public RemoteCloseableImpl<RemoteFileOutput> openForWriting(File path) throws IOException {
     boolean permitted = mayWrite(path);
@@ -63,13 +76,26 @@ public class StreamServiceImpl implements StreamService, Closeable {
       throw new AccessDeniedException("Not permitted");
     }
     FileOutputStream fout = new FileOutputStream(path);
-    return new RemoteCloseableImpl<>(socketFactory, new RemoteFileOutput(socketFactory, fout));
+    return new RemoteCloseableImpl<RemoteFileOutput>(socketFactory, new RemoteFileOutput(
+        socketFactory, fout));
   }
 
+  /**
+   * Checks if the given path may be accessed for reading.
+   *
+   * @param path The path to check.
+   * @return {@code true} if permitted.
+   */
   protected boolean mayRead(File path) {
     return true;
   }
 
+  /**
+   * Checks if the given path may be accessed for writing.
+   *
+   * @param path The path to check.
+   * @return {@code true} if permitted.
+   */
   protected boolean mayWrite(File path) {
     return true;
   }

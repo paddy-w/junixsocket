@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,15 @@
  */
 package org.newsclub.lib.junixsocket.custom;
 
+import com.kohlschutter.annotations.compiletime.ExcludeFromCodeCoverageGeneratedReport;
+
+/**
+ * Marker class to find native libraries in the classpath.
+ *
+ * @author Christian Kohlschütter
+ */
 public final class NarMetadata {
+  @ExcludeFromCodeCoverageGeneratedReport(reason = "unreachable")
   private NarMetadata() {
     throw new IllegalStateException("No instances");
   }

@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,27 +24,38 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
+import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
+
 /**
  * Tests breaking out of accept.
- * 
+ *
  * @see <a href="http://code.google.com/p/junixsocket/issues/detail?id=6">Issue 6</a>
  */
-public class CancelAcceptTest extends SocketTestBase {
+@SuppressFBWarnings({
+    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
+public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTestBase<A> {
+  protected static final String NO_SOCKETEXCEPTION_CLOSED_SERVER =
+      "Did not throw SocketException when connecting to closed server socket";
   private boolean serverSocketClosed = false;
 
-  public CancelAcceptTest() throws IOException {
-    super();
+  protected CancelAcceptTest(AddressSpecifics<A> asp) {
+    super(asp);
   }
 
   @Test
   public void issue6test1() throws Exception {
     serverSocketClosed = false;
 
-    final ServerThread st = new ServerThread() {
+    AtomicBoolean ignoreServerSocketClosedException = new AtomicBoolean(false);
+    try (ServerThread serverThread = new ServerThread() {
 
       @Override
       protected void handleConnection(final Socket sock) throws IOException {
@@ -56,41 +67,82 @@ public class CancelAcceptTest extends SocketTestBase {
       }
 
       @Override
-      protected void handleException(Exception e) {
-        // do not print stacktrace
+      protected ExceptionHandlingDecision handleException(Exception e) {
+        if (ignoreServerSocketClosedException.get() && e instanceof SocketException) {
+          ServerSocket serverSocket = getServerSocket();
+          if (serverSocket != null && serverSocket.isClosed()) {
+            return ExceptionHandlingDecision.IGNORE;
+          }
+        }
+        return ExceptionHandlingDecision.RAISE;
       }
-    };
+    }) {
 
-    try (AFUNIXSocket sock = connectToServer()) {
-      // open and close
-    }
-    try (AFUNIXSocket sock = connectToServer()) {
-      // open and close
-    }
-
-    @SuppressWarnings("resource")
-    final ServerSocket servSock = st.getServerSocket();
-
-    assertFalse(serverSocketClosed && !servSock.isClosed(),
-        "ServerSocket should not be closed now");
-    servSock.close();
-    try {
-      try (AFUNIXSocket sock = connectToServer()) {
+      try (Socket sock = connectTo(serverThread.getServerAddress())) {
         // open and close
       }
-      fail("Did not throw SocketException");
-    } catch (SocketException e) {
-      // as expected
-    }
-    assertTrue(serverSocketClosed || servSock.isClosed(), "ServerSocket should be closed now");
-
-    try {
-      try (AFUNIXSocket sock = connectToServer()) {
-        fail("ServerSocket should have been closed already");
+      try (Socket sock = connectTo(serverThread.getServerAddress())) {
+        // open and close
       }
-      fail("Did not throw SocketException");
+
+      @SuppressWarnings("resource")
+      final ServerSocket serverSocket = serverThread.getServerSocket();
+
+      assertFalse(serverSocketClosed && !serverSocket.isClosed(),
+          "ServerSocket should not be closed now");
+
+      // serverSocket.close() may throw a "Socket is closed" exception in the server thread
+      // so let's make sure we ignore that error when the auto-closing ServerThread
+      ignoreServerSocketClosedException.set(true);
+
+      SocketAddress serverAddress = serverThread.getServerAddress();
+
+      serverSocket.close();
+      try {
+        try (Socket sock = connectTo(serverAddress)) {
+          // open and close
+        }
+
+        String noticeNoSocketException = checkKnownConditionDidNotThrowSocketException();
+        if (noticeNoSocketException == null) {
+          fail(NO_SOCKETEXCEPTION_CLOSED_SERVER);
+        } else {
+          throw new TestAbortedWithImportantMessageException(MessageType.TEST_ABORTED_WITH_ISSUES,
+              noticeNoSocketException);
+        }
+      } catch (SocketException e) {
+        // as expected
+      }
+
+      assertTrue(serverSocketClosed || serverSocket.isClosed(),
+          "ServerSocket should be closed now");
+
+      try {
+        try (Socket sock = connectTo(serverAddress)) {
+          fail("ServerSocket should have been closed already");
+        }
+        String noticeNoSocketException = checkKnownConditionDidNotThrowSocketException();
+        if (noticeNoSocketException == null) {
+          fail(NO_SOCKETEXCEPTION_CLOSED_SERVER);
+        } else {
+          throw new TestAbortedWithImportantMessageException(MessageType.TEST_ABORTED_WITH_ISSUES,
+              noticeNoSocketException);
+        }
+      } catch (SocketException e) {
+        // as expected
+      }
     } catch (SocketException e) {
-      // as expected
+      e.printStackTrace();
     }
+  }
+
+  /**
+   * Subclasses may override this to tell that there is a known condition where an otherwise
+   * expected SocketException is not thrown.
+   *
+   * @return An explanation iff this should not cause a test failure but just add a notice.
+   */
+  protected String checkKnownConditionDidNotThrowSocketException() {
+    return null;
   }
 }

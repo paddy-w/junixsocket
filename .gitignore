@@ -14,3 +14,7 @@ pom.xml.releaseBackup
 .pmdruleset.xml
 interpolated-pom.xml
 .eclipse-pmd
+.*.swp
+.checkstyle
+hs_err_pid*.log
+.idea

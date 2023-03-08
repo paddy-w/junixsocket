@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,346 +17,167 @@
  */
 package org.newsclub.net.unix;
 
-import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.SocketException;
+
+import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Implementation of an AF_UNIX domain socket.
- * 
+ *
  * @author Christian Kohlschütter
  */
-public final class AFUNIXSocket extends Socket {
-  static String loadedLibrary; // set by NativeLibraryLoader
+public final class AFUNIXSocket extends AFSocket<AFUNIXSocketAddress> implements
+    AFUNIXSocketExtensions {
+  private static final Constructor<AFUNIXSocketAddress> CONSTRUCTOR_STRICT =
+      new Constructor<AFUNIXSocketAddress>() {
 
-  private static Integer capabilities = null;
+        @Override
+        public @NonNull AFSocket<AFUNIXSocketAddress> newInstance(FileDescriptor fdObj,
+            AFSocketFactory<AFUNIXSocketAddress> factory) throws SocketException {
+          return new AFUNIXSocket(new AFUNIXSocketImpl(fdObj), factory); // NOPMD
+        }
+      };
 
-  AFUNIXSocketImpl impl;
-  AFUNIXSocketAddress addr;
-
-  private final AFUNIXSocketFactory socketFactory;
-  private final Closeables closeables = new Closeables();
-
-  private AFUNIXSocket(final AFUNIXSocketImpl impl, AFUNIXSocketFactory factory)
-      throws IOException {
-    super(impl);
-    this.socketFactory = factory;
-    if (factory == null) {
-      setIsCreated();
-    }
+  private AFUNIXSocket(AFSocketImpl<AFUNIXSocketAddress> impl,
+      AFSocketFactory<AFUNIXSocketAddress> factory) throws SocketException {
+    super(impl, factory);
   }
 
-  private void setIsCreated() throws IOException {
-    try {
-      NativeUnixSocket.setCreated(this);
-    } catch (LinkageError e) {
-      throw new IOException("Couldn't load native library", e);
-    }
+  AFUNIXSocket(FileDescriptor fd, AFSocketFactory<AFUNIXSocketAddress> factory)
+      throws SocketException {
+    this(new AFUNIXSocketImpl.Lenient(fd), factory);
+  }
+
+  @Override
+  protected AFUNIXSocketChannel newChannel() {
+    return new AFUNIXSocketChannel(this);
   }
 
   /**
-   * Creates a new, unbound {@link AFUNIXSocket}.
-   * 
+   * Creates a new, unbound {@link AFSocket}.
+   *
    * This "default" implementation is a bit "lenient" with respect to the specification.
-   * 
+   *
    * In particular, we ignore calls to {@link Socket#getTcpNoDelay()} and
    * {@link Socket#setTcpNoDelay(boolean)}.
-   * 
+   *
    * @return A new, unbound socket.
    * @throws IOException if the operation fails.
    */
   public static AFUNIXSocket newInstance() throws IOException {
-    return newInstance(null);
+    return (AFUNIXSocket) AFSocket.newInstance(AFUNIXSocket::new, (AFUNIXSocketFactory) null);
   }
 
-  static AFUNIXSocket newInstance(AFUNIXSocketFactory factory) throws IOException {
-    final AFUNIXSocketImpl impl = new AFUNIXSocketImpl.Lenient();
-    AFUNIXSocket instance = new AFUNIXSocket(impl, factory);
-    instance.impl = impl;
-    return instance;
+  static AFUNIXSocket newLenientInstance() throws IOException {
+    return newInstance();
+  }
+
+  static AFUNIXSocket newInstance(FileDescriptor fdObj, int localPort, int remotePort)
+      throws IOException {
+    return (AFUNIXSocket) AFSocket.newInstance(AFUNIXSocket::new, (AFUNIXSocketFactory) null, fdObj,
+        localPort, remotePort);
+  }
+
+  static AFUNIXSocket newInstance(AFUNIXSocketFactory factory) throws SocketException {
+    return (AFUNIXSocket) AFSocket.newInstance(AFUNIXSocket::new, factory);
   }
 
   /**
-   * Creates a new, unbound, "strict" {@link AFUNIXSocket}.
-   * 
+   * Creates a new, unbound, "strict" {@link AFSocket}.
+   *
    * This call uses an implementation that tries to be closer to the specification than
    * {@link #newInstance()}, at least for some cases.
-   * 
+   *
    * @return A new, unbound socket.
    * @throws IOException if the operation fails.
    */
   public static AFUNIXSocket newStrictInstance() throws IOException {
-    final AFUNIXSocketImpl impl = new AFUNIXSocketImpl();
-    AFUNIXSocket instance = new AFUNIXSocket(impl, null);
-    instance.impl = impl;
-    return instance;
+    return (AFUNIXSocket) AFSocket.newInstance(CONSTRUCTOR_STRICT, (AFUNIXSocketFactory) null);
   }
 
   /**
-   * Creates a new {@link AFUNIXSocket} and connects it to the given {@link AFUNIXSocketAddress}.
-   * 
+   * Creates a new {@link AFSocket} and connects it to the given {@link AFUNIXSocketAddress}.
+   *
    * @param addr The address to connect to.
    * @return A new, connected socket.
    * @throws IOException if the operation fails.
    */
   public static AFUNIXSocket connectTo(AFUNIXSocketAddress addr) throws IOException {
-    AFUNIXSocket socket = newInstance();
-    socket.connect(addr);
-    return socket;
-  }
-
-  /**
-   * Binds this {@link AFUNIXSocket} to the given bindpoint. Only bindpoints of the type
-   * {@link AFUNIXSocketAddress} are supported.
-   */
-  @Override
-  public void bind(SocketAddress bindpoint) throws IOException {
-    super.bind(bindpoint);
-    this.addr = (AFUNIXSocketAddress) bindpoint;
+    return (AFUNIXSocket) AFSocket.connectTo(AFUNIXSocket::new, addr);
   }
 
   @Override
-  public void connect(SocketAddress endpoint) throws IOException {
-    connect(endpoint, 0);
+  public AFUNIXSocketChannel getChannel() {
+    return (AFUNIXSocketChannel) super.getChannel();
   }
 
   @Override
-  public void connect(SocketAddress endpoint, int timeout) throws IOException {
-    if (endpoint == null) {
-      throw new IllegalArgumentException("connect: The address can't be null");
-    }
-    if (timeout < 0) {
-      throw new IllegalArgumentException("connect: timeout can't be negative");
-    }
-    if (isClosed()) {
-      throw new SocketException("Socket is closed");
-    }
-
-    if (!(endpoint instanceof AFUNIXSocketAddress)) {
-      if (socketFactory != null) {
-        if (endpoint instanceof InetSocketAddress) {
-          InetSocketAddress isa = (InetSocketAddress) endpoint;
-
-          String hostname = isa.getHostString();
-          if (socketFactory.isHostnameSupported(hostname)) {
-            endpoint = socketFactory.addressFromHost(hostname, isa.getPort());
-          }
-        }
-      }
-      if (!(endpoint instanceof AFUNIXSocketAddress)) {
-        throw new IllegalArgumentException("Can only connect to endpoints of type "
-            + AFUNIXSocketAddress.class.getName() + ", got: " + endpoint);
-      }
-    }
-    impl.connect(endpoint, timeout);
-    this.addr = (AFUNIXSocketAddress) endpoint;
-    NativeUnixSocket.setBound(this);
-    NativeUnixSocket.setConnected(this);
-  }
-
-  @Override
-  public String toString() {
-    if (isConnected()) {
-      return "AFUNIXSocket[fd=" + impl.getFD() + ";addr=" + addr.toString() + "]";
-    }
-    return "AFUNIXSocket[unconnected]";
-  }
-
-  /**
-   * Returns <code>true</code> iff {@link AFUNIXSocket}s are supported by the current Java VM.
-   * 
-   * To support {@link AFUNIXSocket}s, a custom JNI library must be loaded that is supplied with
-   * <em>junixsocket</em>.
-   * 
-   * @return {@code true} iff supported.
-   */
-  public static boolean isSupported() {
-    return NativeUnixSocket.isLoaded();
-  }
-
-  /**
-   * Returns the version of the junixsocket library, as a string, for debugging purposes.
-   * 
-   * NOTE: Do not rely on the format of the version identifier, use socket capabilities instead.
-   * 
-   * @return String The version identfier, or {@code null} if it could not be determined.
-   * @see #supports(AFUNIXSocketCapability)
-   */
-  public static String getVersion() {
-    try {
-      return NativeLibraryLoader.getJunixsocketVersion();
-    } catch (IOException e) {
-      return null;
-    }
-  }
-
-  /**
-   * Returns an identifier of the loaded native library, or {@code null} if the library hasn't been
-   * loaded yet.
-   * 
-   * The identifier is useful mainly for debugging purposes.
-   * 
-   * @return The identifier of the loaded junixsocket-native library, or {@code null}.
-   */
-  public static String getLoadedLibrary() {
-    return loadedLibrary;
-  }
-
-  /**
-   * Retrieves the "peer credentials" for this connection.
-   *
-   * These credentials may be useful to authenticate the other end of the socket (client or server).
-   *
-   * @return The peer's credentials.
-   * @throws IOException If there was an error returning these credentials.
-   */
   public AFUNIXSocketCredentials getPeerCredentials() throws IOException {
     if (isClosed() || !isConnected()) {
       throw new SocketException("Not connected");
     }
-    return impl.getPeerCredentials();
+    return ((AFUNIXSocketImpl) getAFImpl()).getPeerCredentials();
   }
 
   @Override
-  public boolean isClosed() {
-    return super.isClosed() || (isConnected() && !impl.getFD().valid());
-  }
-
-  /**
-   * Returns the size of the receive buffer for ancillary messages (in bytes).
-   * 
-   * @return The size.
-   */
-  public int getAncillaryReceiveBufferSize() {
-    return impl.getAncillaryReceiveBufferSize();
-  }
-
-  /**
-   * Sets the size of the receive buffer for ancillary messages (in bytes).
-   * 
-   * To disable handling ancillary messages, set it to 0 (default).
-   * 
-   * @param size The size.
-   */
-  public void setAncillaryReceiveBufferSize(int size) {
-    impl.setAncillaryReceiveBufferSize(size);
-  }
-
-  /**
-   * Ensures a minimum ancillary receive buffer size.
-   * 
-   * @param minSize The minimum size (in bytes).
-   */
-  public void ensureAncillaryReceiveBufferSize(int minSize) {
-    impl.ensureAncillaryReceiveBufferSize(minSize);
-  }
-
-  /**
-   * Retrieves an array of incoming {@link FileDescriptor}s that were sent as ancillary messages,
-   * along with a call to {@link InputStream#read()}, etc.
-   * 
-   * NOTE: Another call to this method will not return the same file descriptors again (most likely,
-   * {@code null} will be returned).
-   * 
-   * @return The file descriptors, or {@code null} if none were available.
-   * @throws IOException if the operation fails.
-   */
   public FileDescriptor[] getReceivedFileDescriptors() throws IOException {
-    return impl.getReceivedFileDescriptors();
-  }
-
-  /**
-   * Clears the queue of incoming {@link FileDescriptor}s that were sent as ancillary messages.
-   */
-  public void clearReceivedFileDescriptors() {
-    impl.clearReceivedFileDescriptors();
-  }
-
-  /**
-   * Sets a list of {@link FileDescriptor}s that should be sent as an ancillary message along with
-   * the next write.
-   * 
-   * NOTE: There can only be one set of file descriptors active until the write completes.
-   * 
-   * @param fdescs The file descriptors, or {@code null} if none.
-   * @throws IOException if the operation fails.
-   */
-  public void setOutboundFileDescriptors(FileDescriptor... fdescs) throws IOException {
-    impl.setOutboundFileDescriptors(fdescs);
-  }
-
-  private static synchronized int getCapabilities() {
-    if (capabilities == null) {
-      if (!isSupported()) {
-        capabilities = 0;
-      } else {
-        capabilities = NativeUnixSocket.capabilities();
-      }
-    }
-    return capabilities.intValue();
-  }
-
-  /**
-   * Checks if the current environment (system platform, native library, etc.) supports a given
-   * junixsocket capability.
-   * 
-   * @param capability The capability.
-   * @return true if supported.
-   */
-  public static boolean supports(AFUNIXSocketCapability capability) {
-    return (getCapabilities() & capability.getBitmask()) != 0;
+    return ((AFUNIXSocketImpl) getAFImpl()).getReceivedFileDescriptors();
   }
 
   @Override
-  public synchronized void close() throws IOException {
-    IOException superException = null;
-    try {
-      super.close();
-    } catch (IOException e) {
-      superException = e;
+  public void clearReceivedFileDescriptors() {
+    ((AFUNIXSocketImpl) getAFImpl()).clearReceivedFileDescriptors();
+  }
+
+  @Override
+  public void setOutboundFileDescriptors(FileDescriptor... fdescs) throws IOException {
+    if (fdescs != null && fdescs.length > 0 && !isConnected()) {
+      throw new SocketException("Not connected");
     }
-    closeables.close(superException);
+    ((AFUNIXSocketImpl) getAFImpl()).setOutboundFileDescriptors(fdescs);
+  }
+
+  @Override
+  public boolean hasOutboundFileDescriptors() {
+    return ((AFUNIXSocketImpl) getAFImpl()).hasOutboundFileDescriptors();
   }
 
   /**
-   * Registers a {@link Closeable} that should be closed when this socket is closed.
-   * 
-   * @param closeable The closeable.
+   * Returns <code>true</code> iff {@link AFUNIXSocket}s are supported by the current Java VM.
+   *
+   * To support {@link AFSocket}s, a custom JNI library must be loaded that is supplied with
+   * <em>junixsocket</em>, and the system must support AF_UNIX sockets.
+   *
+   * This call is equivalent to checking {@link AFSocket#isSupported()} and
+   * {@link AFSocket#supports(AFSocketCapability)} with
+   * {@link AFSocketCapability#CAPABILITY_UNIX_DOMAIN}.
+   *
+   * @return {@code true} iff supported.
    */
-  public void addCloseable(Closeable closeable) {
-    closeables.add(closeable);
-  }
-
-  /**
-   * Unregisters a previously registered {@link Closeable}.
-   * 
-   * @param closeable The closeable.
-   */
-  public void removeCloseable(Closeable closeable) {
-    closeables.remove(closeable);
+  public static boolean isSupported() {
+    return AFSocket.isSupported() && AFSocket.supports(AFSocketCapability.CAPABILITY_UNIX_DOMAIN);
   }
 
   /**
    * Very basic self-test function.
-   * 
+   *
    * Prints "supported" and "capabilities" status to System.out.
-   * 
+   *
    * @param args ignored.
    */
   public static void main(String[] args) {
-    System.out.print("AFUNIXSocket.isSupported(): ");
+    // If you want to run this directly from within Eclipse, see AFUNIXSocketTest#testMain.
+    System.out.print(AFUNIXSocket.class.getName() + ".isSupported(): ");
     System.out.flush();
     System.out.println(AFUNIXSocket.isSupported());
 
-    for (AFUNIXSocketCapability cap : AFUNIXSocketCapability.values()) {
+    for (AFSocketCapability cap : AFSocketCapability.values()) {
       System.out.print(cap + ": ");
       System.out.flush();
-      System.out.println(AFUNIXSocket.supports(cap));
+      System.out.println(AFSocket.supports(cap));
     }
   }
 }

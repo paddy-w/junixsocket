@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
 
+import org.newsclub.net.unix.AFSocketAddress;
 import org.newsclub.net.unix.AFUNIXSocket;
-import org.newsclub.net.unix.AFUNIXSocketAddress;
 
 /**
  * An {@link AFUNIXSocket} client that's just good for demo purposes.
- * 
+ *
  * @author Christian Kohlschütter
  */
 abstract class DemoClientBase {
@@ -39,8 +39,9 @@ abstract class DemoClientBase {
   }
 
   public void connect(SocketAddress endpoint) throws IOException {
-    if (endpoint instanceof AFUNIXSocketAddress) {
-      socket = AFUNIXSocket.newInstance();
+    System.out.println("Connect " + this + " to " + endpoint);
+    if (endpoint instanceof AFSocketAddress) {
+      socket = ((AFSocketAddress) endpoint).getAddressFamily().newSocket();
     } else {
       socket = new Socket();
     }

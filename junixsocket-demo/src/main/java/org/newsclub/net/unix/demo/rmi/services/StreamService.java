@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,26 @@ import org.newsclub.net.unix.rmi.RemoteFileOutput;
 
 /**
  * The {@link StreamServer}'s RMI service.
- * 
+ *
  * @author Christian Kohlschütter
  * @see StreamServer
  */
 public interface StreamService extends Remote {
+  /**
+   * Opens the given file for reading.
+   *
+   * @param path The file to open.
+   * @return A remote instance for the file.
+   * @throws IOException on error.
+   */
   RemoteCloseable<RemoteFileInput> openForReading(File path) throws IOException;
 
+  /**
+   * Opens the given file for writing.
+   *
+   * @param path The file to open.
+   * @return A remote instance for the file.
+   * @throws IOException on error.
+   */
   RemoteCloseable<RemoteFileOutput> openForWriting(File path) throws IOException;
 }

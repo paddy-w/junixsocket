@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,30 +19,33 @@ package org.newsclub.net.unix.rmi;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 
 /**
  * A resource that can be exposed remotely, and closed locally as well as remotely.
- * 
+ *
  * @author Christian Kohlschütter
+ * @param <T> The resource type.
  */
 public interface RemoteCloseable<T> extends Remote, Closeable {
   /**
    * Returns the resource (or the Remote instance of it).
-   * 
+   *
    * If the returned resource is {@link Closeable}, then closing via {@code get().close()}} will
    * affect the client-side (local), but not necessarily the server-side as well (the exact behavior
    * depends on the resource).
-   * 
+   *
    * @return The wrapped resource.
+   * @throws NoSuchObjectException if this instance has been closed already.
    * @throws IOException if there was a problem.
    */
-  T get() throws IOException;
+  T get() throws NoSuchObjectException, IOException;
 
   /**
    * Closes the resource on the server-side (i.e., where it was created), and — as long as the
    * wrapped resource returned by {@link #get()} supports it — locally as well.
-   * 
+   *
    * @throws IOException if there was a problem.
    */
   @Override

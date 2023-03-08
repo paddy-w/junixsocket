@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,68 +27,50 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
-import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
-import java.rmi.registry.Registry;
 import java.rmi.server.RMISocketFactory;
-import java.rmi.server.RemoteObject;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.newsclub.net.unix.AFSocketCapability;
 
-public class RemoteFileDescriptorTest {
-  private static final String TEST_SERVICE_NAME = RemoteFileDescriptorTest.class.getName();
+import com.kohlschutter.util.IOUtil;
 
+@AFSocketCapabilityRequirement({
+    AFSocketCapability.CAPABILITY_UNIX_DOMAIN, AFSocketCapability.CAPABILITY_FILE_DESCRIPTORS})
+public class RemoteFileDescriptorTest extends TestBase {
   private static final byte[] HELLO_WORLD = "Hello World :-)\n".getBytes(StandardCharsets.US_ASCII);
   private static final byte[] SMILEY = ":-)\n".getBytes(StandardCharsets.US_ASCII);
 
-  private static AFUNIXNaming namingInstance;
-  private static RemoteFileDescriptorTestServiceImpl testService;
-
-  @BeforeAll
-  public static void setupClass() throws IOException, AlreadyBoundException {
-    // NOTE: for testing. You'd probably want to use AFUNIXNaming.getInstance()
-    namingInstance = AFUNIXNaming.newPrivateInstance();
-
-    // Create registry
-    final Registry registry = namingInstance.createRegistry();
-
-    // Create and bind service
-    testService = new RemoteFileDescriptorTestServiceImpl(namingInstance.getSocketFactory());
-    registry.bind(TEST_SERVICE_NAME, RemoteObject.toStub(testService));
-  }
-
-  @AfterAll
-  public static void tearDownClass() throws IOException, NotBoundException {
-    testService.close();
-    namingInstance.shutdownRegistry();
-  }
-
   @Test
-  public void testServiceProxy() throws Exception {
-    RemoteFileDescriptorTestService svc = (RemoteFileDescriptorTestService) namingInstance
-        .getRegistry().lookup(TEST_SERVICE_NAME);
+  public void testServiceProxy() throws IOException, NotBoundException {
+    TestService svc = lookupTestService();
     assertTrue(Proxy.isProxyClass(svc.getClass()));
   }
 
   @Test
-  public void testRemoteStdout() throws Exception {
-    RemoteFileDescriptorTestService svc = (RemoteFileDescriptorTestService) namingInstance
-        .getRegistry().lookup(TEST_SERVICE_NAME);
+  public void testRemoteStdout() throws IOException, NotBoundException {
+    TestService svc = lookupTestService();
 
     try (RemoteFileDescriptor stdout = svc.stdout()) {
       try (FileOutputStream fos = new FileOutputStream(stdout.getFileDescriptor())) {
-        // fos.write(SMILEY);
+        // fos.write(SMILEY); // uncomment to write a smiley to stdout
         fos.flush();
       }
     }
   }
 
   @Test
-  public void testWriteAndReadHello() throws Exception {
-    RemoteFileDescriptorTestService svc = (RemoteFileDescriptorTestService) namingInstance
-        .getRegistry().lookup(TEST_SERVICE_NAME);
+  public void testRemoteStdoutNoop() throws IOException, NotBoundException {
+    TestService svc = lookupTestService();
+
+    try (RemoteFileDescriptor stdout = svc.stdout()) {
+      // not doing anything here should trigger descriptor cleanup in RemoteFileDescriptor#close
+    }
+  }
+
+  @Test
+  public void testWriteAndReadHello() throws IOException, NotBoundException {
+    TestService svc = lookupTestService();
 
     try (FileOutputStream fos = svc.output().asFileOutputStream()) {
       fos.write(HELLO_WORLD);
@@ -96,7 +78,7 @@ public class RemoteFileDescriptorTest {
     svc.verifyContents(HELLO_WORLD);
 
     try (FileInputStream fin = svc.input(12).asFileInputStream()) {
-      byte[] data = TestUtils.readAllBytes(fin);
+      byte[] data = IOUtil.readAllBytes(fin);
       assertArrayEquals(SMILEY, data);
     }
 
@@ -113,19 +95,17 @@ public class RemoteFileDescriptorTest {
 
   @Test
   public void testFindSocketFactory() throws IOException, NotBoundException {
-    RemoteFileDescriptorTestService svc = (RemoteFileDescriptorTestService) namingInstance
-        .getRegistry().lookup(TEST_SERVICE_NAME);
+    TestService svc = lookupTestService();
 
     RemotePeerInfo rci = RemotePeerInfo.getConnectionInfo(svc);
     RMISocketFactory factory = rci.getSocketFactory();
     assertNotNull(factory);
-    assertEquals(namingInstance.getSocketFactory(), factory);
+    assertEquals(namingSocketFactory(), factory);
   }
 
   @Test
   public void testReadWrite() throws IOException, NotBoundException {
-    RemoteFileDescriptorTestService svc = (RemoteFileDescriptorTestService) namingInstance
-        .getRegistry().lookup(TEST_SERVICE_NAME);
+    TestService svc = lookupTestService();
 
     byte[] expected = new byte[5000];
     for (int i = 0; i < expected.length; i++) {
@@ -138,7 +118,7 @@ public class RemoteFileDescriptorTest {
 
     byte[] actual;
     try (FileInputStream fin = svc.input().asFileInputStream()) {
-      actual = TestUtils.readAllBytes(fin);
+      actual = IOUtil.readAllBytes(fin);
     }
     assertArrayEquals(expected, actual);
 

@@ -11,19 +11,14 @@ junixsocket-dist comes either as a `.tar.gz` or `.zip` archive. Get either one o
 Before we start running demos, let's make sure that junixsocket works on the current platform
 as expected.
 
-junixsocket-dist provides a self-contained jar that performs this selftest:
+junixsocket-dist provides a self-contained jar that performs this [selftest](selftest.html):
 
-    java -jar junixsocket-selftest-2.3.2-jar-with-dependencies.jar
+    java -jar junixsocket-selftest-2.5.0-jar-with-dependencies.jar
 
-The last line should say "Selftest PASSED", and you're good to go.
+The last line should read "Selftest PASSED", and you're good to go.
 
 If not, please [file a bug report](https://github.com/kohlschutter/junixsocket/issues) with the
 output of the selftest.
-
-> **NOTE:** On Java 7, you can use the following command for a very basic check:
- 
-    java -cp junixsocket-common.jar:junixsocket-native-common.jar \
-             org.newsclub.net.unix.AFUNIXSocket
 
 ## Running the demos
 

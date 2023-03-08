@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,21 @@ import java.io.Serializable;
 import java.net.Socket;
 import java.rmi.server.RMIClientSocketFactory;
 
-import org.newsclub.net.unix.AFUNIXSocket;
-
 /**
- * An {@link AFUNIXSocket}-compatible implementation of {@link RMIClientSocketFactory}.
+ * An implementation of {@link RMIClientSocketFactory}.
+ *
+ * @see AFRMISocketFactory
  */
 public final class DefaultRMIClientSocketFactory implements RMIClientSocketFactory, Serializable {
   private static final long serialVersionUID = 1L;
   private static final DefaultRMIClientSocketFactory INSTANCE = new DefaultRMIClientSocketFactory();
 
+  private DefaultRMIClientSocketFactory() {
+  }
+
   /**
    * Returns the singleton instance for DefaultRMIClientSocketFactory.
-   * 
+   *
    * @return The singleton.
    */
   public static DefaultRMIClientSocketFactory getInstance() {
@@ -59,5 +62,4 @@ public final class DefaultRMIClientSocketFactory implements RMIClientSocketFacto
   public int hashCode() {
     return 1;
   }
-
 }

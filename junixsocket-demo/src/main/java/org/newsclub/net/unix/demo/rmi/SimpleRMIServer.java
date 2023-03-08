@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,20 @@
  */
 package org.newsclub.net.unix.demo.rmi;
 
+import java.io.IOException;
+import java.rmi.AlreadyBoundException;
+
 import org.newsclub.net.unix.demo.rmi.services.HelloWorld;
 import org.newsclub.net.unix.rmi.AFUNIXNaming;
 
 /**
  * A very simple RMI server. Provides a registry and the implementation of the {@link HelloWorld}
  * service.
- * 
+ *
  * @author Christian Kohlschütter
  */
 public final class SimpleRMIServer {
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws IOException, AlreadyBoundException {
     AFUNIXNaming naming = AFUNIXNaming.getInstance();
     naming.createRegistry();
     // naming.setRemoteShutdownAllowed(false);

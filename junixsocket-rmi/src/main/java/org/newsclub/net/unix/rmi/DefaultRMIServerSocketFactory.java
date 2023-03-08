@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,25 @@ import java.io.Serializable;
 import java.net.ServerSocket;
 import java.rmi.server.RMIServerSocketFactory;
 
-import org.newsclub.net.unix.AFUNIXSocket;
-
 /**
- * An {@link AFUNIXSocket}-compatible implementation of {@link RMIServerSocketFactory}.
+ * An implementation of {@link RMIServerSocketFactory}.
+ *
+ * @see AFRMISocketFactory
  */
 public class DefaultRMIServerSocketFactory implements RMIServerSocketFactory, Serializable {
   private static final long serialVersionUID = 1L;
   private static final DefaultRMIServerSocketFactory INSTANCE = new DefaultRMIServerSocketFactory();
 
   /**
+   * Creates a new {@link DefaultRMIClientSocketFactory}.
+   */
+  public DefaultRMIServerSocketFactory() {
+    super();
+  }
+
+  /**
    * Returns the singleton instance for DefaultRMIServerSocketFactory.
-   * 
+   *
    * @return The singleton.
    */
   public static DefaultRMIServerSocketFactory getInstance() {

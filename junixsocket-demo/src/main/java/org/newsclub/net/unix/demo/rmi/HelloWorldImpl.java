@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,25 @@ import java.rmi.NotBoundException;
 import org.newsclub.net.unix.AFUNIXSocketCredentials;
 import org.newsclub.net.unix.demo.rmi.services.HelloWorld;
 import org.newsclub.net.unix.demo.rmi.services.World;
-import org.newsclub.net.unix.rmi.AFUNIXNaming;
+import org.newsclub.net.unix.rmi.AFNaming;
+
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 /**
  * The implementation of the very simple {@link HelloWorld} service.
- * 
+ *
  * @author Christian Kohlschütter
  */
 public class HelloWorldImpl implements HelloWorld {
-  private final AFUNIXNaming naming;
+  private final AFNaming naming;
 
-  public HelloWorldImpl(AFUNIXNaming naming) {
+  /**
+   * Creates a new {@link HelloWorld} implementation.
+   *
+   * @param naming The naming instance to use.
+   */
+  @SuppressFBWarnings("EI_EXPOSE_REP")
+  public HelloWorldImpl(AFNaming naming) {
     this.naming = naming;
   }
 

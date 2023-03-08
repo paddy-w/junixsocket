@@ -33,10 +33,18 @@ typedef __int64 jlong;
 
 #else
 
-#define JNIEXPORT 
+#if __TOS_MVS__
+#define JNIEXPORT
+#else
+#define JNIEXPORT __attribute__((visibility ("default")))
+#endif
 
 typedef signed char jbyte;
+#ifdef _LP64
+typedef long jlong;
+#else
 typedef long long jlong;
+#endif
 
 #ifdef BREW
 #include "AEEFile.h"

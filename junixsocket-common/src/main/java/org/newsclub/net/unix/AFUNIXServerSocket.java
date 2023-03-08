@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,196 +17,148 @@
  */
 package org.newsclub.net.unix;
 
-import java.io.Closeable;
+import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.SocketAddress;
 import java.net.SocketException;
+import java.nio.file.Path;
 
 /**
  * The server part of an AF_UNIX domain socket.
- * 
+ *
  * @author Christian Kohlschütter
  */
-public class AFUNIXServerSocket extends ServerSocket {
-  private final AFUNIXSocketImpl implementation;
-  private AFUNIXSocketAddress boundEndpoint;
-  private final Closeables closeables = new Closeables();
-
+public class AFUNIXServerSocket extends AFServerSocket<AFUNIXSocketAddress> {
   /**
    * Constructs a new, unconnected instance.
-   * 
+   *
    * @throws IOException if the operation fails.
    */
   protected AFUNIXServerSocket() throws IOException {
     super();
-    setReuseAddress(true);
+  }
 
-    this.implementation = new AFUNIXSocketImpl();
-    NativeUnixSocket.initServerImpl(this, implementation);
+  /**
+   * Constructs a new instance, optionally associated with the given file descriptor.
+   *
+   * @param fdObj The file descriptor, or {@code null}.
+   * @throws IOException if the operation fails.
+   */
+  AFUNIXServerSocket(FileDescriptor fdObj) throws IOException {
+    super(fdObj);
+  }
 
-    NativeUnixSocket.setCreatedServer(this);
+  @Override
+  protected AFUNIXServerSocketChannel newChannel() {
+    return new AFUNIXServerSocketChannel(this);
+  }
+
+  @Override
+  public AFUNIXServerSocketChannel getChannel() {
+    return (AFUNIXServerSocketChannel) super.getChannel();
   }
 
   /**
    * Returns a new, unbound AF_UNIX {@link ServerSocket}.
-   * 
-   * @return The new, unbound {@link AFUNIXServerSocket}.
+   *
+   * @return The new, unbound {@link AFServerSocket}.
    * @throws IOException if the operation fails.
    */
   public static AFUNIXServerSocket newInstance() throws IOException {
-    return new AFUNIXServerSocket();
+    return (AFUNIXServerSocket) AFServerSocket.newInstance(AFUNIXServerSocket::new);
+  }
+
+  static AFUNIXServerSocket newInstance(FileDescriptor fdObj, int localPort, int remotePort)
+      throws IOException {
+    return (AFUNIXServerSocket) AFServerSocket.newInstance(AFUNIXServerSocket::new, fdObj,
+        localPort, remotePort);
   }
 
   /**
    * Returns a new AF_UNIX {@link ServerSocket} that is bound to the given
    * {@link AFUNIXSocketAddress}.
-   * 
+   *
    * @param addr The socket file to bind to.
-   * @return The new, unbound {@link AFUNIXServerSocket}.
+   * @return The new, bound {@link AFServerSocket}.
    * @throws IOException if the operation fails.
    */
   public static AFUNIXServerSocket bindOn(final AFUNIXSocketAddress addr) throws IOException {
-    AFUNIXServerSocket socket = newInstance();
-    socket.bind(addr);
-    return socket;
+    return (AFUNIXServerSocket) AFServerSocket.bindOn(AFUNIXServerSocket::new, addr);
+  }
+
+  /**
+   * Returns a new AF_UNIX {@link ServerSocket} that is bound to the given {@link AFSocketAddress}.
+   *
+   * @param addr The socket file to bind to.
+   * @param deleteOnClose If {@code true}, the socket file (if the address points to a file) will be
+   *          deleted upon {@link #close}.
+   * @return The new, bound {@link AFServerSocket}.
+   * @throws IOException if the operation fails.
+   */
+  public static AFUNIXServerSocket bindOn(final AFUNIXSocketAddress addr, boolean deleteOnClose)
+      throws IOException {
+    return (AFUNIXServerSocket) AFServerSocket.bindOn(AFUNIXServerSocket::new, addr, deleteOnClose);
+  }
+
+  /**
+   * Returns a new AF_UNIX {@link ServerSocket} that is bound to the given path.
+   *
+   * @param path The path to bind to.
+   * @param deleteOnClose If {@code true}, the socket file will be deleted upon {@link #close}.
+   * @return The new, bound {@link AFServerSocket}.
+   * @throws IOException if the operation fails.
+   */
+  public static AFUNIXServerSocket bindOn(final File path, boolean deleteOnClose)
+      throws IOException {
+    return bindOn(path.toPath(), deleteOnClose);
+  }
+
+  /**
+   * Returns a new AF_UNIX {@link ServerSocket} that is bound to the given path.
+   *
+   * @param path The path to bind to.
+   * @param deleteOnClose If {@code true}, the socket file will be deleted upon {@link #close}.
+   * @return The new, bound {@link AFServerSocket}.
+   * @throws IOException if the operation fails.
+   */
+  public static AFUNIXServerSocket bindOn(final Path path, boolean deleteOnClose)
+      throws IOException {
+    return (AFUNIXServerSocket) AFServerSocket.bindOn(AFUNIXServerSocket::new, AFUNIXSocketAddress
+        .of(path), deleteOnClose);
   }
 
   /**
    * Returns a new, <em>unbound</em> AF_UNIX {@link ServerSocket} that will always bind to the given
    * address, regardless of any socket address used in a call to <code>bind</code>.
-   * 
+   *
    * @param forceAddr The address to use.
-   * @return The new, yet unbound {@link AFUNIXServerSocket}.
+   * @return The new, yet unbound {@link AFServerSocket}.
    * @throws IOException if an exception occurs.
    */
   public static AFUNIXServerSocket forceBindOn(final AFUNIXSocketAddress forceAddr)
       throws IOException {
-    return new AFUNIXServerSocket() {
-
-      @Override
-      public void bind(SocketAddress ignored, int backlog) throws IOException {
-        super.bind(forceAddr, backlog);
-      }
-    };
+    return (AFUNIXServerSocket) AFServerSocket.forceBindOn(AFUNIXServerSocket::new, forceAddr);
   }
 
   @Override
-  public void bind(SocketAddress endpoint, int backlog) throws IOException {
-    if (isClosed()) {
-      throw new SocketException("Socket is closed");
-    }
-    if (isBound()) {
-      throw new SocketException("Already bound");
-    }
-    if (!(endpoint instanceof AFUNIXSocketAddress)) {
-      throw new IOException("Can only bind to endpoints of type " + AFUNIXSocketAddress.class
-          .getName());
-    }
-
-    implementation.bind(endpoint, getReuseAddress() ? -1 : 0);
-    boundEndpoint = (AFUNIXSocketAddress) endpoint;
-
-    implementation.listen(backlog);
+  protected AFUNIXSocketImpl newImpl(FileDescriptor fdObj) throws SocketException {
+    return new AFUNIXSocketImpl(fdObj);
   }
 
+  /**
+   * Returns a new {@link AFSocket} instance.
+   *
+   * @return The new instance.
+   * @throws IOException on error.
+   */
   @Override
-  public boolean isBound() {
-    return boundEndpoint != null;
-  }
-
-  @Override
-  public boolean isClosed() {
-    return super.isClosed() || (isBound() && !implementation.getFD().valid());
-  }
-
-  @Override
-  public AFUNIXSocket accept() throws IOException {
-    if (isClosed()) {
-      throw new SocketException("Socket is closed");
-    }
-    AFUNIXSocket as = newSocketInstance();
-    implementation.accept(as.impl);
-    as.addr = boundEndpoint;
-    NativeUnixSocket.setConnected(as);
-    return as;
-  }
-
   protected AFUNIXSocket newSocketInstance() throws IOException {
     return AFUNIXSocket.newInstance();
   }
 
   @Override
-  public String toString() {
-    if (!isBound()) {
-      return "AFUNIXServerSocket[unbound]";
-    }
-    return "AFUNIXServerSocket[" + boundEndpoint.toString() + "]";
-  }
-
-  @Override
-  public synchronized void close() throws IOException {
-    if (isClosed()) {
-      return;
-    }
-
-    IOException superException = null;
-    try {
-      super.close();
-    } catch (IOException e) {
-      superException = e;
-    }
-    if (implementation != null) {
-      try {
-        implementation.close();
-      } catch (IOException e) {
-        if (superException == null) {
-          superException = e;
-        } else {
-          superException.addSuppressed(e);
-        }
-      }
-    }
-    closeables.close(superException);
-  }
-
-  /**
-   * Registers a {@link Closeable} that should be closed when this socket is closed.
-   * 
-   * @param closeable The closeable.
-   */
-  public void addCloseable(Closeable closeable) {
-    closeables.add(closeable);
-  }
-
-  /**
-   * Unregisters a previously registered {@link Closeable}.
-   * 
-   * @param closeable The closeable.
-   */
-  public void removeCloseable(Closeable closeable) {
-    closeables.remove(closeable);
-  }
-
-  /**
-   * Checks whether everything is setup to support AF_UNIX sockets.
-   * 
-   * @return {@code true} if supported.
-   */
-  public static boolean isSupported() {
-    return NativeUnixSocket.isLoaded();
-  }
-
-  @Override
-  public SocketAddress getLocalSocketAddress() {
-    return boundEndpoint;
-  }
-
-  @Override
-  public int getLocalPort() {
-    if (boundEndpoint == null) {
-      return -1;
-    }
-    return boundEndpoint.getPort();
+  public AFUNIXSocket accept() throws IOException {
+    return (AFUNIXSocket) super.accept();
   }
 }

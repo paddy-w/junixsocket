@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,37 +26,44 @@ import java.util.Properties;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.mysql.jdbc.SocketFactory;
 
 /**
  * Connect to mysql databases (and compatibles) using UNIX domain sockets.
- * 
+ *
  * NOTE: This SocketFactory currently implements the "old" Connector/J SocketFactory. This may
  * change in the future.
- * 
+ *
  * For the time being, see AFUNIXDatabaseSocketFactoryCJ to forcibly use the new "CJ"-style
  * SocketFactory.
- * 
+ *
  * @see AFUNIXDatabaseSocketFactoryCJ
  */
 @SuppressWarnings("deprecation")
 public class AFUNIXDatabaseSocketFactory implements SocketFactory {
   private Socket socket = null;
 
+  /**
+   * Creates a new instance.
+   */
   public AFUNIXDatabaseSocketFactory() {
   }
 
   @Override
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   public Socket afterHandshake() throws SocketException, IOException {
     return socket;
   }
 
   @Override
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   public Socket beforeHandshake() throws SocketException, IOException {
     return socket;
   }
 
   @Override
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   public Socket connect(String host, int portNumber, Properties props) throws SocketException,
       IOException {
     // Adjust the path to your MySQL socket by setting the
@@ -64,7 +71,7 @@ public class AFUNIXDatabaseSocketFactory implements SocketFactory {
     // If no socket path is given, use the default: /tmp/mysql.sock
     final File socketFile = new File(props.getProperty("junixsocket.file", "/tmp/mysql.sock"));
 
-    socket = AFUNIXSocket.connectTo(new AFUNIXSocketAddress(socketFile));
+    socket = AFUNIXSocket.connectTo(AFUNIXSocketAddress.of(socketFile));
     return socket;
   }
 }

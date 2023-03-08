@@ -1,7 +1,7 @@
-/**
+/*
  * junixsocket
  *
- * Copyright 2009-2020 Christian Kohlschütter
+ * Copyright 2009-2022 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,128 +18,345 @@
 package org.newsclub.net.unix;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+
+import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Describes an {@link InetSocketAddress} that actually uses AF_UNIX sockets instead of AF_INET.
- * 
+ *
  * The ability to specify a port number is not specified by AF_UNIX sockets, but we need it
  * sometimes, for example for RMI-over-AF_UNIX.
- * 
+ *
  * @author Christian Kohlschütter
  */
-public final class AFUNIXSocketAddress extends InetSocketAddress {
+@SuppressWarnings("PMD.ShortMethodName")
+public final class AFUNIXSocketAddress extends AFSocketAddress {
   private static final long serialVersionUID = 1L;
-  private final byte[] bytes;
+
+  private static final Charset ADDRESS_CHARSET = Charset.defaultCharset();
+
+  @SuppressWarnings("null")
+  static final AFAddressFamily<@NonNull AFUNIXSocketAddress> AF_UNIX = AFAddressFamily
+      .registerAddressFamily("un", //
+          AFUNIXSocketAddress.class, new AFSocketAddressConfig<AFUNIXSocketAddress>() {
+
+            @Override
+            public AFUNIXSocketAddress parseURI(URI u, int port) throws SocketException {
+              return AFUNIXSocketAddress.of(u, port);
+            }
+
+            @Override
+            protected AFSocketAddressConstructor<AFUNIXSocketAddress> addressConstructor() {
+              return AFUNIXSocketAddress::new;
+            }
+
+            @Override
+            protected String selectorProviderClassname() {
+              return AFUNIXSelectorProvider.class.getName();
+            }
+
+            @Override
+            protected Set<String> uriSchemes() {
+              return new HashSet<>(Arrays.asList("unix", "http+unix", "https+unix"));
+            }
+          });
+
+  private AFUNIXSocketAddress(int port, final byte[] socketAddress, ByteBuffer nativeAddress)
+      throws SocketException {
+    super(port, socketAddress, nativeAddress, AF_UNIX);
+  }
 
   /**
-   * Creates a new {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the
-   * given file.
-   * 
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * file and port. <b>Legacy constructor, do not use!</b>
+   *
    * @param socketFile The socket to connect to.
-   * @throws IOException if the operation fails.
+   * @throws SocketException if the operation fails.
+   * @deprecated Use {@link #of(File)} instead.
+   * @see #of(File)
    */
-  public AFUNIXSocketAddress(final File socketFile) throws IOException {
+  public AFUNIXSocketAddress(File socketFile) throws SocketException {
     this(socketFile, 0);
   }
 
   /**
-   * Creates a new {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the
-   * given file, assigning the given port to it.
-   * 
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * file. <b>Legacy constructor, do not use!</b>
+   *
    * @param socketFile The socket to connect to.
    * @param port The port associated with this socket, or {@code 0} when no port should be assigned.
-   * @throws IOException if the operation fails.
+   * @throws SocketException if the operation fails.
+   * @deprecated Use {@link #of(File, int)} instead.
+   * @see #of(File, int)
    */
-  public AFUNIXSocketAddress(final File socketFile, int port) throws IOException {
-    this(socketFile.getCanonicalPath().getBytes(Charset.defaultCharset()), port);
+  public AFUNIXSocketAddress(File socketFile, int port) throws SocketException {
+    this(port, of(socketFile, port).getPathAsBytes(), of(socketFile, port)
+        .getNativeAddressDirectBuffer());
   }
 
   /**
-   * Creates a new {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the
-   * given byte sequence.
-   * 
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * file.
+   *
+   * @param socketFile The socket to connect to.
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails.
+   */
+  public static AFUNIXSocketAddress of(final File socketFile) throws SocketException {
+    return of(socketFile, 0);
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * file, assigning the given port to it.
+   *
+   * @param socketFile The socket to connect to.
+   * @param port The port associated with this socket, or {@code 0} when no port should be assigned.
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails.
+   */
+  public static AFUNIXSocketAddress of(final File socketFile, int port) throws SocketException {
+    return of(socketFile.getPath().getBytes(ADDRESS_CHARSET), port);
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * byte sequence.
+   *
    * NOTE: By specifying a byte array that starts with a zero byte, you indicate that the abstract
    * namespace is to be used. This feature is not available on all target platforms.
-   * 
+   *
    * @param socketAddress The socket address (as bytes).
-   * @throws IOException if the operation fails.
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails.
    * @see AFUNIXSocketAddress#inAbstractNamespace(String)
    */
-  public AFUNIXSocketAddress(final byte[] socketAddress) throws IOException {
-    this(socketAddress, 0);
+  public static AFUNIXSocketAddress of(final byte[] socketAddress) throws SocketException {
+    return of(socketAddress, 0);
   }
 
   /**
-   * Creates a new {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the
-   * given byte sequence, assigning the given port to it.
-   * 
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * byte sequence, assigning the given port to it.
+   *
    * NOTE: By specifying a byte array that starts with a zero byte, you indicate that the abstract
    * namespace is to be used. This feature is not available on all target platforms.
    *
    * @param socketAddress The socket address (as bytes).
    * @param port The port associated with this socket, or {@code 0} when no port should be assigned.
-   * @throws IOException if the operation fails.
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails.
    * @see AFUNIXSocketAddress#inAbstractNamespace(String,int)
    */
-  public AFUNIXSocketAddress(final byte[] socketAddress, int port) throws IOException {
-    super(InetAddress.getLoopbackAddress(), 0);
-    if (port != 0) {
-      NativeUnixSocket.setPort1(this, port);
-    }
+  public static AFUNIXSocketAddress of(final byte[] socketAddress, int port)
+      throws SocketException {
+    return AFSocketAddress.resolveAddress(socketAddress, port, AF_UNIX);
+  }
 
-    if (socketAddress.length == 0) {
-      throw new SocketException("Illegal address length: " + socketAddress.length);
-    }
+  /**
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * path.
+   *
+   * @param socketPath The socket to connect to.
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails.
+   */
+  public static AFUNIXSocketAddress of(final Path socketPath) throws SocketException {
+    return of(socketPath, 0);
+  }
 
-    this.bytes = socketAddress.clone();
+  /**
+   * Returns an {@link AFUNIXSocketAddress} that points to the AF_UNIX socket specified by the given
+   * path, assigning the given port to it.
+   *
+   * @param socketPath The socket to connect to.
+   * @param port The port associated with this socket, or {@code 0} when no port should be assigned.
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails.
+   */
+  public static AFUNIXSocketAddress of(final Path socketPath, int port) throws SocketException {
+    return of(socketPath.toString().getBytes(ADDRESS_CHARSET), port);
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} for the given URI, if possible.
+   *
+   * @param u The URI.
+   * @return The address.
+   * @throws SocketException if the operation fails.
+   */
+  public static AFUNIXSocketAddress of(URI u) throws SocketException {
+    return of(u, -1);
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} for the given URI, if possible.
+   *
+   * @param u The URI.
+   * @param overridePort The port to forcibly use, or {@code -1} for "don't override".
+   * @return The address.
+   * @throws SocketException if the operation fails.
+   */
+  public static AFUNIXSocketAddress of(URI u, int overridePort) throws SocketException {
+    switch (u.getScheme()) {
+      case "file":
+      case "unix":
+        String path = u.getPath();
+        if (path == null || path.isEmpty()) {
+          String auth = u.getAuthority();
+          if (auth != null && !auth.isEmpty() && u.getRawSchemeSpecificPart().indexOf('@') == -1) {
+            path = auth;
+          } else {
+            throw new SocketException("Cannot find UNIX socket path component from URI: " + u);
+          }
+        }
+        return of(new File(path), overridePort != -1 ? overridePort : u.getPort());
+      case "http+unix":
+      case "https+unix":
+        HostAndPort hp = HostAndPort.parseFrom(u);
+        return of(new File(hp.getHostname()), overridePort != -1 ? overridePort : hp.getPort());
+      default:
+        throw new SocketException("Invalid URI");
+    }
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} that points to a temporary, non-existent but accessible
+   * path in the file system.
+   *
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws IOException if the operation fails.
+   */
+  public static AFUNIXSocketAddress ofNewTempFile() throws IOException {
+    return ofNewTempPath(0);
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} that points to a temporary, non-existent but accessible
+   * path in the file system, assigning the given port to it.
+   *
+   * @param port The port associated with this socket, or {@code 0} when no port should be assigned.
+   * @return A corresponding {@link AFUNIXSocketAddress} instance.
+   * @throws IOException if the operation fails.
+   */
+  public static AFUNIXSocketAddress ofNewTempPath(int port) throws IOException {
+    return of(newTempPath(true), port);
+  }
+
+  static File newTempPath(boolean deleteOnExit) throws IOException {
+    File f = File.createTempFile("jux", ".sock");
+    if (deleteOnExit) {
+      f.deleteOnExit(); // always delete on exit to clean-up sockets created under that name
+    }
+    if (!f.delete() && f.exists()) {
+      throw new IOException("Could not delete temporary file that we just created: " + f);
+    }
+    return f;
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} given a special {@link InetAddress} that encodes the
+   * byte sequence of an AF_UNIX socket address, like those returned by {@link #wrapAddress()}.
+   *
+   * @param address The "special" {@link InetAddress}.
+   * @param port The port (use 0 for "none").
+   * @return The {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails, for example when an unsupported address is
+   *           specified.
+   */
+  public static AFUNIXSocketAddress unwrap(InetAddress address, int port) throws SocketException {
+    return AFSocketAddress.unwrap(address, port, AF_UNIX);
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} given a generic {@link SocketAddress}.
+   *
+   * @param address The address to unwrap.
+   * @return The {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails, for example when an unsupported address is
+   *           specified.
+   */
+  public static AFUNIXSocketAddress unwrap(SocketAddress address) throws SocketException {
+    // FIXME: add support for UnixDomainSocketAddress
+    Objects.requireNonNull(address);
+    if (!isSupportedAddress(address)) {
+      throw new SocketException("Unsupported address");
+    }
+    return (AFUNIXSocketAddress) address;
+  }
+
+  /**
+   * Returns an {@link AFUNIXSocketAddress} given a special {@link InetAddress} hostname that
+   * encodes the byte sequence of an AF_UNIX socket address, like those returned by
+   * {@link #wrapAddress()}.
+   *
+   * @param hostname The "special" hostname, as provided by {@link InetAddress#getHostName()}.
+   * @param port The port (use 0 for "none").
+   * @return The {@link AFUNIXSocketAddress} instance.
+   * @throws SocketException if the operation fails, for example when an unsupported address is
+   *           specified.
+   */
+  public static AFUNIXSocketAddress unwrap(String hostname, int port) throws SocketException {
+    return AFSocketAddress.unwrap(hostname, port, AF_UNIX);
   }
 
   /**
    * Convenience method to create an {@link AFUNIXSocketAddress} in the abstract namespace.
-   * 
+   *
    * The returned socket address will use the byte representation of this identifier (using the
    * system's default character encoding), prefixed with a null byte (to indicate the abstract
    * namespace is used).
-   * 
+   *
    * @param name The identifier in the abstract namespace, without trailing zero or @.
    * @return The address.
-   * @throws IOException if the operation fails.
+   * @throws SocketException if the operation fails.
    */
-  public static AFUNIXSocketAddress inAbstractNamespace(String name) throws IOException {
+  public static AFUNIXSocketAddress inAbstractNamespace(String name) throws SocketException {
     return inAbstractNamespace(name, 0);
   }
 
   /**
    * Convenience method to create an {@link AFUNIXSocketAddress} in the abstract namespace.
-   * 
+   *
    * The returned socket address will use the byte representation of this identifier (using the
    * system's default character encoding), prefixed with a null byte (to indicate the abstract
    * namespace is used).
-   * 
+   *
    * @param name The identifier in the abstract namespace, without trailing zero or @.
    * @param port The port associated with this socket, or {@code 0} when no port should be assigned.
    * @return The address.
-   * @throws IOException if the operation fails.
+   * @throws SocketException if the operation fails.
    */
-  public static AFUNIXSocketAddress inAbstractNamespace(String name, int port) throws IOException {
-    byte[] bytes = name.getBytes(Charset.defaultCharset());
+  public static AFUNIXSocketAddress inAbstractNamespace(String name, int port)
+      throws SocketException {
+    byte[] bytes = name.getBytes(ADDRESS_CHARSET);
     byte[] addr = new byte[bytes.length + 1];
     System.arraycopy(bytes, 0, addr, 1, bytes.length);
-    return new AFUNIXSocketAddress(addr, port);
-  }
-
-  byte[] getBytes() {
-    return bytes; // NOPMD
+    return AFUNIXSocketAddress.of(addr, port);
   }
 
   private static String prettyPrint(byte[] data) {
     final int dataLength = data.length;
+    if (dataLength == 0) {
+      return "";
+    }
     StringBuilder sb = new StringBuilder(dataLength + 16);
     for (int i = 0; i < dataLength; i++) {
       byte c = data[i];
@@ -155,37 +372,162 @@ public final class AFUNIXSocketAddress extends InetSocketAddress {
 
   @Override
   public String toString() {
-    return getClass().getName() + "[port=" + getPort() + ";path=" + prettyPrint(bytes) + "]";
+    int port = getPort();
+    return getClass().getName() + "[" + (port == 0 ? "" : "port=" + port + ";") + "path="
+        + prettyPrint(getBytes()) + "]";
   }
 
   /**
-   * Returns the path to the UNIX domain socket, as a human-readable string.
-   * 
-   * Zero-bytes are converted to '@', other non-printable bytes are converted to '.'
-   * 
+   * Returns the path to the UNIX domain socket, as a human-readable string using the default
+   * encoding.
+   *
+   * For addresses in the abstract namespace, the US_ASCII encoding is used; zero-bytes are
+   * converted to '@', other non-printable bytes are converted to '.'
+   *
    * @return The path.
    * @see #getPathAsBytes()
    */
   public String getPath() {
-    byte[] by = getPathAsBytes();
-    for (int i = 1; i < by.length; i++) {
+    byte[] bytes = getBytes();
+    if (bytes.length == 0) {
+      return "";
+    } else if (bytes[0] != 0) {
+      return new String(bytes, ADDRESS_CHARSET);
+    }
+
+    byte[] by = bytes.clone();
+    for (int i = 0; i < by.length; i++) {
       byte b = by[i];
       if (b == 0) {
         by[i] = '@';
-      } else if (b < 32 || b == 127) {
+      } else if (b >= 32 && b < 127) {
+        // print as-is
+      } else {
         by[i] = '.';
       }
     }
-    return new String(by, Charset.defaultCharset());
+    return new String(by, StandardCharsets.US_ASCII);
+  }
+
+  /**
+   * Returns the {@link Charset} used to encode/decode {@link AFUNIXSocketAddress}es.
+   *
+   * This is usually the system default charset, unless that is {@link StandardCharsets#US_ASCII}
+   * (7-bit), in which case {@link StandardCharsets#ISO_8859_1} is used instead.
+   *
+   * @return The charset.
+   */
+  public static Charset addressCharset() {
+    return ADDRESS_CHARSET;
   }
 
   /**
    * Returns the path to the UNIX domain socket, as bytes.
-   * 
+   *
    * @return The path.
    * @see #getPath()
    */
   public byte[] getPathAsBytes() {
-    return this.bytes.clone();
+    return getBytes().clone();
+  }
+
+  /**
+   * Checks if the address is in the abstract namespace.
+   *
+   * @return {@code true} if the address is in the abstract namespace.
+   */
+  public boolean isInAbstractNamespace() {
+    byte[] bytes = getBytes();
+    return bytes.length > 0 && bytes[0] == 0;
+  }
+
+  @Override
+  public boolean hasFilename() {
+    byte[] bytes = getBytes();
+    return bytes.length > 0 && bytes[0] != 0;
+  }
+
+  @Override
+  public File getFile() throws FileNotFoundException {
+    if (isInAbstractNamespace()) {
+      throw new FileNotFoundException("Socket is in abstract namespace");
+    }
+    byte[] bytes = getBytes();
+
+    if (bytes.length == 0) {
+      throw new FileNotFoundException("No name");
+    }
+    return new File(new String(bytes, ADDRESS_CHARSET));
+  }
+
+  /**
+   * Checks if an {@link InetAddress} can be unwrapped to an {@link AFUNIXSocketAddress}.
+   *
+   * @param addr The instance to check.
+   * @return {@code true} if so.
+   * @see #wrapAddress()
+   * @see #unwrap(InetAddress, int)
+   */
+  public static boolean isSupportedAddress(InetAddress addr) {
+    return AFInetAddress.isSupportedAddress(addr, AF_UNIX);
+  }
+
+  /**
+   * Checks if a {@link SocketAddress} can be unwrapped to an {@link AFUNIXSocketAddress}.
+   *
+   * @param addr The instance to check.
+   * @return {@code true} if so.
+   * @see #unwrap(InetAddress, int)
+   */
+  public static boolean isSupportedAddress(SocketAddress addr) {
+    return (addr instanceof AFUNIXSocketAddress);
+  }
+
+  /**
+   * Returns the corresponding {@link AFAddressFamily}.
+   *
+   * @return The address family instance.
+   */
+  @SuppressWarnings("null")
+  public static AFAddressFamily<AFUNIXSocketAddress> addressFamily() {
+    return AFUNIXSelectorProvider.getInstance().addressFamily();
+  }
+
+  @Override
+  public URI toURI(String scheme, URI template) throws IOException {
+    switch (scheme) {
+      case "unix":
+      case "file":
+        try {
+          if (getPort() > 0 && !"file".equals(scheme)) {
+            return new URI(scheme, null, "localhost", getPort(), getPath(), null, (String) null);
+          } else {
+            return new URI(scheme, null, null, -1, getPath(), null, null);
+          }
+        } catch (URISyntaxException e) {
+          throw new IOException(e);
+        }
+      case "http+unix":
+      case "https+unix":
+        HostAndPort hp = new HostAndPort(getPath(), getPort());
+        return hp.toURI(scheme, template);
+      default:
+        return super.toURI(scheme, template);
+    }
+  }
+
+  @Override
+  public AFUNIXSocket newConnectedSocket() throws IOException {
+    return (AFUNIXSocket) super.newConnectedSocket();
+  }
+
+  @Override
+  public AFUNIXServerSocket newBoundServerSocket() throws IOException {
+    return (AFUNIXServerSocket) super.newBoundServerSocket();
+  }
+
+  @Override
+  public AFUNIXServerSocket newForceBoundServerSocket() throws IOException {
+    return (AFUNIXServerSocket) super.newForceBoundServerSocket();
   }
 }
