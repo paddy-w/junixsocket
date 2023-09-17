@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.newsclub.net.unix.AFUNIXSocket;
  *
  * @author Christian Kohlschütter
  */
+@SuppressWarnings("CatchAndPrintStackTrace" /* errorprone */)
 public final class SendFileHandleServer extends DemoServerBase {
   private final File file;
 
@@ -49,7 +50,7 @@ public final class SendFileHandleServer extends DemoServerBase {
     doServeSocket((AFUNIXSocket) socket);
   }
 
-  protected void doServeSocket(AFUNIXSocket socket) throws IOException {
+  private void doServeSocket(AFUNIXSocket socket) throws IOException {
     try (InputStream is = socket.getInputStream();
         OutputStream os = socket.getOutputStream();
         FileInputStream fin = new FileInputStream(file)) {

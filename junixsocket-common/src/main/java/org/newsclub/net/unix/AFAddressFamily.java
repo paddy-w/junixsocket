@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ public final class AFAddressFamily<A extends AFSocketAddress> {
     }
     if (af.addressClassname != null && !addressClass.getName().equals(af.addressClassname)) {
       throw new IllegalStateException("Unexpected classname for address family " + juxString + ": "
-          + addressClass.getName());
+          + addressClass.getName() + "; expected: " + af.addressClassname);
     }
     if (af.addressConstructor != null || af.addressClass != null) {
       throw new IllegalStateException("Already registered: " + juxString);
@@ -267,6 +267,8 @@ public final class AFAddressFamily<A extends AFSocketAddress> {
         return (AFSocketImplExtensions<A>) new AFTIPCSocketImplExtensions(ancillaryDataSupport);
       case NativeUnixSocket.DOMAIN_VSOCK:
         return (AFSocketImplExtensions<A>) new AFVSOCKSocketImplExtensions(ancillaryDataSupport);
+      case NativeUnixSocket.DOMAIN_SYSTEM:
+        return (AFSocketImplExtensions<A>) new AFSYSTEMSocketImplExtensions(ancillaryDataSupport);
       default:
         throw new UnsupportedOperationException();
     }
@@ -357,7 +359,7 @@ public final class AFAddressFamily<A extends AFSocketAddress> {
     }
     try {
       selectorProvider = (SelectorProvider) Class.forName(selectorProviderClassname).getMethod(
-          "provider", new Class[0]).invoke(null);
+          "provider", new Class<?>[0]).invoke(null);
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException
         | ClassNotFoundException | RuntimeException e) {
       throw new IllegalStateException("Cannot instantiate selector provider for "

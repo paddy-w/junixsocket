@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import java.util.List;
  * @author Christian Kohlschütter
  */
 public final class Closeables implements Closeable {
+  private boolean closed = false;
   private List<WeakReference<Closeable>> list;
 
   /**
@@ -45,14 +46,24 @@ public final class Closeables implements Closeable {
    * @param closeable The {@link Closeable}s to add.
    */
   public Closeables(Closeable... closeable) {
+    this.list = new ArrayList<>();
     for (Closeable cl : closeable) {
-      this.list.add(new HardReference<Closeable>(cl));
+      this.list.add(new HardReference<>(cl));
     }
   }
 
   @Override
   public void close() throws IOException {
     close(null);
+  }
+
+  /**
+   * Checks if this instance has been closed already.
+   *
+   * @return {@code true} if closed.
+   */
+  public synchronized boolean isClosed() {
+    return closed;
   }
 
   /**
@@ -65,21 +76,32 @@ public final class Closeables implements Closeable {
   public void close(IOException superException) throws IOException {
     IOException exc = superException;
 
-    if (list != null) {
-      for (WeakReference<Closeable> ref : list) {
-        @SuppressWarnings("resource")
-        Closeable cl = ref.get();
-        if (cl == null) {
-          continue;
-        }
-        try {
-          cl.close();
-        } catch (IOException e) {
-          if (exc == null) {
-            exc = e;
-          } else {
-            exc.addSuppressed(e);
-          }
+    List<WeakReference<Closeable>> l;
+    synchronized (this) {
+      closed = true;
+
+      l = this.list;
+      if (l == null) {
+        return;
+      }
+
+      l = new ArrayList<>(l);
+      this.list = null;
+    }
+
+    for (WeakReference<Closeable> ref : l) {
+      @SuppressWarnings("resource")
+      Closeable cl = ref.get();
+      if (cl == null) {
+        continue;
+      }
+      try {
+        cl.close();
+      } catch (IOException e) {
+        if (exc == null) {
+          exc = e;
+        } else {
+          exc.addSuppressed(e);
         }
       }
     }
@@ -108,10 +130,13 @@ public final class Closeables implements Closeable {
    * Adds the given closeable, but only using a weak reference.
    *
    * @param closeable The closeable.
-   * @return {@code true} iff the closeable was added, {@code false} if it was {@code null} or
-   *         already added before.
+   * @return {@code true} iff the closeable was added, {@code false} if it was {@code null}, already
+   *         added before, or if the {@link Closeables} instance has been closed already.
    */
   public synchronized boolean add(WeakReference<Closeable> closeable) {
+    if (closed) {
+      return false;
+    }
     Closeable cl = closeable.get();
     if (cl == null) {
       // ignore
@@ -150,7 +175,7 @@ public final class Closeables implements Closeable {
    *         previously added.
    */
   public synchronized boolean remove(Closeable closeable) {
-    if (list == null || closeable == null) {
+    if (list == null || closeable == null || closed) {
       return false;
     }
     for (Iterator<WeakReference<Closeable>> it = list.iterator(); it.hasNext();) {

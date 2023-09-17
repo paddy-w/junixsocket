@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,8 @@ public class EchoServer {
         long numBytes = -1;
         long time = System.currentTimeMillis();
         try {
-          numBytes = sock.getInputStream().transferTo(sock.getOutputStream()); // NOPMD
+          // numBytes = sock.getInputStream().transferTo(sock.getOutputStream()); // NOPMD
+          numBytes = IOUtil.transfer(sock.getInputStream(), sock.getOutputStream());
         } finally {
           time = System.currentTimeMillis() - time;
           System.out.println("Disconnected: " + sock + "; echoed bytes: " + (numBytes == -1

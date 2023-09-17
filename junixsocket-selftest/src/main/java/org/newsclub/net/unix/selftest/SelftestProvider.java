@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.newsclub.net.unix.selftest;
 
+import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -43,5 +44,9 @@ public class SelftestProvider {
 
   public Set<String> modulesDisabledByDefault() {
     return Collections.emptySet();
+  }
+
+  public void printAdditionalProperties(PrintWriter out) {
+    out.println("selftest-dummy: true");
   }
 }

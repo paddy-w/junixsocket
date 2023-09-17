@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.newsclub.net.unix.vsock;
 
+import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -34,7 +35,7 @@ import org.newsclub.net.unix.SocketTestBase;
  */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class SelftestProvider {
-  final Map<String, LinkedHashSet<Class<?>>> testMap = new LinkedHashMap<>();
+  final Map<String, LinkedHashSet<Class<?>>> testMap = new LinkedHashMap<>(); // NOPMD.LooseCoupling
 
   // CPD-OFF
 
@@ -100,9 +101,12 @@ public class SelftestProvider {
   public Map<String, Class<?>[]> tests() {
     Map<String, Class<?>[]> tests = new LinkedHashMap<>();
     testMap.forEach((key, set) -> {
-      tests.put(key, set.toArray(new Class[0]));
+      tests.put(key, set.toArray(new Class<?>[0]));
     });
 
     return tests;
+  }
+
+  public void printAdditionalProperties(PrintWriter out) {
   }
 }

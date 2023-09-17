@@ -13,8 +13,12 @@ module org.newsclub.net.unix.demo {
   requires nanohttpd;
   requires okhttp3;
   requires com.kohlschutter.util;
+  requires mina.core;
   requires static com.kohlschutter.annotations.compiletime;
   requires static org.eclipse.jdt.annotation;
+  requires io.netty.common;
+  requires io.netty.buffer;
+  requires io.netty.transport;
 
   exports org.newsclub.net.unix.demo.rmi.services to java.rmi;
   exports org.newsclub.net.unix.demo.rmi.fd to java.rmi;

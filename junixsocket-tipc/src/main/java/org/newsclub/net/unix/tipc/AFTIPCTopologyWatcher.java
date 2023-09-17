@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ public class AFTIPCTopologyWatcher implements Closeable {
   private final int defaultTimeout;
   private final AFTIPCDatagramChannel channel;
   private final Selector selector;
-  private boolean doLoop;
+  private final AtomicBoolean doLoop = new AtomicBoolean(false);
   private final AtomicBoolean running = new AtomicBoolean(false);
 
   /**
@@ -203,10 +203,10 @@ public class AFTIPCTopologyWatcher implements Closeable {
     SelectionKey key = channel.register(selector, SelectionKey.OP_READ);
 
     try {
-      doLoop = true;
-      while (!Thread.interrupted() && doLoop) {
+      doLoop.set(true);
+      while (!Thread.interrupted() && doLoop.get()) {
         int n = selector.select();
-        if (!key.isValid() || !doLoop) {
+        if (!key.isValid() || !doLoop.get()) {
           break;
         }
         if (n > 0) {
@@ -255,7 +255,7 @@ public class AFTIPCTopologyWatcher implements Closeable {
    * Stops the run loop.
    */
   public final void stopLoop() {
-    doLoop = false;
+    doLoop.set(false);
     selector.wakeup();
   }
 

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAd
     DatagramSocket ds2 = new DatagramSocket(0);
     ds1.connect(ds2.getLocalSocketAddress());
     ds2.connect(ds1.getLocalSocketAddress());
-    return new CloseablePair<DatagramChannel>(ds1.getChannel(), ds2.getChannel(), () -> {
+    return new CloseablePair<>(ds1.getChannel(), ds2.getChannel(), () -> {
       ds1.close();
       ds2.close();
     });
@@ -136,5 +136,15 @@ public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAd
       throw new IllegalArgumentException("Not a local address: " + inetAddr);
     }
     return new ServerSocket(inetAddr.getPort());
+  }
+
+  @Override
+  public String addressFamilyString() {
+    return "Java standard socket";
+  }
+
+  @Override
+  public String summaryImportantMessage(String message) {
+    return message;
   }
 }

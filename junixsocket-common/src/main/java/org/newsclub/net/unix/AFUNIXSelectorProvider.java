@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public final class AFUNIXSelectorProvider extends AFSelectorProvider<AFUNIXSocke
 
   @Override
   protected <P extends AFSomeSocket> AFSocketPair<P> newSocketPair(P s1, P s2) {
-    return new AFUNIXSocketPair<P>(s1, s2);
+    return new AFUNIXSocketPair<>(s1, s2);
   }
 
   @SuppressWarnings("unchecked")
@@ -122,6 +122,13 @@ public final class AFUNIXSelectorProvider extends AFSelectorProvider<AFUNIXSocke
     return (AFUNIXSocketPair<AFUNIXDatagramChannel>) super.openDatagramChannelPair();
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public AFUNIXSocketPair<AFUNIXDatagramChannel> openDatagramChannelPair(AFSocketType type)
+      throws IOException {
+    return (AFUNIXSocketPair<AFUNIXDatagramChannel>) super.openDatagramChannelPair(type);
+  }
+
   @Override
   protected AFUNIXSocket newSocket() throws IOException {
     return AFUNIXSocket.newInstance();
@@ -130,6 +137,11 @@ public final class AFUNIXSelectorProvider extends AFSelectorProvider<AFUNIXSocke
   @Override
   public AFUNIXDatagramChannel openDatagramChannel() throws IOException {
     return AFUNIXDatagramSocket.newInstance().getChannel();
+  }
+
+  @Override
+  public AFUNIXDatagramChannel openDatagramChannel(AFSocketType type) throws IOException {
+    return AFUNIXDatagramSocket.newInstance(type).getChannel();
   }
 
   @Override

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,7 @@ import org.newsclub.net.unix.AFSocketType;
 import org.newsclub.net.unix.AFTIPCSocketAddress;
 
 final class AFTIPCDatagramSocketImpl extends AFDatagramSocketImpl<AFTIPCSocketAddress> {
-  protected AFTIPCDatagramSocketImpl(FileDescriptor fd, AFSocketType socketType)
-      throws IOException {
+  AFTIPCDatagramSocketImpl(FileDescriptor fd, AFSocketType socketType) throws IOException {
     super(AFTIPCSelectorProvider.AF_TIPC, fd, socketType);
   }
 }

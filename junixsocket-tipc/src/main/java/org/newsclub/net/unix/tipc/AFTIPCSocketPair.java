@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ public final class AFTIPCSocketPair<T extends AFSomeSocket> extends AFSocketPair
    * @param socket1 The first socket.
    * @param socket2 The second socket.
    */
-  protected AFTIPCSocketPair(T socket1, T socket2) {
+  AFTIPCSocketPair(T socket1, T socket2) {
     super(socket1, socket2);
   }
 

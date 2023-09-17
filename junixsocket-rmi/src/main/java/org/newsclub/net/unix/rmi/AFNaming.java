@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public abstract class AFNaming extends AFRegistryAccess {
   private final int registryPort;
   private final int servicePort;
   AFRMISocketFactory socketFactory;
-  private boolean remoteShutdownAllowed = true;
+  private final AtomicBoolean remoteShutdownAllowed = new AtomicBoolean(true);
   private final AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
   private final AtomicBoolean addedShutdownHook = new AtomicBoolean(false);
 
@@ -107,7 +107,9 @@ public abstract class AFNaming extends AFRegistryAccess {
         try {
           instance = provider.newInstance(registryPort);
           Objects.requireNonNull(instance);
-          instance.socketFactory = instance.initSocketFactory();
+          synchronized (instance) {
+            instance.socketFactory = instance.initSocketFactory();
+          }
         } catch (RemoteException e) {
           throw e;
         } catch (IOException e) {
@@ -142,7 +144,8 @@ public abstract class AFNaming extends AFRegistryAccess {
     return getRMIService(getRegistry());
   }
 
-  AFRMIService getRMIService(AFRegistry reg) throws RemoteException, NotBoundException {
+  synchronized AFRMIService getRMIService(AFRegistry reg) throws RemoteException,
+      NotBoundException {
     if (rmiService == null) {
       this.rmiService = getRMIServiceFromRegistry(reg);
     }
@@ -152,7 +155,7 @@ public abstract class AFNaming extends AFRegistryAccess {
   AFRMIService getRMIServiceFromRegistry(AFRegistry reg) throws RemoteException, NotBoundException {
     AFRMIService service;
     service = (AFRMIService) reg.lookup(RMI_SERVICE_NAME, 5, TimeUnit.SECONDS);
-    this.remoteShutdownAllowed = service.isShutdownAllowed();
+    this.remoteShutdownAllowed.set(service.isShutdownAllowed());
     return service;
   }
 
@@ -161,18 +164,17 @@ public abstract class AFNaming extends AFRegistryAccess {
       ShutdownHookSupport.addWeakShutdownHook(new ShutdownHook() {
 
         @Override
-        public void onRuntimeShutdown(Thread thread) throws IOException {
-          synchronized (AFNaming.class) {
-            if (registry != null && registry.isLocal()) {
-              shutdownRegistry();
-            }
+        @SuppressWarnings("LockOnNonEnclosingClassLiteral" /* errorprone */)
+        public synchronized void onRuntimeShutdown(Thread thread) throws IOException {
+          if (registry != null && registry.isLocal()) {
+            shutdownRegistry();
           }
         }
       });
     }
   }
 
-  private void rebindRMIService(final AFRMIService assigner) throws RemoteException {
+  private synchronized void rebindRMIService(final AFRMIService assigner) throws RemoteException {
     rmiService = assigner;
     getRegistry().rebind(RMI_SERVICE_NAME, assigner);
   }
@@ -197,7 +199,7 @@ public abstract class AFNaming extends AFRegistryAccess {
     if (shutdownInProgress.get()) {
       throw new ShutdownException();
     }
-    synchronized (AFNaming.class) {
+    synchronized (this) {
       AFRegistry reg = getRegistry(false);
       if (reg == null) {
         reg = openRegistry(timeout, unit);
@@ -230,7 +232,7 @@ public abstract class AFNaming extends AFRegistryAccess {
     if (shutdownInProgress.get()) {
       throw new ShutdownException();
     }
-    synchronized (AFNaming.class) {
+    synchronized (this) {
       if (registry != null) {
         return registry;
       } else if (!socketFactory.hasRegisteredPort(registryPort)) {
@@ -266,7 +268,7 @@ public abstract class AFNaming extends AFRegistryAccess {
    * @throws RemoteException if the operation fails.
    */
   public void shutdownRegistry() throws RemoteException {
-    synchronized (AFNaming.class) {
+    synchronized (this) {
       if (registry == null) {
         return;
       }
@@ -309,8 +311,8 @@ public abstract class AFNaming extends AFRegistryAccess {
    */
   protected abstract void shutdownRegistryFinishingTouches();
 
-  private void unexportRMIService(AFRegistry reg, AFRMIServiceImpl serv) throws AccessException,
-      RemoteException {
+  private synchronized void unexportRMIService(AFRegistry reg, AFRMIServiceImpl serv)
+      throws AccessException, RemoteException {
     if (serv != null) {
       serv.shutdownRegisteredCloseables();
     }
@@ -369,40 +371,38 @@ public abstract class AFNaming extends AFRegistryAccess {
    * @throws RemoteException if the operation fails.
    * @see #getRegistry()
    */
-  public AFRegistry createRegistry() throws RemoteException {
-    synchronized (AFNaming.class) {
-      AFRegistry existingRegistry = registry;
-      if (existingRegistry == null) {
-        try {
-          existingRegistry = getRegistry(false);
-        } catch (ServerException e) {
-          Throwable cause = e.getCause();
-          if (cause instanceof NotBoundException || cause instanceof ConnectIOException) {
-            existingRegistry = null;
-          } else {
-            throw e;
-          }
+  public synchronized AFRegistry createRegistry() throws RemoteException {
+    AFRegistry existingRegistry = registry;
+    if (existingRegistry == null) {
+      try {
+        existingRegistry = getRegistry(false);
+      } catch (ServerException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof NotBoundException || cause instanceof ConnectIOException) {
+          existingRegistry = null;
+        } else {
+          throw e;
         }
       }
-      if (existingRegistry != null) {
-        if (!isRemoteShutdownAllowed()) {
-          throw new ServerException("The server refuses to be shutdown remotely");
-        }
-        shutdownRegistry();
-      }
-
-      initRegistryPrerequisites();
-
-      setRegistry(newAFRegistry(LocateRegistry.createRegistry(registryPort, socketFactory,
-          socketFactory)));
-
-      final AFRMIService service = new AFRMIServiceImpl(this);
-      UnicastRemoteObject.exportObject(service, servicePort, socketFactory, socketFactory);
-
-      rebindRMIService(service);
-
-      return registry;
     }
+    if (existingRegistry != null) {
+      if (!isRemoteShutdownAllowed()) {
+        throw new ServerException("The server refuses to be shutdown remotely");
+      }
+      shutdownRegistry();
+    }
+
+    initRegistryPrerequisites();
+    AFRegistry newAFRegistry = newAFRegistry(LocateRegistry.createRegistry(registryPort,
+        socketFactory, socketFactory));
+    setRegistry(newAFRegistry);
+
+    final AFRMIService service = new AFRMIServiceImpl(this);
+    UnicastRemoteObject.exportObject(service, servicePort, socketFactory, socketFactory);
+
+    rebindRMIService(service);
+
+    return registry;
   }
 
   /**
@@ -418,7 +418,7 @@ public abstract class AFNaming extends AFRegistryAccess {
    * @return {@code true} if remote shutdown is allowed.
    */
   public boolean isRemoteShutdownAllowed() {
-    return remoteShutdownAllowed;
+    return remoteShutdownAllowed.get();
   }
 
   /**
@@ -427,7 +427,7 @@ public abstract class AFNaming extends AFRegistryAccess {
    * @param remoteShutdownAllowed {@code true} if remote shutdown is allowed.
    */
   public void setRemoteShutdownAllowed(boolean remoteShutdownAllowed) {
-    this.remoteShutdownAllowed = remoteShutdownAllowed;
+    this.remoteShutdownAllowed.set(remoteShutdownAllowed);
   }
 
   /**
@@ -507,14 +507,12 @@ public abstract class AFNaming extends AFRegistryAccess {
     }
   }
 
-  private void setRegistry(AFRegistry registry) {
-    synchronized (AFNaming.class) {
-      this.registry = registry;
-      if (registry == null) {
-        rmiService = null;
-      } else if (registry.isLocal()) {
-        closeUponRuntimeShutdown();
-      }
+  private synchronized void setRegistry(AFRegistry registry) {
+    this.registry = registry;
+    if (registry == null) {
+      rmiService = null;
+    } else if (registry.isLocal()) {
+      closeUponRuntimeShutdown();
     }
   }
 }

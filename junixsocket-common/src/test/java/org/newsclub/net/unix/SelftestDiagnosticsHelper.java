@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 package org.newsclub.net.unix;
 
 import java.io.File;
+import java.util.Map;
 
 /**
  * Some bridging code that allows junixsocket-selftest to do some in-depth diagnostics.
@@ -44,5 +45,16 @@ public final class SelftestDiagnosticsHelper {
    */
   public static File tempDir() {
     return NativeLibraryLoader.tempDir();
+  }
+
+  /**
+   * Returns properties determined upon Maven build time.
+   *
+   * For performance reasons, these will not be correctly resolves when developing in Eclipse.
+   *
+   * @return The properties.
+   */
+  public static Map<String, String> buildProperties() {
+    return BuildProperties.getBuildProperties();
   }
 }

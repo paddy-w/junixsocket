@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,8 @@ public class ZeroServer {
         try {
 
           File devZeroFile = new File("/dev/zero");
-          if (devZeroFile.exists() && Boolean.valueOf(System.getProperty("useDevZero", "true"))) {
+          if (devZeroFile.exists() && Boolean.parseBoolean(System.getProperty("useDevZero",
+              "true"))) {
             System.out.println("Streaming /dev/zero");
             try (FileInputStream fin = new FileInputStream(devZeroFile);
                 AFOutputStream out = sock.getOutputStream()) {

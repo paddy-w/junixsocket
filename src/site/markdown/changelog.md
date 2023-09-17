@@ -1,13 +1,58 @@
-# Noteworthy changes
+
+# Changelog
 
 ### General remarks
 
-Please tend to always use the latest version.
-
-The existing API should always be backwards compatible between minor releases (e.g., 2.4.0 -> 2.5.1) unless explicitly mentioned in the changelog below (e.g., dropping Java 7 support in 2.5.0)
+Please try to use the latest version.
 
 When upgrading from versions older than 2.4.0, please note that `junixsocket-core` is now a POM-only
 artifact (`<type>pom</type>`); see [Add junixsocket to your project](dependency.html) for details.
+
+## Noteworthy changes
+
+**Users of junixsocket are strongly advised to upgrade to version 2.7.2 or newer**
+
+### _(2023-09-15)_ **junixsocket 2.7.2**
+
+- Fix SelectionKey logic (regression introduced in 2.7.1)
+- Fix selftest-android dependency (some tests would always fail)
+- Improve AFSocketAddress creation, skip DNS resolution on Android
+- Add demo code for interacting with Apache Mina and Netty
+- Code cleanup
+
+### _(2023-09-09)_ **junixsocket 2.7.1**
+
+- Fix openDatagramChannelPair (was using STREAM instead of DGRAM), add AFSocketType support
+- Fix availability of AF_SYSTEM capability on Darwin
+- Improve exception handling for "EPROTOTYPE" error on z/OS
+- Improve SelectionKey logic, reduce locking/GC overhead
+- Improve "unsupported operation" handling in native code
+- Improve handling of "test aborted, but not really an issue"
+- Add unit tests for Jetty 12
+- Code cleanup, update dependencies
+
+### _(2023-08-04)_ **junixsocket 2.7.0**
+
+- New supported platform (out of the box): Android (aarch64, arm-linux-androideabi, x86_64, i686)
+- New platforms that can be used when building the native library from source: Haiku, IBM z/TPF
+- Add selftest GUI app for Android ("junixsocket-selftest-android")
+- Add ability to get native file descriptor number via FileDescriptorCast
+- Add AFSocketCapability for "large port numbers" (larger than 65535)
+- Add support to convert UnixDomainSocketAddress to AFUNIXSocketAddress (Java 16+)
+- Add support for AF_SYSTEM (macOS), which allows creating your own VPN via utun, for example.
+- Add initial support for SOCK_SEQPACKET/SOCK_RDM/SOCK_RAW
+- Fix potential data corruption when sending non-direct ByteBuffers larger than 8192 bytes
+- Fix potential data corruption when receiving non-direct ByteBuffers with non-zero position
+- Fix intermittent hangs when sending datagrams on macOS, BSD
+- Fix "org.eclipse.jdt.annotation" JPMS module: no longer required at runtime
+- Fix Exception messages from native code being empty in some Linux environments
+- Fix selftest failing for vsock in some Linux environments
+- Improve JNI library lookup; load from user.home/user.dir if tmpfs is mounted with noexec
+- Improve concurrency performance for RMI over Unix domain sockets
+- Improve reliability on exotic environments
+- Update dependencies, improve tests, selftest, build scripts
+- Require Java 16 to build (still supports running on Java 8 and newer)
+- Last but not least: junixsocket finally has a logo!
 
 ### _(2022-02-08)_ **junixsocket 2.6.2**
 

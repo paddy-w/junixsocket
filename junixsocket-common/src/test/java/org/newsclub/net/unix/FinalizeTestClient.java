@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.newsclub.net.unix;
 
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
@@ -34,7 +36,8 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 @SuppressFBWarnings({
     "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public class FinalizeTestClient {
-  @SuppressFBWarnings({"RV_RETURN_VALUE_IGNORED"})
+  @SuppressWarnings({"ModifiedButNotUsed" /* errorprone */})
+  @SuppressFBWarnings({"RV_RETURN_VALUE_IGNORED", "UC_USELESS_OBJECT"})
   public static void main(String[] args) throws Exception {
     String socketType = System.getProperty("test.junixsocket.socket.type", "");
     String socketName = System.getProperty("test.junixsocket.socket", "");
@@ -56,9 +59,11 @@ public class FinalizeTestClient {
     }
     socket = AFSocket.connectTo(Objects.requireNonNull(addr));
     socket.getInputStream().read();
+
+    // create some pressure on GC
+    List<String> list = new ArrayList<>();
     while (true) {
-      // create some pressure on GC
-      new String("junixsocket".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+      list.add(new String("junixsocket".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
     }
   }
 }

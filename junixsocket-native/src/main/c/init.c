@@ -131,6 +131,7 @@ jboolean supportsZeroLengthSend(void) {
 JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_init
 (JNIEnv *env, jclass clazz CK_UNUSED)
 {
+    (*env)->EnsureLocalCapacity(env, 20);
 #if defined(_WIN32)
     WSADATA wsaData;
     int ret = WSAStartup(MAKEWORD(2,2), &wsaData);
@@ -140,8 +141,8 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_init
     }
 #endif
 
-    init_exceptions(env);
-    init_capabilities(env);
+    init_exceptions(env); // should be first
+
     init_reflection(env);
     init_unix();
     init_filedescriptors(env);
@@ -157,6 +158,8 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_init
 #endif
     init_poll(env);
     init_socketoptions(env);
+
+    init_capabilities(env); // should be last
 }
 
 /*
@@ -180,4 +183,15 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_destroy
 #endif
     destroy_poll(env);
     destroy_socketoptions(env);
+}
+
+/*
+ * Class:     org_newsclub_net_unix_NativeUnixSocket
+ * Method:    noop
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_noop
+(JNIEnv *env CK_UNUSED, jclass clazz CK_UNUSED) {
+    // no-op
+    return;
 }

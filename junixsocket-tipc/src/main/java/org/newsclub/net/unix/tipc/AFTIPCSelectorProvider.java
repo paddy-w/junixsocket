@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.newsclub.net.unix.AFServerSocketChannel;
 import org.newsclub.net.unix.AFSocket;
 import org.newsclub.net.unix.AFSocketChannel;
 import org.newsclub.net.unix.AFSocketPair;
+import org.newsclub.net.unix.AFSocketType;
 import org.newsclub.net.unix.AFSomeSocket;
 import org.newsclub.net.unix.AFTIPCSocketAddress;
 
@@ -125,7 +126,7 @@ public final class AFTIPCSelectorProvider extends AFSelectorProvider<AFTIPCSocke
    */
   @Override
   protected <P extends AFSomeSocket> AFSocketPair<P> newSocketPair(P s1, P s2) {
-    return new AFTIPCSocketPair<P>(s1, s2);
+    return new AFTIPCSocketPair<>(s1, s2);
   }
 
   @SuppressWarnings("unchecked")
@@ -140,6 +141,13 @@ public final class AFTIPCSelectorProvider extends AFSelectorProvider<AFTIPCSocke
     return (AFTIPCSocketPair<AFTIPCDatagramChannel>) super.openDatagramChannelPair();
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public AFTIPCSocketPair<AFTIPCDatagramChannel> openDatagramChannelPair(AFSocketType type)
+      throws IOException {
+    return (AFTIPCSocketPair<AFTIPCDatagramChannel>) super.openDatagramChannelPair(type);
+  }
+
   @Override
   protected AFTIPCSocket newSocket() throws IOException {
     return AFTIPCSocket.newInstance();
@@ -148,6 +156,11 @@ public final class AFTIPCSelectorProvider extends AFSelectorProvider<AFTIPCSocke
   @Override
   public AFTIPCDatagramChannel openDatagramChannel() throws IOException {
     return AFTIPCDatagramSocket.newInstance().getChannel();
+  }
+
+  @Override
+  public AFTIPCDatagramChannel openDatagramChannel(AFSocketType type) throws IOException {
+    return AFTIPCDatagramSocket.newInstance(type).getChannel();
   }
 
   @Override

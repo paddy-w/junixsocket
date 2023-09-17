@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 package org.newsclub.net.unix.rmi;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 import org.newsclub.net.unix.AFSocket;
@@ -35,7 +34,6 @@ public class JunixsocketVersionTest {
   @Test
   public void testVersion() {
     String version = AFSocket.getVersion();
-    assertNotNull(version);
     assertNotEquals("", version);
   }
 }

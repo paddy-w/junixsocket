@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+
+import org.newsclub.net.unix.StackTraceUtil;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
@@ -120,7 +122,7 @@ final class AFRMIServiceImpl implements AFRMIService {
   public void registerForShutdown(Closeable closeable) throws RemoteException {
     synchronized (closeAtShutdown) {
       unregisterForShutdown(closeable);
-      closeAtShutdown.add(new WeakReference<Closeable>(closeable));
+      closeAtShutdown.add(new WeakReference<>(closeable));
     }
   }
 
@@ -146,21 +148,18 @@ final class AFRMIServiceImpl implements AFRMIService {
 
     ExecutorService executor = Executors.newCachedThreadPool();
     for (WeakReference<Closeable> ref : list) {
-      executor.submit(new Runnable() {
-        @Override
-        public void run() {
-          @SuppressWarnings("resource")
-          Closeable cl = ref.get();
-          if (cl == null) {
-            return;
-          }
-          try {
-            cl.close();
-          } catch (NoSuchObjectException e) {
-            // ignore
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
+      executor.execute(() -> {
+        @SuppressWarnings("resource")
+        Closeable cl = ref.get();
+        if (cl == null) {
+          return;
+        }
+        try {
+          cl.close();
+        } catch (NoSuchObjectException e) {
+          // ignore
+        } catch (IOException e) {
+          StackTraceUtil.printStackTrace(e);
         }
       });
     }

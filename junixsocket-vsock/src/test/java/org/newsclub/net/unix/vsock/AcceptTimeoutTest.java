@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,10 +51,29 @@ public final class AcceptTimeoutTest extends
         newInterconnectedSockets();
       } catch (TestAbortedException e2) {
         TestAbortedWithImportantMessageException e3 = new TestAbortedWithImportantMessageException(
-            MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, AFVSOCKAddressSpecifics.KERNEL_TOO_OLD, e);
+            MessageType.TEST_ABORTED_SHORT_WITH_ISSUES,
+            AFVSOCKAddressSpecifics.KERNEL_NOT_CONFIGURED, summaryImportantMessage(
+                AFVSOCKAddressSpecifics.KERNEL_NOT_CONFIGURED), e);
         e3.addSuppressed(e2);
         throw e3; // NOPMD.PreserveStackTrace
       }
+    }
+  }
+
+  /**
+   * Subclasses may override this to tell that there is a known issue with "Accept timeout after
+   * delay" when a SocketTimeoutException was thrown.
+   *
+   * @param e The exception
+   * @return An explanation iff this should not cause a test failure but trigger "With issues".
+   */
+  @Override
+  protected String checkKnownBugAcceptTimeout(SocketTimeoutException e) {
+    String message = e.getMessage();
+    if (message != null && message.contains("navailable")) {
+      return "Server accept timed out. VSOCK may not be available";
+    } else {
+      return null;
     }
   }
 
@@ -85,5 +104,4 @@ public final class AcceptTimeoutTest extends
     }
     return null;
   }
-
 }

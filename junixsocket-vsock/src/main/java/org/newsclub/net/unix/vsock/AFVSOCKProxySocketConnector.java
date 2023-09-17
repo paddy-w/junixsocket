@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,7 @@ public final class AFVSOCKProxySocketConnector implements
    * @throws AddressUnavailableSocketException if the CID is not covered by this connector.
    */
   @Override
+  @SuppressWarnings("Finally" /* errorprone */)
   public AFSocket<?> connect(AFVSOCKSocketAddress vsockAddress) throws IOException {
     int cid = vsockAddress.getVSOCKCID();
     if (cid != allowedCID && cid != AFVSOCKSocketAddress.VMADDR_CID_ANY

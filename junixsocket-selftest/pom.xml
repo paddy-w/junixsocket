@@ -6,14 +6,14 @@
     <parent>
         <groupId>com.kohlschutter.junixsocket</groupId>
         <artifactId>junixsocket</artifactId>
-        <version>2.6.3-SNAPSHOT</version>
+        <version>2.7.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <name>junixsocket-selftest</name>
     <properties>
         <kohlschutter.project.base.directory>${project.parent.basedir}</kohlschutter.project.base.directory>
         <kohlschutter.multirelease.java8.release>8</kohlschutter.multirelease.java8.release>
-        <kohlschutter.multirelease.java.release>9</kohlschutter.multirelease.java.release>
+        <kohlschutter.multirelease.java.release>16</kohlschutter.multirelease.java.release>
 
         <!-- moving standard jar building to an earlier phase to prevent maven-shade-plugin
       from failing with "The project main artifact does not exist" -->
@@ -74,6 +74,18 @@
                                 </configuration>
                             </execution>
                             <execution>
+                                <id>add-sources-from-junixsocket-darwin</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>${project.parent.basedir}/junixsocket-darwin/src/test/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                            <execution>
                                 <id>add-sources-from-junixsocket-rmi</id>
                                 <phase>generate-sources</phase>
                                 <goals>
@@ -102,25 +114,115 @@
                                     <includeEmptyDirs>true</includeEmptyDirs>
                                     <resources>
                                         <resource>
-                                            <directory>${project.parent.basedir}/junixsocket-common/src/main/java</directory>
-                                            <includes>
-                                                <include>**</include>
-                                            </includes>
-                                            <excludes>
-                                                <exclude>module-info.java</exclude>
-                                            </excludes>
-                                        </resource>
-                                        <resource>
-                                            <directory>${project.parent.basedir}/junixsocket-common/src/main/java8</directory>
-                                            <includes>
-                                                <include>**</include>
-                                            </includes>
-                                            <excludes>
-                                                <exclude>module-info.java</exclude>
-                                            </excludes>
-                                        </resource>
-                                        <resource>
                                             <directory>${project.parent.basedir}/junixsocket-common/src/test/java</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java20</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java19</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java18</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java17</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java16</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java15</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java14</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java13</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java12</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java11</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java10</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java9</directory>
                                             <includes>
                                                 <include>**</include>
                                             </includes>
@@ -191,6 +293,140 @@
                                                 <exclude>module-info.java</exclude>
                                             </excludes>
                                         </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-darwin/src/test/java</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-darwin/src/test/java8</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>module-info.java</exclude>
+                                            </excludes>
+                                        </resource>
+                                    </resources>
+                                    <overwrite>true</overwrite>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-sources-from-junixsocket-java9</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/sources-java9</outputDirectory>
+                                    <includeEmptyDirs>true</includeEmptyDirs>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java20</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java19</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java18</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java17</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java16</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java15</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java14</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java13</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java12</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java11</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java10</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-common/src/test/java9</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-tipc/src/test/java</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-vsock/src/test/java</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-rmi/src/test/java</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/junixsocket-darwin/src/test/java</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
                                     </resources>
                                     <overwrite>true</overwrite>
                                 </configuration>
@@ -225,6 +461,7 @@
                                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                             <mainClass>org.newsclub.net.unix.selftest.Selftest</mainClass>
                                         </transformer>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                     </transformers>
                                     <minimizeJar>true</minimizeJar>
                                     <filters>
@@ -266,19 +503,10 @@
                 <configuration>
                     <!-- do not require test methods to be documented even if strict mode is enabled -->
                     <failOnWarnings>false</failOnWarnings>
+                    <doclint>-missing</doclint>
                 </configuration>
             </plugin>
         </plugins>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.3.0</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
     <reporting>
@@ -321,6 +549,11 @@
         <dependency>
             <groupId>com.kohlschutter.junixsocket</groupId>
             <artifactId>junixsocket-rmi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.kohlschutter.junixsocket</groupId>
+            <artifactId>junixsocket-darwin</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

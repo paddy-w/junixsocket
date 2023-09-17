@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
    * @param socketType The socket type.
    * @throws IOException on error.
    */
+  @SuppressWarnings("this-escape")
   protected AFDatagramSocketImpl(AFAddressFamily<@NonNull A> addressFamily, FileDescriptor fd,
       AFSocketType socketType) throws IOException {
     super();
@@ -114,7 +115,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
       connected.set(false);
       this.remotePort = 0;
     } catch (IOException e) {
-      e.printStackTrace();
+      StackTraceUtil.printStackTrace(e);
     }
   }
 
@@ -207,6 +208,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
         sendToBuf = AFSocketAddress.SOCKETADDRESS_BUFFER_TL.get();
         sendToBufLen = NativeUnixSocket.bytesToSockAddr(getAddressFamily().getDomain(), sendToBuf,
             addrBytes);
+        sendToBuf.position(0);
         if (sendToBufLen == -1) {
           throw new SocketException("Unsupported domain");
         }
@@ -219,6 +221,8 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
     ByteBuffer datagramPacketBuffer = core.getThreadLocalDirectByteBuffer(len);
     datagramPacketBuffer.clear();
     datagramPacketBuffer.put(p.getData(), p.getOffset(), p.getLength());
+    datagramPacketBuffer.flip();
+
     NativeUnixSocket.send(fdesc, datagramPacketBuffer, 0, len, sendToBuf, sendToBufLen,
         /* NativeUnixSocket.OPT_NON_BLOCKING | */
         NativeUnixSocket.OPT_DGRAM_MODE, ancillaryDataSupport);

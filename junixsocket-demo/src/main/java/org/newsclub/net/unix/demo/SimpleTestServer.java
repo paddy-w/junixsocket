@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.newsclub.net.unix.SocketClosedException;
  * @author Christian Kohlschütter
  * @see SimpleTestClient
  */
+@SuppressWarnings({"CatchAndPrintStackTrace" /* errorprone */, "PMD.CognitiveComplexity"})
 public final class SimpleTestServer {
   private static final int MAX_NUMBER = 5;
 

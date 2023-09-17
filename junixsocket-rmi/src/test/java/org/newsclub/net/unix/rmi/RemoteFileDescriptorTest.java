@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.rmi.NotBoundException;
 import java.rmi.server.RMISocketFactory;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.newsclub.net.unix.AFSocketCapability;
@@ -63,7 +64,7 @@ public class RemoteFileDescriptorTest extends TestBase {
   public void testRemoteStdoutNoop() throws IOException, NotBoundException {
     TestService svc = lookupTestService();
 
-    try (RemoteFileDescriptor stdout = svc.stdout()) {
+    try (RemoteFileDescriptor unused = svc.stdout()) {
       // not doing anything here should trigger descriptor cleanup in RemoteFileDescriptor#close
     }
   }
@@ -83,7 +84,8 @@ public class RemoteFileDescriptorTest extends TestBase {
     }
 
     try (NaiveFileInputStreamRemote rfis = svc.naiveInputStreamRemote();
-        FileInputStream fin = rfis.getRemoteFileDescriptor().asFileInputStream()) {
+        FileInputStream fin = Objects.requireNonNull(rfis.getRemoteFileDescriptor()
+            .asFileInputStream())) {
       assertEquals('H', rfis.read());
       assertEquals('e', fin.read());
       assertEquals('l', fin.read());

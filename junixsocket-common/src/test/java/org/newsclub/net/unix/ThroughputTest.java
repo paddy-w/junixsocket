@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,20 +55,26 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.platform.commons.JUnitException;
+import org.opentest4j.AssertionFailedError;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.testutil.TestAsyncUtil;
+import com.kohlschutter.testutil.TestStackTraceUtil;
 import com.kohlschutter.util.SystemPropertyUtil;
 
 /**
  * This test measures throughput for sending and receiving messages over AF_UNIX, comparing
  * implementations of junixsocket and JEP 380 (Java 16).
  *
- * The test is enabled by default, and also included with the self-test.
+ * The test is enabled by default (only runs for a very short time), and is also included within the
+ * self-test.
  *
  * The tests can be configured as follows (all system properties):
  * <ul>
  * <li><code>org.newsclub.net.unix.throughput-test.enabled</code> (0/1, default: 1)</li>
  * <li><code>org.newsclub.net.unix.throughput-test.payload-size</code> (bytes, e.g., 8192)</li>
+ * <li><code>org.newsclub.net.unix.throughput-test.payload-size.datagram</code> (bytes, e.g., 2048;
+ * defaults to value specified with "payload-size" above)</li>
  * <li><code>org.newsclub.net.unix.throughput-test.seconds</code> (default: 0)</li>
  * </ul>
  *
@@ -83,8 +88,12 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
       "org.newsclub.net.unix.throughput-test.enabled", 1);
   protected static final int PAYLOAD_SIZE = SystemPropertyUtil.getIntSystemProperty(
       "org.newsclub.net.unix.throughput-test.payload-size", 2048); // 8192 is much faster
+  protected static final int PAYLOAD_SIZE_DATAGRAM = SystemPropertyUtil.getIntSystemProperty(
+      "org.newsclub.net.unix.throughput-test.payload-size.datagram", PAYLOAD_SIZE);
   protected static final int NUM_SECONDS = SystemPropertyUtil.getIntSystemProperty(
       "org.newsclub.net.unix.throughput-test.seconds", 0);
+  protected static final int GRACE_TIME_NUM_SECONDS = SystemPropertyUtil.getIntSystemProperty(
+      "org.newsclub.net.unix.throughput-test.gracetime.seconds", 5);
   protected static final int NUM_MILLISECONDS = Math.max(50, NUM_SECONDS * 1000);
 
   protected ThroughputTest(AddressSpecifics<A> asp) {
@@ -112,7 +121,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
     assumeTrue(ENABLED > 0, "Throughput tests are disabled");
     assumeTrue(PAYLOAD_SIZE > 0, "Payload must be positive");
 
-    assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+    assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
       try (ServerThread serverThread = new ServerThread() {
         @Override
         protected void handleConnection(final Socket sock) throws IOException {
@@ -129,9 +138,10 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
       }) {
 
         AtomicBoolean keepRunning = new AtomicBoolean(true);
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+
+        TestAsyncUtil.runAsyncDelayed(NUM_MILLISECONDS, TimeUnit.MILLISECONDS, () -> {
           keepRunning.set(false);
-        }, NUM_MILLISECONDS, TimeUnit.MILLISECONDS);
+        });
 
         try (Socket sock = connectTo(serverThread.getServerAddress())) {
           byte[] buf = createTestData(PAYLOAD_SIZE);
@@ -178,7 +188,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
   public void testSocketChannel() throws Exception {
     assumeTrue(ENABLED > 0, "Throughput tests are disabled");
     assumeTrue(PAYLOAD_SIZE > 0, "Payload must be positive");
-    assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+    assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
       runtestSocketChannel(false);
     });
   }
@@ -187,7 +197,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
   public void testSocketChannelDirectBuffer() throws Exception {
     assumeTrue(ENABLED > 0, "Throughput tests are disabled");
     assumeTrue(PAYLOAD_SIZE > 0, "Payload must be positive");
-    assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+    assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
       runtestSocketChannel(true);
     });
   }
@@ -217,7 +227,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
       SupplierWithException<SocketChannel, IOException> sscSupp, boolean direct) throws Exception {
     final AtomicBoolean keepRunning = new AtomicBoolean(true);
 
-    try (ServerThread serverThread = new ServerThread() {
+    try (ServerThread unused = new ServerThread() {
 
       @Override
       protected ServerSocket startServer() throws IOException {
@@ -265,9 +275,9 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
       }
     }) {
 
-      Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+      TestAsyncUtil.runAsyncDelayed(NUM_MILLISECONDS, TimeUnit.MILLISECONDS, () -> {
         keepRunning.set(false);
-      }, NUM_MILLISECONDS, TimeUnit.MILLISECONDS);
+      });
 
       try (SocketChannel sc = sscSupp.get()) {
         ByteBuffer bb = direct ? ByteBuffer.allocateDirect(PAYLOAD_SIZE) : ByteBuffer.allocate(
@@ -279,7 +289,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
           bb.clear();
           bb.put(createTestData(PAYLOAD_SIZE));
           bb.flip();
-          int remaining = sc.write(bb);
+          long remaining = sc.write(bb);
           bb.clear();
 
           long read; // limited by net.local.stream.recvspace / sendspace etc.
@@ -303,7 +313,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
   @SuppressWarnings("PMD.CognitiveComplexity")
   public void testDatagramPacket() throws Exception {
     try {
-      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
         SocketAddress dsAddr = newTempAddressForDatagram();
         SocketAddress dcAddr = newTempAddressForDatagram();
 
@@ -323,15 +333,16 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
           dc.connect(dsAddr);
 
           AtomicBoolean keepRunning = new AtomicBoolean(true);
-          Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+          TestAsyncUtil.runAsyncDelayed(NUM_MILLISECONDS, TimeUnit.MILLISECONDS, () -> {
             keepRunning.set(false);
-          }, NUM_MILLISECONDS, TimeUnit.MILLISECONDS);
+          });
 
           AtomicLong readTotal = new AtomicLong();
           long sentTotal = 0;
 
           new Thread() {
-            final DatagramPacket dp = new DatagramPacket(new byte[PAYLOAD_SIZE], PAYLOAD_SIZE);
+            final DatagramPacket dp = new DatagramPacket(new byte[PAYLOAD_SIZE_DATAGRAM],
+                PAYLOAD_SIZE_DATAGRAM);
 
             @Override
             public void run() {
@@ -343,24 +354,25 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
                     continue;
                   }
                   int read = dp.getLength();
-                  if (read != PAYLOAD_SIZE && read != 0) {
+                  if (read != PAYLOAD_SIZE_DATAGRAM && read != 0) {
                     throw new IOException("Unexpected response length: " + read);
                   }
                   readTotal.addAndGet(dp.getLength());
                 }
               } catch (SocketException e) {
                 if (keepRunning.get()) {
-                  e.printStackTrace();
+                  TestStackTraceUtil.printStackTrace(e);
                 }
-              } catch (IOException e) {
-                e.printStackTrace();
+              } catch (IOException e) { // NOPMD.ExceptionAsFlowControl
+                TestStackTraceUtil.printStackTrace(e);
               }
             }
           }.start();
 
           long time = System.currentTimeMillis();
 
-          DatagramPacket dp = new DatagramPacket(new byte[PAYLOAD_SIZE], PAYLOAD_SIZE);
+          DatagramPacket dp = new DatagramPacket(new byte[PAYLOAD_SIZE_DATAGRAM],
+              PAYLOAD_SIZE_DATAGRAM);
           byte[] data = dp.getData();
           for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
@@ -373,7 +385,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
               e.addSuppressed(new Exception(dp.getSocketAddress().toString()));
               throw e;
             }
-            sentTotal += PAYLOAD_SIZE;
+            sentTotal += PAYLOAD_SIZE_DATAGRAM;
           }
           time = System.currentTimeMillis() - time;
           keepRunning.set(false);
@@ -382,14 +394,14 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
           long readTotal0 = readTotal.get();
 
           reportResults(stbTestType() + " DatagramPacket", ((1000f * readTotal0 / time) / 1000f
-              / 1000f) + " MB/s for payload size " + PAYLOAD_SIZE + "; " + String.format(
-                  Locale.ENGLISH, "%.1f%% packet loss", 100 * (1 - (readTotal0
+              / 1000f) + " MB/s for datagram payload size " + PAYLOAD_SIZE_DATAGRAM + "; " + String
+                  .format(Locale.ENGLISH, "%.1f%% packet loss", 100 * (1 - (readTotal0
                       / (float) sentTotal))));
         }
       });
     } catch (JUnitException e) {
       // Ignore timeout failure (this is a throughput test only)
-      e.printStackTrace();
+      TestStackTraceUtil.printStackTrace(e);
     }
   }
 
@@ -397,12 +409,18 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
   @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_UNIX_DATAGRAMS)
   public void testDatagramChannel() throws Exception {
     try {
-      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
         testDatagramChannel(false, true);
       });
+    } catch (AssertionFailedError e) {
+      if (TestUtil.isHaikuOS()) {
+        throw TestUtil.haikuBug18535(e);
+      } else {
+        throw e;
+      }
     } catch (JUnitException e) {
       // Ignore timeout failure (this is a throughput test only)
-      e.printStackTrace();
+      TestStackTraceUtil.printStackTrace(e);
     }
   }
 
@@ -410,12 +428,18 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
   @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_UNIX_DATAGRAMS)
   public void testDatagramChannelDirect() throws Exception {
     try {
-      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
         testDatagramChannel(true, true);
       });
+    } catch (AssertionFailedError e) {
+      if (TestUtil.isHaikuOS()) {
+        throw TestUtil.haikuBug18535(e);
+      } else {
+        throw e;
+      }
     } catch (JUnitException e) {
       // Ignore timeout failure (this is a throughput test only)
-      e.printStackTrace();
+      TestStackTraceUtil.printStackTrace(e);
     }
   }
 
@@ -423,12 +447,12 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
   @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_UNIX_DATAGRAMS)
   public void testDatagramChannelNonBlocking() throws Exception {
     try {
-      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
         testDatagramChannel(false, false);
       });
     } catch (JUnitException e) {
       // Ignore timeout failure (this is a throughput test only)
-      e.printStackTrace();
+      TestStackTraceUtil.printStackTrace(e);
     }
   }
 
@@ -436,12 +460,12 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
   @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_UNIX_DATAGRAMS)
   public void testDatagramChannelNonBlockingDirect() throws Exception {
     try {
-      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + 5), () -> {
+      assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
         testDatagramChannel(true, false);
       });
     } catch (JUnitException e) {
       // Ignore timeout failure (this is a throughput test only)
-      e.printStackTrace();
+      TestStackTraceUtil.printStackTrace(e);
     }
   }
 
@@ -483,14 +507,14 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
     // ds.setOption(StandardSocketOptions.SO_RCVBUF, (PAYLOAD_SIZE + 82));
 
     AtomicBoolean keepRunning = new AtomicBoolean(true);
-    Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+    TestAsyncUtil.runAsyncDelayed(NUM_MILLISECONDS, TimeUnit.MILLISECONDS, () -> {
       keepRunning.set(false);
       try {
         ds.close();
       } catch (IOException e) {
         // ignore
       }
-    }, NUM_MILLISECONDS, TimeUnit.MILLISECONDS);
+    });
 
     AtomicLong readTotal = new AtomicLong();
     long sentTotal = 0;
@@ -502,8 +526,8 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
       new Thread() {
         @Override
         public void run() {
-          final ByteBuffer receiveBuffer = direct ? ByteBuffer.allocateDirect(PAYLOAD_SIZE)
-              : ByteBuffer.allocate(PAYLOAD_SIZE);
+          final ByteBuffer receiveBuffer = direct ? ByteBuffer.allocateDirect(PAYLOAD_SIZE_DATAGRAM)
+              : ByteBuffer.allocate(PAYLOAD_SIZE_DATAGRAM);
           try {
             SelectionKey key;
             if (readSelector != null) {
@@ -528,7 +552,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
               }
               read = ds.read(receiveBuffer);
               receiveBuffer.rewind();
-              if (read != PAYLOAD_SIZE && read != 0 && read != -1) {
+              if (read != PAYLOAD_SIZE_DATAGRAM && read != 0 && read != -1) {
                 throw new IOException("Unexpected response length: " + read);
               }
               readTotal.addAndGet(read);
@@ -541,7 +565,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
             } else {
               bytesRead.complete(readTotal.get());
             }
-          } catch (Exception e) {
+          } catch (Exception e) { // NOPMD.ExceptionAsFlowControl
             keepRunning.set(false);
             bytesRead.completeExceptionally(e);
           }
@@ -550,8 +574,8 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
 
       time = System.currentTimeMillis();
 
-      final ByteBuffer sendBuffer = direct ? ByteBuffer.allocateDirect(PAYLOAD_SIZE) : ByteBuffer
-          .allocate(PAYLOAD_SIZE);
+      final ByteBuffer sendBuffer = direct ? ByteBuffer.allocateDirect(PAYLOAD_SIZE_DATAGRAM)
+          : ByteBuffer.allocate(PAYLOAD_SIZE_DATAGRAM);
 
       try (AbstractSelector writeSelector = sp == null ? null : sp.openSelector()) { // NOPMD
         if (sp != null) {
@@ -576,11 +600,11 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
             }
           }
 
-          if (written != PAYLOAD_SIZE && written != 0) {
+          if (written != PAYLOAD_SIZE_DATAGRAM && written != 0) {
             throw new IOException("Unexpected written length: " + written);
           }
 
-          sentTotal += PAYLOAD_SIZE;
+          sentTotal += PAYLOAD_SIZE_DATAGRAM;
           sendBuffer.rewind();
         }
       } finally {
@@ -591,16 +615,21 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
     }
 
     try {
-      bytesRead.get(2, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      e.printStackTrace();
+      bytesRead.get(NUM_MILLISECONDS, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException e) {
+      if (NUM_SECONDS != 0) {
+        TestStackTraceUtil.printStackTrace(e);
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      TestStackTraceUtil.printStackTrace(e);
     }
 
     long readTotal0 = readTotal.get();
 
     reportResults(id + " direct=" + direct + ";blocking=" + blocking, ((1000f * readTotal0 / time)
-        / 1000f / 1000f) + " MB/s for payload size " + PAYLOAD_SIZE + "; " + String.format(
-            Locale.ENGLISH, "%.1f%% packet loss", 100 * (1 - (readTotal0 / (float) sentTotal))));
+        / 1000f / 1000f) + " MB/s for datagram payload size " + PAYLOAD_SIZE_DATAGRAM + "; "
+        + String.format(Locale.ENGLISH, "%.1f%% packet loss", 100 * (1 - (readTotal0
+            / (float) sentTotal))));
 
   }
 

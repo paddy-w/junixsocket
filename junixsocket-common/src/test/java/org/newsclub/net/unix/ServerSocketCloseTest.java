@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,10 @@ public abstract class ServerSocketCloseTest<A extends SocketAddress> extends Soc
 
         final CountDownLatch cdl = new CountDownLatch(numThreads);
 
+        @SuppressWarnings("all") // "resource"; only since Java 19 ThreadPoolExecutor is
+                                 // AutoCloseable
         ThreadPoolExecutor threadPool = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L,
-            TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+            TimeUnit.SECONDS, new SynchronousQueue<>());
         for (int i = 0; i < numThreads; i++) {
           threadPool.submit(new Runnable() {
 

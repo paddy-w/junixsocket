@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ import java.nio.channels.spi.SelectorProvider;
 import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -85,6 +85,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * This implementation should work with jetty version 9.4.12 or newer.
  */
 @ManagedObject
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class AFSocketServerConnector extends AbstractConnector {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractConnector.class);
 
@@ -143,6 +144,7 @@ public class AFSocketServerConnector extends AbstractConnector {
    * @param factories The Connection Factories to use.
    */
   @SuppressFBWarnings("EI_EXPOSE_REP2")
+  @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
   public AFSocketServerConnector(Server server, Executor executor, Scheduler scheduler,
       ByteBufferPool pool, int acceptors, int selectors, ConnectionFactory... factories) {
     super(server, executor, scheduler, pool, acceptors, factories.length > 0 ? factories
@@ -179,6 +181,7 @@ public class AFSocketServerConnector extends AbstractConnector {
    * @see #getListenSocketAddress()
    */
   @ManagedAttribute("The Unix-Domain path this connector listens to")
+  @Deprecated
   public Path getUnixDomainPath() {
     if (listenSocketAddress instanceof AFUNIXSocketAddress) {
       AFUNIXSocketAddress addr = (AFUNIXSocketAddress) listenSocketAddress;
@@ -202,6 +205,7 @@ public class AFSocketServerConnector extends AbstractConnector {
    * @deprecated Use {@link #setListenSocketAddress(AFSocketAddress)} instead.
    * @see #setListenSocketAddress(AFSocketAddress)
    */
+  @Deprecated
   public void setUnixDomainPath(Path unixDomainPath) {
     try {
       this.listenSocketAddress = AFUNIXSocketAddress.of(unixDomainPath);
@@ -343,7 +347,7 @@ public class AFSocketServerConnector extends AbstractConnector {
 
         if (takenOver && isMayStopServer()) {
           LOG.warn("Another server has taken over our address");
-          CompletableFuture.runAsync(this::checkServerStop);
+          ForkJoinPool.commonPool().execute(this::checkServerStop);
         }
         throw (ClosedByInterruptException) new ClosedByInterruptException().initCause(e);
       }

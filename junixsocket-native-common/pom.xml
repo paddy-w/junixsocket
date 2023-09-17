@@ -7,7 +7,7 @@
         <groupId>com.kohlschutter.junixsocket</groupId>
         <artifactId>junixsocket</artifactId>
         <!-- Update this manually after maven-release -->
-        <version>2.6.3-SNAPSHOT</version>
+        <version>2.7.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <name>junixsocket-native-common</name>
@@ -164,6 +164,17 @@
                     <scope>runtime</scope>
                     <optional>true</optional>
                 </dependency>
+                <!-- do NOT add Android libraries to native-common
+                <dependency>
+                    <groupId>com.kohlschutter.junixsocket</groupId>
+                    <artifactId>junixsocket-native</artifactId>
+                    <version>${project.version}</version>
+                    <type>nar</type>
+                    <classifier>aarch64-Android-clang-llvm-jni</classifier>
+                    <scope>runtime</scope>
+                    <optional>true</optional>
+                </dependency>
+                -->
                 <!--
           <dependency>
           <groupId>com.kohlschutter.junixsocket</groupId>

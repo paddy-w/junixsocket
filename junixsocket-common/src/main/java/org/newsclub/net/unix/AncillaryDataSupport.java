@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ package org.newsclub.net.unix;
 import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -38,10 +38,10 @@ final class AncillaryDataSupport implements Closeable {
       .ancillaryBufMinLen() : 0;
 
   private final Map<FileDescriptor, Integer> openReceivedFileDescriptors = Collections
-      .synchronizedMap(new HashMap<FileDescriptor, Integer>());
+      .synchronizedMap(new HashMap<>());
 
   private final List<FileDescriptor[]> receivedFileDescriptors = Collections.synchronizedList(
-      new LinkedList<FileDescriptor[]>());
+      new ArrayList<>());
 
   // referenced from native code
   private ByteBuffer ancillaryReceiveBuffer = EMPTY_BUFFER;
@@ -131,7 +131,12 @@ final class AncillaryDataSupport implements Closeable {
           openReceivedFileDescriptors.remove(fdesc);
         }
       };
-      NativeUnixSocket.attachCloseable(fdesc, cleanup);
+
+      try {
+        NativeUnixSocket.attachCloseable(fdesc, cleanup);
+      } catch (SocketException e) {
+        // ignore (cannot attach)
+      }
     }
 
     this.receivedFileDescriptors.add(descriptors);
@@ -193,10 +198,12 @@ final class AncillaryDataSupport implements Closeable {
   public void close() {
     synchronized (openReceivedFileDescriptors) {
       for (FileDescriptor desc : openReceivedFileDescriptors.keySet()) {
-        try {
-          NativeUnixSocket.close(desc);
-        } catch (Exception e) {
-          // ignore
+        if (desc.valid()) {
+          try {
+            NativeUnixSocket.close(desc);
+          } catch (Exception e) {
+            // ignore
+          }
         }
       }
     }

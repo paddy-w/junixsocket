@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -28,6 +29,8 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.spi.AbstractSelectableChannel;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.newsclub.net.unix.AFSelector.PollFd;
 
@@ -40,14 +43,16 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @author Christian Kohlschütter
  */
 final class NativeUnixSocket {
-  private static boolean loaded;
+  private static final CompletableFuture<Boolean> LOADED = new CompletableFuture<>();
 
   static final int DOMAIN_UNIX = 1;
   static final int DOMAIN_TIPC = 30;
   static final int DOMAIN_VSOCK = 40;
+  static final int DOMAIN_SYSTEM = 32;
 
   static final int SOCK_STREAM = 1;
   static final int SOCK_DGRAM = 2;
+  static final int SOCK_RAW = 3;
   static final int SOCK_RDM = 4;
   static final int SOCK_SEQPACKET = 5;
 
@@ -69,6 +74,7 @@ final class NativeUnixSocket {
   static final int SOCKETSTATUS_BOUND = 1;
   static final int SOCKETSTATUS_CONNECTED = 2;
 
+  @SuppressWarnings("StaticAssignmentOfThrowable" /* errorprone */)
   private static Throwable initError = null;
 
   @ExcludeFromCodeCoverageGeneratedReport(reason = "unreachable")
@@ -77,12 +83,15 @@ final class NativeUnixSocket {
   }
 
   static {
+    boolean loadSuccessful = false;
     try (NativeLibraryLoader nll = new NativeLibraryLoader()) {
       nll.loadLibrary();
-      loaded = true;
+      loadSuccessful = true;
     } catch (RuntimeException | Error e) {
       initError = e;
-      e.printStackTrace(); // keep
+      StackTraceUtil.printStackTraceSevere(e);
+    } finally {
+      setLoaded(loadSuccessful);
     }
 
     AFAddressFamily.registerAddressFamily("un", NativeUnixSocket.DOMAIN_UNIX,
@@ -91,10 +100,18 @@ final class NativeUnixSocket {
         "org.newsclub.net.unix.AFTIPCSocketAddress");
     AFAddressFamily.registerAddressFamily("vsock", NativeUnixSocket.DOMAIN_VSOCK,
         "org.newsclub.net.unix.AFVSOCKSocketAddress");
+    AFAddressFamily.registerAddressFamily("system", NativeUnixSocket.DOMAIN_SYSTEM,
+        "org.newsclub.net.unix.AFSYSTEMSocketAddress");
   }
 
   static boolean isLoaded() {
-    return loaded;
+    boolean loadSuccessful;
+    try {
+      loadSuccessful = LOADED.get();
+    } catch (InterruptedException | ExecutionException e) {
+      loadSuccessful = false;
+    }
+    return loadSuccessful;
   }
 
   static void ensureSupported() throws UnsupportedOperationException {
@@ -120,6 +137,11 @@ final class NativeUnixSocket {
     // in some environments, JNI FindClass won't find these classes unless we resolve them first
     tryResolveClass(AbstractSelectableChannel.class.getName());
     tryResolveClass("java.lang.ProcessBuilder$RedirectPipeImpl");
+    tryResolveClass(InetSocketAddress.class.getName());
+    tryResolveClass(OperationNotSupportedSocketException.class.getName());
+    tryResolveClass(InvalidArgumentSocketException.class.getName());
+    tryResolveClass(AddressUnavailableSocketException.class.getName());
+    tryResolveClass(NoSuchDeviceSocketException.class.getName());
   }
 
   private static void tryResolveClass(String className) {
@@ -135,6 +157,13 @@ final class NativeUnixSocket {
 
   @SuppressFBWarnings("THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION")
   static native void destroy() throws Exception;
+
+  /**
+   * Can be used to check (without side-effects) if the library has been loaded.
+   *
+   * Terminates normally if so; throws {@link UnsatisfiedLinkError} if not.
+   */
+  static native void noop();
 
   static native int capabilities();
 
@@ -232,7 +261,8 @@ final class NativeUnixSocket {
   static native void copyFileDescriptor(FileDescriptor source, FileDescriptor target)
       throws IOException;
 
-  static native void attachCloseable(FileDescriptor fdsec, Closeable closeable);
+  static native void attachCloseable(FileDescriptor fdsec, Closeable closeable)
+      throws SocketException;
 
   static native int maxAddressLength();
 
@@ -285,4 +315,10 @@ final class NativeUnixSocket {
   static native int sockTypeToNative(int type) throws IOException;
 
   static native int vsockGetLocalCID() throws IOException;
+
+  static native int systemResolveCtlId(FileDescriptor fd, String ctlName) throws IOException;
+
+  static void setLoaded(boolean successful) {
+    LOADED.complete(successful);
+  }
 }

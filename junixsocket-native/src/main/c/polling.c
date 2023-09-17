@@ -355,8 +355,15 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_poll
     jintArray ropsObj = (*env)->GetObjectField(env, pollFdObj, fieldID_rops);
 
     struct pollfd* pollFd = calloc(nfds, sizeof(struct pollfd));
+    if(pollFd == NULL) {
+        return 0;
+    }
 
     jint *buf = calloc(nfds, sizeof(jint));
+    if(buf == NULL) {
+        free(pollFd);
+        return 0;
+    }
 
     (*env)->GetIntArrayRegion(env, opsObj, 0, nfds, buf);
     for(int i=0; i<nfds;i++) {
@@ -372,6 +379,13 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_poll
             pfd->events = 0;
         }
 }
+
+#if __TOS_MVS__
+    if(timeout == -1) {
+        // polling on datagram sockets hangs if we don't set a short timeout on z/OS
+        timeout = 1000;
+    }
+#endif
 
 #if defined(_OS400)
     if(timeout == -1) {

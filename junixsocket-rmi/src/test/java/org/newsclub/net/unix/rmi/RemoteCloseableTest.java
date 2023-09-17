@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class RemoteCloseableTest extends TestBase {
 
     try (RemoteCloseable<? extends IsCloseable> remoteCloseable = svc.remoteCloseable(
         IsCloseable.class)) {
-      try (IsCloseable testCloseable = remoteCloseable.get()) {
+      try (IsCloseable unused = remoteCloseable.get()) {
         assertEquals(0, svc.remoteCloseableThingNumberOfCloseCalls(IsCloseable.class));
         // forcibly calling close here unexports the RemoteCloseable
         remoteCloseable.close();
@@ -73,7 +73,7 @@ public class RemoteCloseableTest extends TestBase {
 
     try (RemoteCloseable<? extends IsCloseable> remoteCloseable = svc.remoteCloseable(
         IsCloseable.class)) {
-      try (IsCloseable testCloseable = remoteCloseable.get()) {
+      try (IsCloseable unused = remoteCloseable.get()) {
         // no exception thrown
       }
     }
@@ -109,8 +109,7 @@ public class RemoteCloseableTest extends TestBase {
     }
     assertEquals(0, svc.remoteCloseableThingNumberOfCloseCalls(NotCloseable.class));
 
-    try (RemoteCloseable<? extends NotCloseable> remoteCloseable = svc.remoteCloseable(
-        NotCloseable.class)) {
+    try (RemoteCloseable<? extends NotCloseable> unused = svc.remoteCloseable(NotCloseable.class)) {
       // no exception thrown
     }
 

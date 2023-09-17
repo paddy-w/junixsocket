@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.newsclub.net.unix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,6 +95,26 @@ public class FileDescriptorCastTest {
     } catch (AssertionFailedError e) {
       // on Linux, we timeout, and that's OK, too.
     }
+  }
+
+  @Test
+  public void testCastAsInteger() throws Exception {
+    assertNotEquals(-1, FileDescriptorCast.using(FileDescriptor.in).as(Integer.class));
+    assertNotEquals(-1, FileDescriptorCast.using(FileDescriptor.out).as(Integer.class));
+    assertNotEquals(-1, FileDescriptorCast.using(FileDescriptor.err).as(Integer.class));
+
+    assertThrows(IOException.class, () -> FileDescriptorCast.using(new FileDescriptor()).as(
+        Integer.class));
+  }
+
+  @Test
+  @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_UNSAFE)
+  public void testUnsafeCast() throws Exception {
+    assertEquals(1, FileDescriptorCast.unsafeUsing(1).as(Integer.class));
+    assertEquals(-2, FileDescriptorCast.unsafeUsing(-2).as(Integer.class));
+    assertSame(FileDescriptor.out, FileDescriptorCast.unsafeUsing(FileDescriptorCast.using(
+        FileDescriptor.out).as(Integer.class)).as(FileDescriptor.class));
+    assertThrows(IOException.class, () -> FileDescriptorCast.unsafeUsing(-1).as(Integer.class));
   }
 
   @Test

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,9 @@ import org.eclipse.jdt.annotation.Nullable;
  * @author Christian Kohlschütter
  * @param <A> The supported address type.
  */
-@SuppressWarnings({"PMD.CyclomaticComplexity"})
+@SuppressWarnings({
+    "PMD.CyclomaticComplexity", "PMD.CouplingBetweenObjects",
+    "UnsafeFinalization" /* errorprone */})
 public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImplShim {
   private static final int SHUT_RD = 0;
   private static final int SHUT_WR = 1;
@@ -97,7 +99,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
       pendingAccepts.decrementAndGet();
     }
 
-    protected void createSocket(FileDescriptor fdTarget, AFSocketType type) throws IOException {
+    void createSocket(FileDescriptor fdTarget, AFSocketType type) throws IOException {
       NativeUnixSocket.createSocket(fdTarget, addressFamily().getDomain(), type.getId());
     }
 
@@ -153,10 +155,8 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
    *
    * @param addressFamily The address family.
    * @param fdObj The socket's {@link FileDescriptor}.
-   * @throws SocketException on error.
    */
-  protected AFSocketImpl(AFAddressFamily<@NonNull A> addressFamily, FileDescriptor fdObj)
-      throws SocketException {
+  protected AFSocketImpl(AFAddressFamily<@NonNull A> addressFamily, FileDescriptor fdObj) {
     super();
     this.addressFamily = addressFamily;
     this.address = InetAddress.getLoopbackAddress();
@@ -231,6 +231,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     accept0(socket);
   }
 
+  @SuppressWarnings("Finally" /* errorprone */)
   final boolean accept0(SocketImpl socket) throws IOException {
     FileDescriptor fdesc = core.validFdOrException();
     if (isClosed()) {
@@ -262,7 +263,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
             .get())) {
           return false;
         }
-      } catch (SocketException e) {
+      } catch (SocketException e) { // NOPMD.ExceptionAsFlowControl
         caught = e;
       } finally { // NOPMD.DoNotThrowExceptionInFinally
         if (!isBound() || isClosed()) {
@@ -376,7 +377,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     if (addr == AFSocketAddress.INTERNAL_DUMMY_CONNECT) { // NOPMD
       this.connected.set(true);
       return true;
-    } else if (addr == AFSocketAddress.INTERNAL_DUMMY_CONNECT) { // NOPMD)
+    } else if (addr == AFSocketAddress.INTERNAL_DUMMY_DONT_CONNECT) { // NOPMD)
       return false;
     }
 
@@ -398,7 +399,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
         if (ignoreSpuriousTimeout) {
           Object o = getOption(SocketOptions.SO_TIMEOUT);
           if (o instanceof Integer) {
-            if (((Integer) o).intValue() == 0) {
+            if (((Integer) o) == 0) {
               ignoreSpuriousTimeout = false;
               continue;
             }
@@ -425,7 +426,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     }
     if (fd.valid()) {
       if (createType != null) {
-        if (createType.booleanValue() != stream) {
+        if (createType.booleanValue() != stream) { // NOPMD.UnnecessaryBoxing
           throw new IllegalStateException("Already created with different mode");
         }
       } else {
@@ -664,7 +665,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
           new NullPointerException());
     }
     try {
-      return ((Boolean) value).booleanValue() ? 1 : 0;
+      return ((Boolean) value) ? 1 : 0;
     } catch (final ClassCastException e) {
       throw (SocketException) new SocketException("Unsupported value: " + value).initCause(e);
     }
@@ -964,7 +965,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   @Override
   protected <T> void setOption(SocketOption<T> name, T value) throws IOException {
     if (name instanceof AFSocketOption<?>) {
-      ((AFSocketImpl<?>) this).getCore().setOption((AFSocketOption<T>) name, value);
+      getCore().setOption((AFSocketOption<T>) name, value);
       return;
     }
     Integer optionId = SocketOptionsMapper.resolve(name);
@@ -979,7 +980,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   @Override
   protected <T> T getOption(SocketOption<T> name) throws IOException {
     if (name instanceof AFSocketOption<?>) {
-      return ((AFSocketImpl<?>) this).getCore().getOption((AFSocketOption<T>) name);
+      return getCore().getOption((AFSocketOption<T>) name);
     }
     Integer optionId = SocketOptionsMapper.resolve(name);
     if (optionId == null) {

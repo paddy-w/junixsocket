@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.newsclub.net.unix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -30,6 +29,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
@@ -87,14 +87,25 @@ public abstract class SocketPairTest<A extends SocketAddress> extends SocketTest
     bb2.flip();
     assertEquals(0x04030201, bb2.getInt());
 
+    // Haiku OS uses "0x00 AA BB CC DD EE" as socket addresses for internal socket IDs
+
     if (getServerBindAddress() instanceof AFUNIXSocketAddress) {
-      assertNull(pair.getFirst().getLocalAddress());
-      assertNull(pair.getSecond().getLocalAddress());
-      assertNull(pair.getFirst().getRemoteAddress());
-      assertNull(pair.getSecond().getRemoteAddress());
-    } else {
+      if (pair.getFirst().getLocalAddress() == null && pair.getSecond().getLocalAddress() == null
+          && pair.getFirst().getRemoteAddress() == null && pair.getSecond()
+              .getRemoteAddress() == null) {
+        // on many systems, socketpair with AF_UNIX returns all-null addresses
+        return;
+      }
+    }
+    try {
       assertCovered(pair.getFirst().getLocalAddress(), pair.getSecond().getRemoteAddress());
       assertCovered(pair.getSecond().getLocalAddress(), pair.getFirst().getRemoteAddress());
+    } catch (AssertionFailedError e) {
+      if (TestUtil.isHaikuOS()) {
+        throw TestUtil.haikuBug18534(e);
+      } else {
+        throw e;
+      }
     }
   }
 
@@ -130,14 +141,25 @@ public abstract class SocketPairTest<A extends SocketAddress> extends SocketTest
     bb2.flip();
     assertEquals(0x04030201, bb2.getInt());
 
+    // NOTE: Haiku OS uses "0x00 AA BB CC DD EE" as socket addresses for internal socket IDs
+
     if (getServerBindAddress() instanceof AFUNIXSocketAddress) {
-      assertNull(pair.getFirst().getLocalAddress());
-      assertNull(pair.getSecond().getLocalAddress());
-      assertNull(pair.getFirst().getRemoteAddress());
-      assertNull(pair.getSecond().getRemoteAddress());
-    } else {
+      if (pair.getFirst().getLocalAddress() == null && pair.getSecond().getLocalAddress() == null
+          && pair.getFirst().getRemoteAddress() == null && pair.getSecond()
+              .getRemoteAddress() == null) {
+        // on many systems, socketpair with AF_UNIX returns all-null addresses
+        return;
+      }
+    }
+    try {
       assertCovered(pair.getFirst().getLocalAddress(), pair.getSecond().getRemoteAddress());
       assertCovered(pair.getSecond().getLocalAddress(), pair.getFirst().getRemoteAddress());
+    } catch (AssertionFailedError e) {
+      if (TestUtil.isHaikuOS()) {
+        throw TestUtil.haikuBug18534(e);
+      } else {
+        throw e;
+      }
     }
   }
 }

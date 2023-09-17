@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.net.Socket;
 import java.net.SocketException;
 
 class AFUNIXSocketImpl extends AFSocketImpl<AFUNIXSocketAddress> {
-  protected AFUNIXSocketImpl(FileDescriptor fdObj) throws SocketException {
+  protected AFUNIXSocketImpl(FileDescriptor fdObj) {
     super(AFUNIXSocketAddress.AF_UNIX, fdObj);
   }
 
@@ -34,7 +34,7 @@ class AFUNIXSocketImpl extends AFSocketImpl<AFUNIXSocketAddress> {
    * {@link Socket#setTcpNoDelay(boolean)}.
    */
   static final class Lenient extends AFUNIXSocketImpl {
-    protected Lenient(FileDescriptor fdObj) throws SocketException {
+    Lenient(FileDescriptor fdObj) throws SocketException {
       super(fdObj);
     }
 

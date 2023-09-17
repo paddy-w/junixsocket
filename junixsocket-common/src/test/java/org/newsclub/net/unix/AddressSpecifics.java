@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ import java.nio.channels.spi.SelectorProvider;
  * @see SocketTestBase
  */
 public interface AddressSpecifics<A extends SocketAddress> {
+
+  String addressFamilyString();
 
   Socket newStrictSocket() throws IOException;
 
@@ -104,8 +106,10 @@ public interface AddressSpecifics<A extends SocketAddress> {
     ServerSocket server = newServerSocketBindOn(address);
     Socket client = connectTo(server.getLocalSocketAddress());
     final Socket socket = server.accept();
-    return new CloseablePair<AFSocket<?>>((AFSocket<?>) client, (AFSocket<?>) socket, server);
+    return new CloseablePair<>((AFSocket<?>) client, (AFSocket<?>) socket, server);
   }
 
   DatagramChannel newDatagramChannel() throws IOException;
+
+  String summaryImportantMessage(String message);
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class AFUNIXRMISocketFactory extends AFRMISocketFactory {
   private String socketPrefix;
   private String socketSuffix;
 
-  private final Map<HostAndPort, AFUNIXSocketCredentials> credentials = new HashMap<>();
+  private final transient Map<HostAndPort, AFUNIXSocketCredentials> credentials = new HashMap<>();
 
   /**
    * Constructor required per definition.
@@ -222,7 +222,9 @@ public class AFUNIXRMISocketFactory extends AFRMISocketFactory {
 
   @Override
   public void close() throws IOException {
-    credentials.clear();
+    synchronized (credentials) {
+      credentials.clear();
+    }
     super.close();
   }
 

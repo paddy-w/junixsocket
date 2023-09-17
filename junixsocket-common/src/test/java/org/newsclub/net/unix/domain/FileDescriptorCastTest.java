@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,8 @@ import org.newsclub.net.unix.AFUNIXSocketChannel;
 import org.newsclub.net.unix.AFUNIXSocketPair;
 import org.newsclub.net.unix.FileDescriptorCast;
 import org.newsclub.net.unix.StdinSocketApp;
+import org.newsclub.net.unix.TestUtil;
+import org.opentest4j.AssertionFailedError;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.ForkedVM;
@@ -83,8 +86,17 @@ public class FileDescriptorCastTest {
     } else {
       Socket sock2 = FileDescriptorCast.using(sock2fd).as(Socket.class);
       assertEquals(AFUNIXSocket.class, sock2.getClass());
-      assertTrue(sock2.isConnected());
+
       assertEquals(sock2fd, ((AFUNIXSocket) sock2).getFileDescriptor());
+      try {
+        assertTrue(sock2.isConnected());
+      } catch (AssertionFailedError e) {
+        if (TestUtil.isHaikuOS()) {
+          throw TestUtil.haikuBug18534(e);
+        } else {
+          throw e;
+        }
+      }
     }
   }
 
@@ -99,7 +111,16 @@ public class FileDescriptorCastTest {
 
     AFUNIXSocketChannel sock2chan = FileDescriptorCast.using(sock2fd).as(AFUNIXSocketChannel.class);
     assertEquals(sock2fd, sock2chan.getFileDescriptor());
-    assertTrue(sock2chan.isConnected());
+
+    try {
+      assertTrue(sock2chan.isConnected());
+    } catch (AssertionFailedError e) {
+      if (TestUtil.isHaikuOS()) {
+        throw TestUtil.haikuBug18534(e);
+      } else {
+        throw e;
+      }
+    }
 
     ByteBuffer bb = ByteBuffer.allocate(32);
     bb.putInt(0x12345678);
@@ -167,9 +188,17 @@ public class FileDescriptorCastTest {
         AFUNIXSocket sock = AFUNIXSocket.connectTo(serverAddress)) {
       AFUNIXSocket sock1 = FileDescriptorCast.using(sock.getFileDescriptor()).as(
           AFUNIXSocket.class);
-      assertEquals(sock.isBound(), sock1.isBound());
-      assertEquals(sock.isConnected(), sock1.isConnected());
-      assertTrue(sock1.isConnected());
+      try {
+        assertEquals(sock.isBound(), sock1.isBound());
+        assertEquals(sock.isConnected(), sock1.isConnected());
+        assertTrue(sock1.isConnected());
+      } catch (AssertionFailedError e) {
+        if (TestUtil.isHaikuOS()) {
+          throw TestUtil.haikuBug18534(e);
+        } else {
+          throw e;
+        }
+      }
       assertEquals(sock.getRemoteSocketAddress(), sock1.getRemoteSocketAddress());
       assertEquals(ass.getLocalSocketAddress(), sock.getRemoteSocketAddress());
 
@@ -220,33 +249,55 @@ public class FileDescriptorCastTest {
       dc1c.connect(addr2);
       dc2c.connect(addr1);
       assertTrue(dc1c.isConnected());
-      assertTrue(dc1.isConnected());
-
-      assertEquals(dc1.getLocalAddress(), dc2c.getRemoteAddress());
-      assertEquals(dc1.getRemoteAddress(), dc2c.getLocalAddress());
-      assertEquals(dc1c.getLocalAddress(), dc2.getRemoteAddress());
-      assertEquals(dc1c.getRemoteAddress(), dc2.getLocalAddress());
 
       assertEquals(4, dc1c.write(bb));
       bb.clear();
       assertEquals(4, dc2c.read(bb));
       bb.flip();
       assertEquals(1234, bb.getInt());
+
+      try {
+        assertTrue(dc1.isConnected());
+        assertEquals(dc1.getLocalAddress(), dc2c.getRemoteAddress());
+        assertEquals(dc1.getRemoteAddress(), dc2c.getLocalAddress());
+        assertEquals(dc1c.getLocalAddress(), dc2.getRemoteAddress());
+        assertEquals(dc1c.getRemoteAddress(), dc2.getLocalAddress());
+      } catch (AssertionFailedError e) {
+        if (TestUtil.isHaikuOS()) {
+          throw TestUtil.haikuBug18534(e);
+        } else {
+          throw e;
+        }
+      }
     }
   }
 
   @Test
+  @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
   public void testSocketPorts() throws Exception {
     AFUNIXSocketAddress addr = AFUNIXSocketAddress.ofNewTempPath(123);
     try (AFUNIXServerSocket ass = AFUNIXServerSocket.bindOn(addr)) {
       assertEquals(123, ass.getLocalPort());
 
+      @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
       AFUNIXServerSocket ass1 = FileDescriptorCast.using(ass.getFileDescriptor()).withLocalPort(123)
           .as(AFUNIXServerSocket.class);
       assertEquals(123, ass.getLocalPort());
 
       AFUNIXSocket socket = AFUNIXSocket.connectTo(addr);
-      assertEquals(123, socket.getRemoteSocketAddress().getPort());
+      AFUNIXSocketAddress rsa = socket.getRemoteSocketAddress();
+
+      try {
+        Objects.requireNonNull(rsa);
+      } catch (NullPointerException e) {
+        if (TestUtil.isHaikuOS()) {
+          throw TestUtil.haikuBug18534(e);
+        } else {
+          throw e;
+        }
+      }
+
+      assertEquals(123, rsa.getPort());
 
       AFUNIXSocket socket1 = FileDescriptorCast.using(socket.getFileDescriptor()).withRemotePort(
           123).as(AFUNIXSocket.class);
@@ -285,7 +336,15 @@ public class FileDescriptorCastTest {
       dc1.bind(addr);
       dc2.connect(addr);
 
-      assertEquals(dc1.getLocalAddress(), dc2.getRemoteAddress());
+      try {
+        assertEquals(dc1.getLocalAddress(), dc2.getRemoteAddress());
+      } catch (AssertionFailedError e) {
+        if (TestUtil.isHaikuOS() && dc2.getRemoteAddress() == null) {
+          throw TestUtil.haikuBug18534(e);
+        } else {
+          throw e;
+        }
+      }
 
       assertEquals(123, getPort(dc1.getLocalAddress()));
 
@@ -308,7 +367,13 @@ public class FileDescriptorCastTest {
             .withRemotePort(123).as(AFUNIXDatagramChannel.class);
 
         assertEquals(123, getPort(dc1c.getLocalAddress()));
-        assertEquals(123, getPort(dc2c.getRemoteAddress()));
+        int remotePort = getPort(dc2c.getRemoteAddress());
+        if (remotePort == -1) {
+          // that's acceptable, too (seen on z/OS)
+          assertNull(dc2c.getRemoteAddress());
+        } else {
+          assertEquals(123, remotePort);
+        }
       }
     }
   }

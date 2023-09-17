@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
  */
 package org.newsclub.net.mysql;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -38,7 +37,6 @@ import com.mysql.cj.protocol.SocketFactory;
  */
 public class AFUNIXDatabaseSocketFactoryCJ implements SocketFactory {
   private AFUNIXSocket rawSocket;
-  private Socket sslSocket;
 
   /**
    * Creates a new instance.
@@ -46,11 +44,11 @@ public class AFUNIXDatabaseSocketFactoryCJ implements SocketFactory {
   public AFUNIXDatabaseSocketFactoryCJ() {
   }
 
-  @SuppressWarnings({"unchecked", "exports"})
+  @SuppressWarnings({"unchecked"})
   @SuppressFBWarnings("EI_EXPOSE_REP")
   @Override
-  public <T extends Closeable> T connect(String hostname, int portNumber, PropertySet props,
-      int loginTimeout) throws IOException {
+  public Socket connect(String hostname, int portNumber, PropertySet props, int loginTimeout)
+      throws IOException {
     // Adjust the path to your MySQL socket by setting the
     // "junixsocket.file" property
     // If no socket path is given, use the default: /tmp/mysql.sock
@@ -64,17 +62,15 @@ public class AFUNIXDatabaseSocketFactoryCJ implements SocketFactory {
     final File socketFile = new File(sock);
 
     this.rawSocket = AFUNIXSocket.connectTo(AFUNIXSocketAddress.of(socketFile));
-    this.sslSocket = rawSocket;
-    return (T) rawSocket;
+    return rawSocket;
   }
 
-  @SuppressWarnings({"unchecked", "exports"})
+  @SuppressWarnings({"unchecked"})
   @SuppressFBWarnings("EI_EXPOSE_REP")
   @Override
-  public <T extends Closeable> T performTlsHandshake(SocketConnection socketConnection,
-      ServerSession serverSession) throws IOException {
-    this.sslSocket = ExportControlled.performTlsHandshake(this.rawSocket, socketConnection,
+  public Socket performTlsHandshake(SocketConnection socketConnection, ServerSession serverSession)
+      throws IOException {
+    return ExportControlled.performTlsHandshake(this.rawSocket, socketConnection,
         serverSession == null ? null : serverSession.getServerVersion(), null);
-    return (T) this.sslSocket;
   }
 }

@@ -23,24 +23,31 @@
 
 void handleFieldNotFound(JNIEnv *env, jobject instance, char *fieldName)
 {
+    (*env)->ExceptionClear(env);
 
     jmethodID classMethodId = (*env)->GetMethodID(env,
                                                   (*env)->GetObjectClass(env, instance), "getClass",
                                                   "()Ljava/lang/Class;");
     jobject classObject = (*env)->CallObjectMethod(env, instance,
                                                    classMethodId);
+    (*env)->ExceptionClear(env);
 
     jmethodID methodId = (*env)->GetMethodID(env,
-                                             (*env)->GetObjectClass(env, classObject), "getSimpleName",
+                                             (*env)->GetObjectClass(env, classObject), "getName",
                                              "()Ljava/lang/String;");
     jstring className = (jstring)(*env)->CallObjectMethod(env, classObject,
                                                           methodId);
+    if ((*env)->ExceptionCheck(env)) {
+        return;
+    }
+
     const char* classNameStr = (*env)->GetStringUTFChars(env, className, NULL);
     if(classNameStr == NULL) {
         return; // OOME
     }
 
 #define handleFieldNotFound_error_message_template "Cannot find '%s' in class %s"
+
     size_t buflen = strlen(handleFieldNotFound_error_message_template) + strlen(fieldName) + strlen(classNameStr);
     char *message = calloc(1, buflen);
     CK_IGNORE_USED_BUT_MARKED_UNUSED_BEGIN
@@ -68,7 +75,10 @@ void callObjectSetter(JNIEnv *env, jobject instance, char *methodName,
     }
 
     __attribute__((aligned(8))) jobject array[] = {value};
-    (*env)->CallObjectMethodA(env, instance, methodId, (jvalue*)array);
+    (*env)->CallVoidMethodA(env, instance, methodId, (jvalue*)array);
+    if ((*env)->ExceptionCheck(env)) {
+        return;
+    }
 }
 
 void setObjectFieldValue(JNIEnv *env, jobject instance, char *fieldName,

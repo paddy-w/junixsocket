@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,5 +124,15 @@ public final class AFTIPCAddressSpecifics implements AddressSpecifics<AFTIPCSock
   public CloseablePair<? extends Socket> newInterconnectedSockets() throws IOException {
     CloseablePair<? extends SocketChannel> sp = newSocketPair();
     return new CloseablePair<>(sp.getFirst().socket(), sp.getSecond().socket());
+  }
+
+  @Override
+  public String addressFamilyString() {
+    return "AF_TIPC";
+  }
+
+  @Override
+  public String summaryImportantMessage(String message) {
+    return message;
   }
 }

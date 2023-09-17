@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @param <A> The concrete {@link AFSocketAddress} that is supported by this type.
  * @author Christian Kohlschütter
  */
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public abstract class AFSocket<A extends AFSocketAddress> extends Socket implements AFSomeSocket,
     AFSocketExtensions {
   static final String PROP_LIBRARY_DISABLE_CAPABILITY_PREFIX =
@@ -47,13 +48,15 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
   @SuppressWarnings("PMD.MutableStaticState")
   static String loadedLibrary; // set by NativeLibraryLoader
 
-  private static final int CAPABILITIES = initCapabilities();
+  private static Integer capabilitiesValue = null;
 
   private final AFSocketImpl<A> impl;
 
   private final AFSocketAddressFromHostname<A> afh;
   private final Closeables closeables = new Closeables();
   private final AtomicBoolean created = new AtomicBoolean(false);
+
+  @SuppressWarnings("this-escape")
   private final AFSocketChannel<A> channel = newChannel();
 
   private @Nullable SocketAddressFilter connectFilter;
@@ -332,6 +335,11 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
    * @see #supports(AFSocketCapability)
    */
   public static final String getVersion() {
+    String v = BuildProperties.getBuildProperties().get("git.build.version");
+    if (v != null && !v.startsWith("$")) {
+      return v;
+    }
+
     try {
       return NativeLibraryLoader.getJunixsocketVersion();
     } catch (IOException e) {
@@ -371,6 +379,11 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
     impl.ensureAncillaryReceiveBufferSize(minSize);
   }
 
+  private static boolean isCapDisabled(AFSocketCapability cap) {
+    return Boolean.parseBoolean(System.getProperty(PROP_LIBRARY_DISABLE_CAPABILITY_PREFIX + cap
+        .name(), "false"));
+  }
+
   private static int initCapabilities() {
     if (!isSupported()) {
       return 0;
@@ -392,9 +405,11 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
     }
   }
 
-  private static boolean isCapDisabled(AFSocketCapability cap) {
-    return Boolean.valueOf(System.getProperty(PROP_LIBRARY_DISABLE_CAPABILITY_PREFIX + cap.name(),
-        "false"));
+  private static synchronized int capabilities() {
+    if (capabilitiesValue == null) {
+      capabilitiesValue = initCapabilities();
+    }
+    return capabilitiesValue;
   }
 
   /**
@@ -412,7 +427,7 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
    */
   @Deprecated
   public static final boolean supports(AFUNIXSocketCapability capability) {
-    return (CAPABILITIES & capability.getBitmask()) != 0;
+    return (capabilities() & capability.getBitmask()) != 0;
   }
 
   /**
@@ -426,7 +441,22 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
    * @return true if supported.
    */
   public static final boolean supports(AFSocketCapability capability) {
-    return (CAPABILITIES & capability.getBitmask()) != 0;
+    return (capabilities() & capability.getBitmask()) != 0;
+  }
+
+  /**
+   * Checks if the current environment (system platform, native library, etc.) supports "unsafe"
+   * operations (as controlled via the {@link AFSocketCapability#CAPABILITY_UNSAFE} capability).
+   *
+   * If supported, the method returns normally. If not supported, an {@link IOException} is thrown.
+   *
+   * @throws IOException if "unsafe" operations are not supported.
+   * @see Unsafe
+   */
+  public static final void ensureUnsafeSupported() throws IOException {
+    if (!AFSocket.supports(AFSocketCapability.CAPABILITY_UNSAFE)) {
+      throw new IOException("Unsafe operations are not supported in this environment");
+    }
   }
 
   @Override

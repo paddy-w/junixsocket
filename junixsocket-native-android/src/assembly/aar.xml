@@ -1,0 +1,51 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+  <id>aar</id>
+
+  <formats>
+    <format>zip</format>
+  </formats>
+
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <includeSiteDirectory>false</includeSiteDirectory>
+
+  <fileSets>
+    <fileSet>
+      <directory>${project.basedir}/src/aar</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>*</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <outputDirectory>res</outputDirectory>
+      <excludes>
+        <exclude>**/*</exclude>
+      </excludes>
+    </fileSet>
+  </fileSets>
+
+  <files>
+    <file>
+      <source>${project.build.directory}/lib/aarch64-Android-clang/jni/libjunixsocket-native-${project.version}.so</source>
+      <outputDirectory>jni/arm64-v8a</outputDirectory>
+      <destName>libjunixsocket-native.so</destName>
+    </file>
+    <file>
+      <source>${project.build.directory}/lib/x86_64-Android-clang/jni/libjunixsocket-native-${project.version}.so</source>
+      <outputDirectory>jni/x86_64</outputDirectory>
+      <destName>libjunixsocket-native.so</destName>
+    </file>
+    <file>
+      <source>${project.build.directory}/lib/i686-Android-clang/jni/libjunixsocket-native-${project.version}.so</source>
+      <outputDirectory>jni/x86</outputDirectory>
+      <destName>libjunixsocket-native.so</destName>
+    </file>
+    <file>
+      <source>${project.build.directory}/lib/arm-Android-clang/jni/libjunixsocket-native-${project.version}.so</source>
+      <outputDirectory>jni/armeabi-v7a</outputDirectory>
+      <destName>libjunixsocket-native.so</destName>
+    </file>
+  </files>
+</assembly>

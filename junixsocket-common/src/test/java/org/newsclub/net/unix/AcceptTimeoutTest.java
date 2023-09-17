@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,7 +144,6 @@ public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketT
                   }
 
                   System.out.println("SocketTimeout, trying connect again (" + i + ")");
-                  // e.printStackTrace();
                   continue;
                 } catch (TestAbortedWithImportantMessageException e) {
                   runtimeExceptionCF.complete(e);
@@ -164,6 +163,14 @@ public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketT
           try (Socket socket = serverSock.accept();) {
             assertNotNull(socket);
             accepted.set(true);
+          } catch (SocketTimeoutException e) {
+            String msg = checkKnownBugAcceptTimeout(e);
+            if (msg == null) {
+              throw e;
+            } else {
+              throw new TestAbortedWithImportantMessageException(
+                  MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg), e);
+            }
           }
           time = System.currentTimeMillis() - time;
 
@@ -183,12 +190,23 @@ public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketT
       if (msg == null) {
         throw e;
       } else {
-        throw new TestAbortedWithImportantMessageException(MessageType.TEST_ABORTED_WITH_ISSUES,
-            msg, e);
+        throw new TestAbortedWithImportantMessageException(
+            MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg), e);
       }
     } finally {
       keepRunning.set(false);
     }
+  }
+
+  /**
+   * Subclasses may override this to tell that there is a known issue with "Accept timeout after
+   * delay" when a SocketTimeoutException was thrown.
+   *
+   * @param e The exception
+   * @return An explanation iff this should not cause a test failure but trigger "With issues".
+   */
+  protected String checkKnownBugAcceptTimeout(SocketTimeoutException e) {
+    return null;
   }
 
   /**
@@ -205,6 +223,10 @@ public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketT
   @Test
   public void testAcceptWithoutBindToService() throws Exception {
     ServerSocket ss = newServerSocket();
-    assertThrows(SocketException.class, () -> ss.accept());
+    assertThrows(SocketException.class, () -> {
+      try (Socket s = ss.accept()) {
+        fail("Should not be reached");
+      }
+    });
   }
 }

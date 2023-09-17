@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.newsclub.net.unix.selftest;
 
+import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,8 @@ public class SelftestProvider {
       new org.newsclub.net.unix.vsock.SelftestProvider();
   private final org.newsclub.net.unix.rmi.SelftestProvider rmiSelftests =
       new org.newsclub.net.unix.rmi.SelftestProvider();
+  private final org.newsclub.net.unix.darwin.SelftestProvider darwinSelftests =
+      new org.newsclub.net.unix.darwin.SelftestProvider();
 
   public Map<String, Class<?>[]> tests() throws Exception {
     Map<String, Class<?>[]> tests = new LinkedHashMap<>();
@@ -43,6 +46,7 @@ public class SelftestProvider {
     tests.putAll(tipcSelftests.tests());
     tests.putAll(vsockSelftests.tests());
     tests.putAll(rmiSelftests.tests());
+    tests.putAll(darwinSelftests.tests());
 
     return tests;
   }
@@ -53,6 +57,15 @@ public class SelftestProvider {
     set.addAll(tipcSelftests.modulesDisabledByDefault());
     set.addAll(vsockSelftests.modulesDisabledByDefault());
     set.addAll(rmiSelftests.modulesDisabledByDefault());
+    set.addAll(darwinSelftests.modulesDisabledByDefault());
     return set;
+  }
+
+  public void printAdditionalProperties(PrintWriter out) {
+    commonSelftests.printAdditionalProperties(out);
+    tipcSelftests.printAdditionalProperties(out);
+    vsockSelftests.printAdditionalProperties(out);
+    rmiSelftests.printAdditionalProperties(out);
+    darwinSelftests.printAdditionalProperties(out);
   }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.newsclub.net.unix.AFServerSocket;
 import org.newsclub.net.unix.AFSocketAddress;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.annotations.compiletime.SuppressLint;
 
 /**
  * A base implementation for a simple, multi-threaded socket server.
@@ -76,7 +77,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    *
    * @param serverSocket The server socket to use (must be bound).
    */
-  @SuppressWarnings({"null", "unchecked"})
+  @SuppressWarnings("all") // unchecked, null
   public SocketServer(V serverSocket) {
     this((A) Objects.requireNonNull(serverSocket).getLocalSocketAddress(), serverSocket);
   }
@@ -114,7 +115,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * @param maxConcurrentConnections The new maximum.
    */
   public void setMaxConcurrentConnections(int maxConcurrentConnections) {
-    if (connectionPool != null) {
+    if (isRunning()) {
       throw new IllegalStateException("Already configured");
     }
     this.maxConcurrentConnections = maxConcurrentConnections;
@@ -135,12 +136,10 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * @param timeout The new timeout in milliseconds (0 = no timeout).
    */
   public void setServerTimeout(int timeout) {
-    synchronized (this) {
-      if (serverSocket != null) {
-        throw new IllegalStateException("Already configured");
-      }
-      this.serverTimeout = timeout;
+    if (isRunning()) {
+      throw new IllegalStateException("Already configured");
     }
+    this.serverTimeout = timeout;
   }
 
   /**
@@ -298,6 +297,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
 
   @SuppressWarnings("PMD.CognitiveComplexity")
   @SuppressFBWarnings("NN_NAKED_NOTIFY")
+  @SuppressLint("RESOURCE_LEAK")
   private void acceptLoop(V server) throws IOException {
     long busyStartTime = 0;
     acceptLoop : while (!stopRequested.get() && !Thread.interrupted()) {
@@ -443,7 +443,6 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
       ScheduledFuture<?> existingFuture = this.timeoutFuture;
       if (existingFuture != null) {
         existingFuture.cancel(false);
-        this.timeoutFuture = null;
       }
 
       return (this.timeoutFuture = TIMEOUTS.schedule(new Callable<IOException>() {

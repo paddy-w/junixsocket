@@ -1,15 +1,23 @@
+![junixsocket logo](https://user-images.githubusercontent.com/822690/246675372-d1775152-5f5e-4576-8f3d-8445779ea584.png)
+
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/kohlschutter/junixsocket/codeql-analysis.yml?cacheSeconds=60)](https://github.com/kohlschutter/junixsocket/actions/workflows/codeql-analysis.yml) [![Last commit on main](https://img.shields.io/github/last-commit/kohlschutter/junixsocket/main)](https://github.com/kohlschutter/junixsocket/commits/main) [![Maven Central version](https://img.shields.io/maven-central/v/com.kohlschutter.junixsocket/junixsocket)](https://search.maven.org/artifact/com.kohlschutter.junixsocket/junixsocket) [![Apache 2.0 Licensed](https://img.shields.io/github/license/kohlschutter/junixsocket)](https://github.com/kohlschutter/junixsocket/blob/main/NOTICE)
+
+**Users of junixsocket are strongly advised to upgrade to version 2.7.2 or newer ([changelog](https://kohlschutter.github.io/junixsocket/changelog.html))**
+
 # junixsocket
 
 junixsocket is a Java/JNI library that allows the use of
 [Unix Domain Sockets](https://en.wikipedia.org/wiki/Unix_domain_socket) (AF_UNIX sockets), and
-other address/protocol families (such as [AF_TIPC](http://tipc.io/) and AF_VSOCK), from Java.
+other address/protocol families (such as [AF_TIPC](http://tipc.io/), AF_VSOCK, and AF_SYSTEM),
+from Java.
 
 ## Unix sockets API, in Java, AF.
 
 * *junixsocket* is the most complete implementation of AF_UNIX sockets for the Java ecosystem.
-* Supports other socket types, such as TIPC (on Linux) and VSOCK (on Linux, and certain macOS VMs), as well!
+* Supports other socket types, such as TIPC (on Linux), VSOCK (on Linux, and certain macOS VMs), and
+  AF_SYSTEM (on macOS) as well!
 * Comes with pre-built native libraries for most operating systems and platforms, including
-  macOS, Linux, Windows, Solaris, FreeBSD, NetBSD, OpenBSD, DragonFlyBSD, AIX, IBM i.
+  macOS, Linux, Android, Windows, Solaris, FreeBSD, NetBSD, OpenBSD, DragonFlyBSD, AIX, IBM i.
 * Additionally, you can build and run junixsocket natively on IBM z/OS (experimental).
 * Supports all Java versions since Java 8*
 * Supports both the Java Socket API and NIO (`java.net.Socket`, `java.net.SocketChannel`, etc.)
@@ -28,7 +36,7 @@ other address/protocol families (such as [AF_TIPC](http://tipc.io/) and AF_VSOCK
 * Provides a selftest package with 100+ tests to ensure compatibility with any target platform.
 * Apache 2.0 licensed.
 
-`*` (Tested up to Java 19; support for Java 7 was dropped in version 2.5.0).
+`*` (Tested up to Java 22; support for Java 7 was dropped in version 2.5.0).
 
 ## Quick links
 
@@ -39,10 +47,13 @@ other address/protocol families (such as [AF_TIPC](http://tipc.io/) and AF_VSOCK
     - Sockets (`org.newsclub.net.unix.demo`)
     - RMI over Unix Sockets (`org.newsclub.net.unix.demo.rmi` and `org.newsclub.net.unix.demo.rmi.services`)
     - MySQL over Unix Sockets  (`org.newsclub.net.mysql.demo`)
+    - Apache Mina (`org.newsclub.net.unix.demo.mina`)
+    - Netty (`org.newsclub.net.unix.demo.netty`)
   * [API Javadocs](https://kohlschutter.github.io/junixsocket/apidocs/)
   * [Unix Domain Socket Reference](https://kohlschutter.github.io/junixsocket/unixsockets.html)
   * [TIPC documentation](https://kohlschutter.github.io/junixsocket/junixsocket-tipc/index.html)
   * [VSOCK documentation](https://kohlschutter.github.io/junixsocket/junixsocket-vsock/index.html)
+  * [AF_SYSTEM documentation](https://kohlschutter.github.io/junixsocket/junixsocket-darwin/index.html)
 
 ## Licensing
 
@@ -66,23 +77,28 @@ java -jar junixsocket-selftest-VERSION-jar-with-dependencies.jar
 
 To include the core junixsocket functionality in your project, add the following Maven dependency
 
-> **NOTE** Since version 2.4.0, `junixsocket-core` is POM-only (that's why you need to specify `<type>pom</type>`)
+> **NOTE** Since version 2.4.0, `junixsocket-core` is POM-only (that's why you need to specify
+`<type>pom</type>`)
 
 ```
 <dependency>
   <groupId>com.kohlschutter.junixsocket</groupId>
   <artifactId>junixsocket-core</artifactId>
-  <version>2.6.2</version>
+  <version>2.7.2</version>
   <type>pom</type>
 </dependency>
 ```
 
-While you should definitely pin your dependency to a specific version, you are very much encouraged to always update to the most recent version. Check back frequently.
+While you should definitely pin your dependency to a specific version, you are very much encouraged
+to keep updating to the most recent version. Check back frequently.
 
-For more, optional packages (RMI, MySQL, Jetty, TIPC, VSOCK, server, GraalVM, etc.) and Gradle instructions see
-[here](https://kohlschutter.github.io/junixsocket/dependency.html)
+For more, optional packages (RMI, MySQL, Jetty, TIPC, VSOCK, server, Darwin, GraalVM, etc.) and
+Gradle instructions see [here](https://kohlschutter.github.io/junixsocket/dependency.html)
 
-If you're testing a `-SNAPSHOT` version, make sure that the Sonatype snapshot repository is enabled in your POM:
+## Snapshot builds for testing
+
+When you're testing a `-SNAPSHOT` version, make sure that the Sonatype snapshot repository is
+enabled in your POM:
 
 ```
 <repositories>
@@ -98,4 +114,15 @@ If you're testing a `-SNAPSHOT` version, make sure that the Sonatype snapshot re
 </repositories>
 ```
 
-> **NOTE** Never rely on -SNAPSHOT builds. They can break any time.
+To update to the latest SNAPSHOT (which is currently not being built for every commit),
+run the following command from within your own project:
+
+```
+mvn -U dependency:resolve
+```
+
+or (for Gradle)
+
+```
+./gradlew refreshVersions
+```

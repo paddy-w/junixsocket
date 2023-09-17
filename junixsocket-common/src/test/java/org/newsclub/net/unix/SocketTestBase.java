@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  *
  * @author Christian Kohlschuetter
  */
-@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
+@SuppressWarnings({"PMD.AbstractClassWithoutAbstractMethod", "PMD.CouplingBetweenObjects"})
 @SuppressFBWarnings({
     "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs to be public for
@@ -176,6 +176,11 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
       readySema.acquire();
     }
 
+    @Override
+    public final void start() {
+      super.start();
+    }
+
     protected ServerSocket startServer() throws IOException {
       return SocketTestBase.this.startServer();
     }
@@ -281,7 +286,7 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
         if (acceptSuccess) {
           handleConnection(sock);
         }
-      } catch (IOException e) {
+      } catch (IOException e) { // NOPMD.ExceptionAsFlowControl
         if (!acceptSuccess) {
           // ignore: connection closed before accept could complete
           if (serverSocket.isClosed()) {
@@ -458,6 +463,10 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
     return asp.newInterconnectedSockets();
   }
 
+  protected String addressFamilyString() {
+    return asp.addressFamilyString();
+  }
+
   protected Random getRandom() {
     return RANDOM;
   }
@@ -480,5 +489,16 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
     } else {
       return null; // NOPMD.PMD.ReturnEmptyCollectionRatherThanNull
     }
+  }
+
+  /**
+   * Provide a potentially different string for the "important message" section in selftest, given
+   * an existing error message.
+   *
+   * @param message The original message.
+   * @return A potentially different string.
+   */
+  protected String summaryImportantMessage(String message) {
+    return asp.summaryImportantMessage(message);
   }
 }

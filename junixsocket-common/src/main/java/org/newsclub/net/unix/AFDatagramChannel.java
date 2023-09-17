@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,7 +210,7 @@ public abstract class AFDatagramChannel<A extends AFSocketAddress> extends Datag
     if (optionId == null) {
       throw new UnsupportedOperationException("unsupported option");
     } else {
-      afSocket.getAFImpl().setOption(optionId.intValue(), value);
+      afSocket.getAFImpl().setOption(optionId, value);
     }
     return this;
   }
@@ -225,7 +225,7 @@ public abstract class AFDatagramChannel<A extends AFSocketAddress> extends Datag
     if (optionId == null) {
       throw new UnsupportedOperationException("unsupported option");
     } else {
-      return (T) afSocket.getAFImpl().getOption(optionId.intValue());
+      return (T) afSocket.getAFImpl().getOption(optionId);
     }
   }
 

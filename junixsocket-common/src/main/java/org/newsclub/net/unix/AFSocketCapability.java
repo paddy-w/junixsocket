@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,13 @@ import java.lang.ProcessBuilder.Redirect;
  *
  * You can check whether your environment supports a given capability by calling
  * {@link AFSocket#supports(AFSocketCapability)}.
+ *
+ * You can also manually disable a given capability by specifying a System property of the form
+ * <code>org.newsclub.net.unix.library.disable.<em>CAPABILITY_SOMETHING_SOMETHING</em>=true</code>
+ * when invoking the JVM (make sure this property is set before junixsocket is accessed).
+ *
+ * A simple way to check which capabilities are supported in an environment is to run the
+ * `junixsocket-selftest` jar.
  */
 public enum AFSocketCapability {
   // see org_newsclub_net_unix_NativeUnixSocket.c in junixsocket-native
@@ -41,7 +48,7 @@ public enum AFSocketCapability {
   /** Socket addressing supports the abstract namespace (Linux). */
   CAPABILITY_ABSTRACT_NAMESPACE(3),
 
-  /** Support for AF_UNIX datagrams (not on Windows yet). */
+  /** Support for AF_UNIX datagrams. */
   CAPABILITY_UNIX_DATAGRAMS(4),
 
   /**
@@ -115,6 +122,29 @@ public enum AFSocketCapability {
    * condition.
    */
   CAPABILITY_ZERO_LENGTH_SEND(11),
+
+  /**
+   * Support for "unsafe" operations.
+   *
+   * Trading-in safety for speed or simplicity may be justified sometimes.
+   *
+   * @see Unsafe
+   * @see AFSocket#ensureUnsafeSupported()
+   */
+  CAPABILITY_UNSAFE(12),
+
+  /**
+   * Support for port numbers larger than 65535 (0xffff).
+   *
+   * Not all systems allow setting port numbers beyond the default TCP range (we use JNI tricks for
+   * that). This capability is required for RMI support.
+   */
+  CAPABILITY_LARGE_PORTS(13),
+
+  /**
+   * Support for certain Darwin (macOS Kernel)-specific features, such as the AF_SYSTEM domain.
+   */
+  CAPABILITY_DARWIN(14),
 
   ; // end of list
 

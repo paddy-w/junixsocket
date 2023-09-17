@@ -76,6 +76,7 @@ ssize_t send_wrapper(int handle, jbyte *buf, jint length, jux_sockaddr_t *sendTo
                 count = write(handle, (char*)buf, length);
             }
         }
+
         // on macOS/BSD, send seems to not block if the send buffer is full, so we have to handle ENOBUFS
         if(count >= 0) {
             break;
@@ -96,22 +97,13 @@ ssize_t send_wrapper(int handle, jbyte *buf, jint length, jux_sockaddr_t *sendTo
                 break;
             }
             count = 0; // don't throw
-#if defined(sched_yield)
-            sched_yield();
-#else
-            struct pollfd fds[] = {
-                {
-                    .fd = handle,
-                    .events = (POLLOUT),
-                    .revents = 0
-                }
-            };
 
-#  if defined(_WIN32)
-            WSAPoll(fds, 1, -1);
-#  else
-            poll(fds, 1, -1);
-#  endif
+            // see https://github.com/virtualsquare/vde-2/issues/19
+            // and https://stackoverflow.com/questions/16555101/sendto-dgrams-do-not-block-for-enobufs-on-osx
+#if defined(_WIN32)
+            SwitchToThread();
+#else
+            sched_yield();
 #endif
             continue;
         }
@@ -155,7 +147,7 @@ ssize_t sendmsg_wrapper(JNIEnv * env, int handle, jbyte *buf, jint length, jux_s
         if(ancFdsLen > 0) {
             ancBuf = (*env)->GetIntArrayElements(env, ancFds, NULL);
             memcpy(data, ancBuf, ancFdsLen * sizeof(jint));
-            (*env)->ReleaseIntArrayElements(env, ancFds, ancBuf, 0);
+            (*env)->ReleaseIntArrayElements(env, ancFds, ancBuf, JNI_ABORT); // ancFds is unmodified
         }
 
         cmsg = junixsocket_CMSG_NXTHDR(&msg, cmsg);

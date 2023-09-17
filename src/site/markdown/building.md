@@ -8,10 +8,11 @@ Here's how you build junixsocket from the source.
  
     If you have a different platform or architecture, [continue here](customarch.html).
  
- 2. Install the Java JDK 9 or newer (preferably Java 11), Maven 3.6 or newer, and junixsocket.
+ 2. Install the Java JDK 16 or newer, Maven 3.8.8 or newer, and junixsocket.
  
-    Even though junixsocket can run on Java 8, you need Java 9 or better to build it, so we can
-    support the new Java module system on newer Java versions.
+    Even though junixsocket can run on Java 8, you need Java 16 or better to build it, so we can
+    support the new Java module system on newer Java versions as well as features that are only
+    available on newer versions (e.g., UnixDomainSocketAddress).
  
  3. Install a development environment so you can compile C code (preferably clang/llvm).
  
@@ -35,6 +36,12 @@ Build and test junixsocket.
     mvn clean install
 
 That's it!
+
+### SNAPSHOT builds
+
+Development versions may need SNAPSHOT versions of dependencies. Use the following command to build:
+
+    mvn clean install -Puse-snapshots
 
 ## Build options
 
@@ -60,8 +67,21 @@ You can also try to build the full release version of junixsocket (which will in
 
     mvn clean install -Pstrict -Prelease
 
-## Issues
+## Issues and Workarounds
+
+### clang/gcc
 
 If you don't have clang, try compiling with gcc. You may need to specify the compiler/linker at the command line:
 
     mvn clean install -Djunixsocket.native.default.linkerName=gcc
+
+### Failure to find com.kohlschutter.junixsocket:junixsocket-native-custom:jar:default:...-SNAPSHOT
+
+You're building a SNAPSHOT version, skipping over native artifacts, and access to some native
+artifacts is missing. Try building with the "use-snapshot" profile first:
+
+    mvn clean install -Puse-snapshot -rf :junixsocket-native-custom
+
+If that doesn't work, try ignoring junixsocket-native-custom as an optional dependency for testing:
+
+    mvn clean install -Dnative-custom.skip -rf :junixsocket-common

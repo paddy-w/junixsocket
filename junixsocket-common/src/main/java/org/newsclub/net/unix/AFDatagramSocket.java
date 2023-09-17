@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ public abstract class AFDatagramSocket<A extends AFSocketAddress> extends Datagr
   private final AncillaryDataSupport ancillaryDataSupport;
   private final AtomicBoolean created = new AtomicBoolean(false);
   private final AtomicBoolean deleteOnClose = new AtomicBoolean(true);
+
+  @SuppressWarnings("this-escape")
   private final AFDatagramChannel<A> channel = newChannel();
 
   /**
@@ -70,11 +72,11 @@ public abstract class AFDatagramSocket<A extends AFSocketAddress> extends Datagr
   protected abstract AFDatagramChannel<A> newChannel();
 
   /**
-   * Returns the {@link AncillaryDataSupport} instance.
+   * Returns the {@code AncillaryDataSupport} instance.
    *
    * @return The instance.
    */
-  protected final AncillaryDataSupport getAncillaryDataSupport() {
+  final AncillaryDataSupport getAncillaryDataSupport() {
     return ancillaryDataSupport;
   }
 

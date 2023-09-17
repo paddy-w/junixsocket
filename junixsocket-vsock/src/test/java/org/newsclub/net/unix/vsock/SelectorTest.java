@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,9 @@ public final class SelectorTest extends org.newsclub.net.unix.SelectorTest<AFVSO
       newInterconnectedSockets();
     } catch (TestAbortedException e) {
       TestAbortedWithImportantMessageException e2 = new TestAbortedWithImportantMessageException(
-          MessageType.TEST_ABORTED_SHORT_INFORMATIONAL, AFVSOCKAddressSpecifics.KERNEL_TOO_OLD);
+          MessageType.TEST_ABORTED_SHORT_INFORMATIONAL,
+          AFVSOCKAddressSpecifics.KERNEL_NOT_CONFIGURED, summaryImportantMessage(
+              AFVSOCKAddressSpecifics.KERNEL_NOT_CONFIGURED));
       e2.addSuppressed(e);
       throw e2; // NOPMD.PreserveStackTrace
     }

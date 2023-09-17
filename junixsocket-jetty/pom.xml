@@ -1,21 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>junixsocket-jetty</artifactId>
     <packaging>jar</packaging>
     <parent>
         <groupId>com.kohlschutter.junixsocket</groupId>
         <artifactId>junixsocket</artifactId>
-        <version>2.6.3-SNAPSHOT</version>
+        <version>2.7.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <name>junixsocket-jetty</name>
     <properties>
         <kohlschutter.project.base.directory>${project.parent.basedir}</kohlschutter.project.base.directory>
-        <jetty.version>11.0.13</jetty.version>
+        <jetty.version>11.0.16</jetty.version>
     </properties>
 
     <description>junixsocket for Jetty</description>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <configuration>
+                        <!-- see junixsocket-jetty-12 for newer versions -->
+                        <allowMajorUpdates>false</allowMajorUpdates>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
     <dependencies>
         <dependency>
@@ -34,13 +51,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.6</version>
+            <version>2.0.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.10.0</version>
+            <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -56,6 +73,14 @@
             <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
+        <!--
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-unixdomain-server</artifactId>
+            <version>${jetty.version}</version>
+            <scope>test</scope>
+        </dependency>
+        -->
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>

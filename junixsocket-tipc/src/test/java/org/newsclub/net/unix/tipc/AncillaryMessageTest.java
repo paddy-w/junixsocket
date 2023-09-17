@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.newsclub.net.unix.AFTIPCSocketAddress.Scope;
 import org.newsclub.net.unix.tipc.AFTIPCErrInfo.ErrorCode;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.testutil.TestStackTraceUtil;
 
 @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_TIPC)
 @SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_SUPERCLASS")
@@ -60,7 +61,7 @@ public final class AncillaryMessageTest extends
       try {
         clientSocket.close();
       } catch (IOException e) {
-        e.printStackTrace();
+        TestStackTraceUtil.printStackTrace(e);
       }
     }).start();
 

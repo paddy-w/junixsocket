@@ -28,6 +28,12 @@ You can also get the file descriptor from some classes in the Java API, for exam
 	FileDescriptor stdout = FileDescriptor.out;
 	FileDescriptor stderr = FileDescriptor.err;
 
+### Getting a FileDescriptor from a native fd integer value
+
+You may use a somewhat "unsafe" operation to convert a system-native file descriptor, described as an integer value, to a `FileDescriptor` (or other types, see below), via `FileDescriptorCast.unsafeUsing(fdVal).as(FileDescriptor.class)`.
+
+This functionality may not be available in all environments (e.g., on Windows, or when manually disabled by setting the system property `-Dorg.newsclub.net.unix.library.disable.CAPABILITY_UNSAFE=true`).
+
 ## Sending and receiving File Descriptors
 
 A very useful feature of Unix Domain Sockets is the ability to send and receive file descriptors
@@ -111,6 +117,7 @@ When you receive a FileDescriptor from another process, you want to use it as if
 First, you instantiate a `FileDescriptorCast` instance using the FileDescriptor of your choice, then you specify as what class you want to access it:
 
 	FileDescriptor fd = ...;
+	// NOTE: check `fd.valid()` or an `IOException` may be thrown.
 	Class<T> desiredClass = ...;
 	T instance = FileDescriptorCast.using(fd).as(desiredClass);
 
@@ -126,6 +133,10 @@ If the file descriptor is a Socket, you can use:
 	// or:
 	AFUNIXSocket sock = FileDescriptorCast.using(fd).as(AFUNIXSocket.class);
 	// etc.
+
+If you want to access the native file descriptor value as an integer (only where supported), you can use:
+
+    int fdVal = FileDescriptorCast.using(fd).as(Integer.class); // won't work for all types on Windows
 
 Note that if the specified `FileDescriptor` is incompatible with the target class, a `ClassCastException` is thrown. Also be aware that this technically isn't a cast, since a different object reference is returned.
 

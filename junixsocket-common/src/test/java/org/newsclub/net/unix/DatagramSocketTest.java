@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
@@ -108,7 +109,7 @@ public abstract class DatagramSocketTest<A extends SocketAddress> extends Socket
   }
 
   @Test
-  public void testBindConnect() throws SocketException, IOException, InterruptedException {
+  public void testBindConnect() throws Exception {
     AFSocketAddress ds1Addr = (AFSocketAddress) newTempAddressForDatagram();
     AFSocketAddress ds2Addr = (AFSocketAddress) newTempAddressForDatagram();
 
@@ -130,7 +131,15 @@ public abstract class DatagramSocketTest<A extends SocketAddress> extends Socket
 
       ds1.connect(ds2Addr);
 
-      assertConnectedDatagramSocket(ds1, ds1Addr, ds2Addr);
+      try {
+        assertConnectedDatagramSocket(ds1, ds1Addr, ds2Addr);
+      } catch (AssertionFailedError e) {
+        if (TestUtil.isHaikuOS()) {
+          throw TestUtil.haikuBug18534(e);
+        } else {
+          throw e;
+        }
+      }
 
       byte[] data = "Hello world!".getBytes(StandardCharsets.UTF_8);
       byte[] buf = new byte[512];

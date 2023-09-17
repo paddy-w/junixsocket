@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
+import com.kohlschutter.testutil.TestStackTraceUtil;
 
 /**
  * Tests breaking out of accept.
@@ -80,9 +82,11 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
 
       try (Socket sock = connectTo(serverThread.getServerAddress())) {
         // open and close
+        Objects.requireNonNull(sock); // silence Xlint warning
       }
       try (Socket sock = connectTo(serverThread.getServerAddress())) {
         // open and close
+        Objects.requireNonNull(sock); // silence Xlint warning
       }
 
       @SuppressWarnings("resource")
@@ -99,7 +103,7 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
 
       serverSocket.close();
       try {
-        try (Socket sock = connectTo(serverAddress)) {
+        try (Socket unused = connectTo(serverAddress)) {
           // open and close
         }
 
@@ -119,6 +123,7 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
 
       try {
         try (Socket sock = connectTo(serverAddress)) {
+          Objects.requireNonNull(sock); // silence Xlint warning
           fail("ServerSocket should have been closed already");
         }
         String noticeNoSocketException = checkKnownConditionDidNotThrowSocketException();
@@ -132,7 +137,7 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
         // as expected
       }
     } catch (SocketException e) {
-      e.printStackTrace();
+      TestStackTraceUtil.printStackTrace(e);
     }
   }
 

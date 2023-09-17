@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.rmi.server.RemoteServer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.newsclub.net.unix.rmi.ShutdownHookSupport.ShutdownHook;
 
@@ -48,7 +49,9 @@ public abstract class AFRegistry implements Registry {
   private final Registry impl;
   private final Map<String, Remote> bound = new HashMap<>();
   private final AFNaming naming;
-  private boolean boundCloserExported = false;
+  private final AtomicBoolean boundCloserExported = new AtomicBoolean(false);
+
+  private AFRMIService rmiService = null;
 
   AFRegistry(AFNaming naming, Registry impl) throws RemoteException {
     this.naming = naming;
@@ -246,12 +249,10 @@ public abstract class AFRegistry implements Registry {
       empty = bound.isEmpty();
     }
     if (empty) {
-      if (boundCloserExported) {
-        boundCloserExported = false;
-
+      if (boundCloserExported.compareAndSet(true, false)) {
         AFRMIService service;
         try {
-          service = naming.getRMIService(this);
+          service = getRMIService();
           service.unregisterForShutdown(boundCloser);
         } catch (NoSuchObjectException | NotBoundException e) {
           return;
@@ -259,17 +260,23 @@ public abstract class AFRegistry implements Registry {
           AFNaming.unexportObject(boundCloser);
         }
       }
-    } else if (!boundCloserExported) {
+    } else if (boundCloserExported.compareAndSet(false, true)) {
       AFNaming.exportObject(boundCloser, naming.getSocketFactory());
-      boundCloserExported = true;
 
       AFRMIService service;
       try {
-        service = naming.getRMIService(this);
+        service = getRMIService();
       } catch (NotBoundException e) {
         return;
       }
       service.registerForShutdown(boundCloser);
     }
+  }
+
+  private AFRMIService getRMIService() throws RemoteException, NotBoundException {
+    if (rmiService == null) {
+      rmiService = naming.getRMIService(this);
+    }
+    return rmiService;
   }
 }

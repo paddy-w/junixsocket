@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.newsclub.net.unix.AFSocketAddress;
  * @author Christian Kohlschütter
  * @deprecated Use {@link SocketServer} or {@link AFSocketServer}
  */
+@Deprecated
 public abstract class AFUNIXSocketServer extends SocketServer<SocketAddress, Socket, ServerSocket> {
   /**
    * Creates a server using the given, bound {@link ServerSocket}.
@@ -59,8 +60,10 @@ public abstract class AFUNIXSocketServer extends SocketServer<SocketAddress, Soc
    * @param unit The duration's time unit.
    * @return {@code true} if the server is ready to serve requests.
    * @throws InterruptedException If the wait was interrupted.
-   * @deprecated @see #startAndWaitToBecomeReady(long, TimeUnit)
+   * @deprecated Use {@link #startAndWaitToBecomeReady(long, TimeUnit)}
+   * @see #startAndWaitToBecomeReady(long, TimeUnit)
    */
+  @Deprecated
   public boolean startAndWait(long duration, TimeUnit unit) throws InterruptedException {
     return startAndWaitToBecomeReady(duration, unit);
   }

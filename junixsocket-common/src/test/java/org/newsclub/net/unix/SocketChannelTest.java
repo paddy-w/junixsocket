@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.newsclub.net.unix;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -24,11 +25,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
+import com.kohlschutter.testutil.TestAsyncUtil;
 
 public abstract class SocketChannelTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected SocketChannelTest(AddressSpecifics<A> asp) {
@@ -55,7 +59,7 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
     {
       SocketChannel sc = selectorProvider().openSocketChannel();
       sc.configureBlocking(false);
-      if (!sc.connect(sa)) {
+      if (!handleConnect(sc, sa)) {
         // connect pending
         assertTrue(sc.isConnected() || sc.isConnectionPending());
         long now = System.currentTimeMillis();
@@ -90,13 +94,15 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
     testDoubleBind(true);
   }
 
-  @SuppressWarnings({"PMD.ExcessiveMethodLength", "PMD.CognitiveComplexity", "PMD.NPathComplexity"})
+  @SuppressWarnings({
+      "PMD.ExcessiveMethodLength", "PMD.CognitiveComplexity", "PMD.NPathComplexity",
+      "PMD.CyclomaticComplexity"})
   private void testDoubleBind(boolean reuseAddress) throws Exception {
     SocketAddress sa0 = newTempAddress();
 
-    final CompletableFuture<SocketChannel> acceptCall;
-    final CompletableFuture<SocketChannel> acceptCall2;
-    CompletableFuture<Void> connectCall = null;
+    final Future<SocketChannel> acceptCall;
+    final Future<SocketChannel> acceptCall2;
+    Future<Void> connectCall = null;
 
     AtomicBoolean socketDomainWillAcceptCallOnFirstBind = new AtomicBoolean(true);
 
@@ -106,7 +112,7 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
 
       AtomicBoolean connectMustSucceed = new AtomicBoolean(false);
 
-      acceptCall = CompletableFuture.supplyAsync(() -> {
+      acceptCall = TestAsyncUtil.supplyAsync(() -> {
         try {
           SocketChannel sc = ssc1.accept();
           socketDomainWillAcceptCallOnFirstBind.set(false);
@@ -116,11 +122,23 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
           }
           return sc;
         } catch (SocketException e) {
+          String msg = checkKnownBugAcceptFailure(e);
+          if (msg != null) {
+            throw new TestAbortedWithImportantMessageException(
+                MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg), e);
+          }
           if (reuseAddress) {
             // expected (Software caused connection abort)
           } else {
             fail(e);
           }
+        } catch (SocketTimeoutException e) {
+          String msg = checkKnownBugAcceptFailure(e);
+          if (msg != null) {
+            throw new TestAbortedWithImportantMessageException(
+                MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg), e);
+          }
+          fail(e);
         } catch (IOException e) {
           fail(e);
         }
@@ -146,7 +164,7 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
         }
 
         if (reuseAddress) {
-          acceptCall2 = CompletableFuture.supplyAsync(() -> {
+          acceptCall2 = TestAsyncUtil.supplyAsync(() -> {
             try {
               SocketChannel sc = ssc2.accept();
               socketDomainWillAcceptCallOnFirstBind.set(false);
@@ -171,7 +189,7 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
 
         // unblock accept of any successful bind
         if (!acceptCall.isDone() && socketDomainWillAcceptCallOnFirstBind.get()) {
-          connectCall = CompletableFuture.runAsync(() -> {
+          connectCall = TestAsyncUtil.supplyAsync(() -> {
             try {
               newSocket().connect(sa);
             } catch (SocketException e) {
@@ -205,12 +223,20 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
       acceptCall.get(5, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       // ignore socket closed etc.
+      if (e.getCause() instanceof TestAbortedWithImportantMessageException) {
+        throw (TestAbortedWithImportantMessageException) e.getCause();
+      }
     } catch (TimeoutException e) {
       triggerWithIssues = checkKnownBugFirstAcceptCallNotTerminated();
       if (triggerWithIssues == null) {
         fail("First accept call did not terminate");
       }
     }
+    if (triggerWithIssues != null) {
+      throw new TestAbortedWithImportantMessageException(MessageType.TEST_ABORTED_SHORT_WITH_ISSUES,
+          triggerWithIssues, summaryImportantMessage(triggerWithIssues));
+    }
+
     if (connectCall != null) {
       try {
         connectCall.get(5, TimeUnit.SECONDS);
@@ -220,10 +246,119 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
         fail("Connect call did not terminate");
       }
     }
+  }
 
-    if (triggerWithIssues != null) {
-      throw new TestAbortedWithImportantMessageException(MessageType.TEST_ABORTED_WITH_ISSUES,
-          triggerWithIssues);
+  /**
+   * Subclasses may override this to tell that there is a known issue with "accept".
+   *
+   * @param e The exception
+   * @return An explanation iff this should not cause a test failure but trigger "With issues".
+   */
+  protected String checkKnownBugAcceptFailure(SocketException e) {
+    return null;
+  }
+
+  /**
+   * Subclasses may override this to tell that there is a known issue with "accept".
+   *
+   * @param e The exception
+   * @return An explanation iff this should not cause a test failure but trigger "With issues".
+   */
+  protected String checkKnownBugAcceptFailure(SocketTimeoutException e) {
+    return null;
+  }
+
+  /**
+   * Bind the given address to the given {@link ServerSocketChannel}.
+   *
+   * By default, this just calls `ssc.bind(sa)`, but you may handle some exceptions by overriding
+   * this method in a subclass.
+   *
+   * @param ssc The server socket channel.
+   * @param sa The socket address to bind to.
+   * @throws IOException on error.
+   */
+  protected void handleBind(ServerSocketChannel ssc, SocketAddress sa) throws IOException {
+    ssc.bind(sa);
+  }
+
+  /**
+   * Connect the given {@link SocketChannel} with the given address.
+   *
+   * By default, this just calls `sc.connect(sa)`, but you may handle some exceptions by overriding
+   * this method in a subclass.
+   *
+   * @param sc The socket channel.
+   * @param sa The socket address to connect to.
+   * @throws IOException on error.
+   */
+  protected boolean handleConnect(SocketChannel sc, SocketAddress sa) throws IOException {
+    return sc.connect(sa);
+  }
+
+  @Test
+  public void testByteBufferWithPositionOffset() throws Exception {
+    SocketAddress sa = newTempAddress();
+
+    final int bb1Offset = 32;
+    final int bb2Offset = 1;
+
+    byte[] data = new byte[96];
+    getRandom().nextBytes(data);
+
+    try (ServerSocketChannel ssc = selectorProvider().openServerSocketChannel()) {
+      handleBind(ssc, sa);
+
+      ByteBuffer bb1 = ByteBuffer.allocate(data.length + bb1Offset);
+      bb1.position(bb1Offset);
+
+      bb1.put(data);
+      bb1.flip();
+
+      bb1.position(bb1Offset);
+      assertEquals(bb1Offset, bb1.position());
+
+      TestAsyncUtil.runAsync(() -> {
+        try (SocketChannel sc = ssc.accept()) {
+          int written = 0;
+          while (bb1.hasRemaining()) {
+            written += sc.write(bb1);
+          }
+          assertEquals(data.length, written);
+        } catch (IOException e) {
+          fail(e);
+        }
+      });
+
+      SocketChannel sc = selectorProvider().openSocketChannel();
+
+      ByteBuffer bb2 = ByteBuffer.allocate(data.length + bb2Offset);
+
+      assertTrue(handleConnect(sc, ssc.getLocalAddress()));
+
+      bb2.position(bb2Offset);
+
+      int read = 0;
+      int r;
+      do {
+        r = sc.read(bb2);
+        if (r == -1) {
+          break;
+        }
+        read += r;
+      } while (bb2.hasRemaining());
+      assertEquals(data.length, read);
+
+      assertEquals(bb1.capacity(), bb1.position());
+      assertEquals(bb1.capacity(), bb1.limit());
+      assertEquals(data.length + bb2Offset, bb2.position());
+      assertEquals(bb2.capacity(), bb2.limit());
+
+      bb1.position(bb1Offset);
+
+      for (int i = 0, n = data.length; i < n; i++) {
+        assertEquals(bb1.get(bb1Offset + i), bb2.get(bb2Offset + i), "at pos " + i);
+      }
     }
   }
 

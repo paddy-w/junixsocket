@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ class AFSocketCore extends AFCore {
   }
 
   @Override
+  @SuppressWarnings("UnsafeFinalization" /* errorprone */)
   protected void doClose() throws IOException {
     NativeUnixSocket.shutdown(fd, SHUT_RD_WR);
     unblockAccepts();
@@ -91,13 +92,14 @@ class AFSocketCore extends AFCore {
     return false;
   }
 
-  @SuppressWarnings({"unchecked", "null"})
+  @SuppressWarnings({"unchecked"})
   <T> T getOption(AFSocketOption<T> name) throws IOException {
     Class<T> type = name.type();
     if (Boolean.class.isAssignableFrom(type)) {
       return (T) (Object) (NativeUnixSocket.getSocketOption(fd, name.level(), name.optionName(),
-          Integer.class).intValue() != 0);
+          Integer.class) != 0);
     } else if (NamedInteger.HasOfValue.class.isAssignableFrom(type)) {
+      @SuppressWarnings("all") // "null" creates another warning
       int v = NativeUnixSocket.getSocketOption(fd, name.level(), name.optionName(), Integer.class);
       try {
         return (T) type.getMethod("ofValue", int.class).invoke(null, v);
@@ -113,7 +115,7 @@ class AFSocketCore extends AFCore {
   <T> void setOption(AFSocketOption<T> name, T value) throws IOException {
     final Object val;
     if (value instanceof Boolean) {
-      val = (((Boolean) value).booleanValue() ? 1 : 0);
+      val = (((Boolean) value) ? 1 : 0);
     } else if (value instanceof NamedInteger) {
       val = ((NamedInteger) value).value();
     } else {

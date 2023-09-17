@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -43,6 +49,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.engine.JupiterTestEngine;
 import org.junit.jupiter.engine.discovery.DiscoverySelectorResolver;
@@ -56,6 +63,7 @@ import org.newsclub.net.unix.AFSocketCapability;
 import org.newsclub.net.unix.AFUNIXSocket;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.testutil.TestAbortedNotAnIssueException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
 import com.kohlschutter.util.ConsolePrintStream;
@@ -71,9 +79,12 @@ import com.kohlschutter.util.SystemPropertyUtil;
  *
  * @author Christian Kohlschütter
  */
-@SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.CognitiveComplexity"})
+@SuppressWarnings({
+    "PMD.CyclomaticComplexity", "PMD.CognitiveComplexity", "PMD.CouplingBetweenObjects"})
 public class Selftest {
-  private final ConsolePrintStream out = ConsolePrintStream.wrapSystemOut();
+  private final Class<?> diagnosticsHelperClass = resolveOptionalClass(
+      "org.newsclub.net.unix.SelftestDiagnosticsHelper");
+  private final ConsolePrintStream out;
   private final Map<String, ModuleResult> results = new LinkedHashMap<>();
   private final List<AFSocketCapability> supportedCapabilites = new ArrayList<>();
   private final List<AFSocketCapability> unsupportedCapabilites = new ArrayList<>();
@@ -83,15 +94,16 @@ public class Selftest {
   private boolean isSupportedAFUNIX = false;
   private final Set<String> important = new LinkedHashSet<>();
   private boolean inconclusive = false;
+  private final SelftestProvider sp;
 
   private enum Result {
-    SKIP, PASS, DONE, NONE, FAIL
+    AUTOSKIP, SKIP, PASS, DONE, NONE, FAIL
   }
 
   private enum SkipMode {
-    UNDECLARED(false), KEEP(false), SKIP(true), SKIP_FORCE(true);
+    UNDECLARED(false), KEEP(false), SKIP(true), SKIP_FORCE(true), SKIP_AUTO(true);
 
-    boolean skip;
+    final boolean skip;
 
     SkipMode(boolean skip) {
       this.skip = skip;
@@ -106,16 +118,18 @@ public class Selftest {
     }
 
     boolean isForce() {
-      return this == SKIP_FORCE;
+      return this == SKIP_FORCE || this == SKIP_AUTO;
     }
 
-    public static final SkipMode parse(String skipMode) {
+    public static SkipMode parse(String skipMode) {
       if (skipMode == null || skipMode.isEmpty()) {
         return SkipMode.UNDECLARED;
       } else if ("force".equalsIgnoreCase(skipMode)) {
         return SkipMode.SKIP_FORCE;
+      } else if ("force_auto".equalsIgnoreCase(skipMode)) {
+        return SkipMode.SKIP_AUTO;
       } else {
-        return Boolean.valueOf(skipMode) ? SkipMode.SKIP : SkipMode.KEEP;
+        return Boolean.parseBoolean(skipMode) ? SkipMode.SKIP : SkipMode.KEEP;
       }
     }
 
@@ -137,7 +151,9 @@ public class Selftest {
     org.newsclub.lib.junixsocket.custom.NarMetadata nmCustom;
   }
 
-  public Selftest() {
+  public Selftest(PrintStream out, SelftestProvider sp) {
+    this.out = ConsolePrintStream.wrapPrintStream(out);
+    this.sp = sp;
   }
 
   public void checkVM() {
@@ -148,14 +164,31 @@ public class Selftest {
 
       if (!getSkipModeForModule("junixsocket-rmi").isDeclared()) {
         important.add("Auto-skipping junixsocket-rmi tests due to Substrate VM");
-        System.setProperty("selftest.skip.junixsocket-rmi", "force");
+        System.setProperty("selftest.skip.junixsocket-rmi", "force_auto");
         withIssues = true;
       }
 
       if (!getSkipModeForClass("org.newsclub.net.unix.FileDescriptorCastTest").isDeclared()) {
         important.add("Auto-skipping FileDescriptorCastTest tests due to Substrate VM");
-        System.setProperty("selftest.skip.FileDescriptorCastTest", "force");
+        System.setProperty("selftest.skip.FileDescriptorCastTest", "force_auto");
         withIssues = true;
+      }
+    } else {
+      if (!getSkipModeForModule("junixsocket-rmi").isDeclared()) {
+        try {
+          Class.forName("java.rmi.Remote");
+        } catch (ClassNotFoundException e) {
+          important.add("Auto-skipping junixsocket-rmi tests due to java.rmi.Remote class missing");
+          System.setProperty("selftest.skip.junixsocket-rmi", "force_auto");
+          withIssues = true;
+        }
+
+        if (!AFSocket.supports(AFSocketCapability.CAPABILITY_LARGE_PORTS)) {
+          important.add(
+              "Auto-skipping junixsocket-rmi tests due to missing CAPABILITY_LARGE_PORTS");
+          System.setProperty("selftest.skip.junixsocket-rmi", "force_auto");
+          withIssues = true;
+        }
       }
     }
   }
@@ -166,21 +199,118 @@ public class Selftest {
    * A zero error code indicates success.
    *
    * @param args Ignored.
-   * @throws IOException on error.
+   * @throws Exception on error.
    */
   @SuppressFBWarnings({
       "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
   public static void main(String[] args) throws Exception {
-    Selftest st = new Selftest();
+    int delay = SystemPropertyUtil.getIntSystemProperty("selftest.delay.at-start", 0);
+    if (delay > 0) {
+      System.out.println("Delaying execution of selftest by " + delay + " seconds");
+      Thread.sleep(Duration.ofSeconds(delay).toMillis());
+    }
+
+    int rc = runSelftest();
+
+    if (SystemPropertyUtil.getBooleanSystemProperty("selftest.wait.at-end", false)) {
+      System.gc(); // NOPMD
+      System.out.print("Press any key to end test. ");
+      System.out.flush();
+      System.in.read();
+      System.out.println("RC=" + rc);
+    }
+    System.out.flush();
+
+    System.exit(rc); // NOPMD
+  }
+
+  /**
+   * Run this from some other Java code to ensure junixsocket works correctly on the target system.
+   *
+   * A zero return value indicates success.
+   *
+   * @throws Exception on error.
+   */
+  @SuppressFBWarnings({
+      "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
+  public static int runSelftest() throws Exception {
+    return runSelftest(System.out);
+  }
+
+  private static void printStackTrace(Throwable t) {
+    t.printStackTrace();
+  }
+
+  public static int runSelftest(Writer out) throws Exception {
+    PipedInputStream pis = new PipedInputStream();
+    @SuppressWarnings("resource")
+    PipedOutputStream pos = new PipedOutputStream(pis);
+    @SuppressWarnings("resource")
+    PrintStream ps = new PrintStream(pos, false, Charset.defaultCharset().name());
+
+    InputStreamReader isr = new InputStreamReader(pis, Charset.defaultCharset());
+
+    Thread t = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        char[] buf = new char[4096];
+        int read;
+        try {
+          while ((read = isr.read(buf)) >= 0) {
+            out.write(buf, 0, read);
+            out.flush();
+          }
+        } catch (IOException e) {
+          printStackTrace(e);
+        }
+      }
+    });
+    t.start();
+
+    return runSelftest0(ps, () -> {
+      ps.close();
+      try {
+        t.join();
+      } catch (InterruptedException e) {
+        printStackTrace(e);
+      }
+    });
+  }
+
+  @SuppressFBWarnings({
+      "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
+  public static int runSelftest(PrintStream out) throws Exception {
+    return runSelftest0(out, null);
+  }
+
+  private static int runSelftest0(PrintStream out, Runnable whenDone) throws Exception {
+    int rc;
+    PrintStream origSystemOut = System.out;
+    System.setOut(out);
+    try {
+      rc = runSelftest0(out);
+    } finally {
+      out.flush();
+      System.setOut(origSystemOut);
+      if (whenDone != null) {
+        whenDone.run();
+      }
+    }
+    return rc;
+  }
+
+  private static int runSelftest0(PrintStream out) throws Exception {
+    SelftestProvider sp = new SelftestProvider();
+    Selftest st = new Selftest(out, sp);
 
     st.checkVM();
     st.printExplanation();
+    st.dumpAdditionalProperties();
     st.dumpSystemProperties();
     st.dumpOSReleaseFiles();
     st.checkSupported();
     st.checkCapabilities();
 
-    SelftestProvider sp = new SelftestProvider();
     Set<String> disabledModules = sp.modulesDisabledByDefault();
 
     List<String> messagesAtEnd = new ArrayList<>();
@@ -206,7 +336,7 @@ public class Selftest {
 
     if (!messagesAtEnd.isEmpty()) {
       for (String m : messagesAtEnd) {
-        System.out.println(m);
+        out.println(m);
       }
     }
 
@@ -215,16 +345,15 @@ public class Selftest {
 
     int rc = st.isFail() ? 1 : 0;
 
-    if (SystemPropertyUtil.getBooleanSystemProperty("selftest.wait.at-end", false)) {
-      System.gc(); // NOPMD
-      System.out.print("Press any key to end test. ");
-      System.out.flush();
-      System.in.read();
-      System.out.println("RC=" + rc);
-    }
+    out.flush();
+    return rc;
+  }
 
-    System.out.flush();
-    System.exit(rc); // NOPMD
+  private void dumpAdditionalProperties() {
+    PrintWriter pw = new PrintWriter(new OutputStreamWriter(out, Charset.defaultCharset()));
+    sp.printAdditionalProperties(pw);
+    pw.flush();
+    out.println();
   }
 
   public void printExplanation() throws IOException {
@@ -237,26 +366,100 @@ public class Selftest {
     out.println("and file a new bug report with the output below.");
     out.println();
     out.println("junixsocket selftest version " + AFUNIXSocket.getVersion());
+
+    Map<String, String> buildProperties = new LinkedHashMap<>(retrieveBuildProperties());
     try (InputStream in = getClass().getResourceAsStream(
         "/META-INF/maven/com.kohlschutter.junixsocket/junixsocket-selftest/git.properties")) {
-      Properties props = new Properties();
       if (in != null) {
+        Properties props = new Properties();
         props.load(in);
-        out.println();
-        out.println("Git properties:");
-        out.println();
         for (String key : new TreeSet<>(props.stringPropertyNames())) {
-          out.println(key + ": " + props.getProperty(key));
+          buildProperties.put(key, props.getProperty(key));
         }
       }
+    }
+    out.println();
+    out.println("Build properties:");
+    for (Map.Entry<String, String> en : buildProperties.entrySet()) {
+      out.println(en.getKey() + ": " + en.getValue());
     }
     out.println();
   }
 
   public void dumpSystemProperties() {
+    Map<Object, Object> map = new TreeMap<>(System.getProperties());
+    // NOTE: Some environments, such as Android, do not enumerate all available properties upon
+    // calling System.getProperties(). Let's make sure we catch the most important properties
+    // by looking them up manually, which seems to work.
+
+    // https://github.com/AndroidSDKSources/android-sdk-sources-for-api-level-33/blob/master/
+    // java/lang/System.java
+    // java/lang/AndroidHardcodedSystemProperties.java
+    for (String expectedKey : new String[] {
+        "android.icu.library.version", //
+        "android.icu.unicode.version", //
+        "android.icu.cldr.version", //
+        "ICUDebug", //
+        "android.icu.text.DecimalFormat.SkipExtendedSeparatorParsing", //
+        "android.icu.text.MessagePattern.ApostropheMode", //
+        "sun.io.useCanonCaches", //
+        "sun.io.useCanonPrefixCache", //
+        "sun.stdout.encoding", //
+        "sun.stderr.encoding", //
+        "http.keepAlive", //
+        "http.keepAliveDuration", //
+        "http.maxConnections", //
+        "javax.net.debug", //
+        "com.sun.security.preserveOldDCEncoding", //
+        "java.util.logging.manager", //
+        //
+        "file.encoding", //
+        "file.separator", //
+        "line.separator", //
+        "path.separator", //
+        "java.boot.class.path", //
+        "java.class.path", //
+        "java.class.version", //
+        "java.compiler", //
+        "java.ext.dirs", //
+        "java.home", //
+        "java.io.tmpdir", //
+        "java.library.path", //
+        "java.vendor", //
+        "java.vendor.url", //
+        "java.version", //
+        "java.net.preferIPv6Addresses", //
+        "java.specification.version", //
+        "java.specification.vendor", //
+        "java.specification.name", //
+        "java.vm.version", //
+        "java.vm.vendor", //
+        "java.vm.vendor.url", //
+        "java.vm.name", //
+        "java.vm.specification.version", //
+        "java.vm.specification.vendor", //
+        "java.vm.specification.name", //
+        "os.arch", //
+        "os.name", //
+        "os.version", //
+        "user.dir", //
+        "user.home", //
+        "user.language", //
+        "user.region", //
+        "user.variant", //
+        "user.name" //
+    }) {
+      if (!map.containsKey(expectedKey)) {
+        String value = System.getProperty(expectedKey);
+        if (value != null) {
+          map.put(expectedKey, value);
+        }
+      }
+    }
+
     out.println("System properties:");
     out.println();
-    for (Map.Entry<Object, Object> en : new TreeMap<>(System.getProperties()).entrySet()) {
+    for (Map.Entry<Object, Object> en : map.entrySet()) {
       String key = String.valueOf(en.getKey());
       String value = String.valueOf(en.getValue());
       StringBuilder sb = new StringBuilder();
@@ -397,9 +600,14 @@ public class Selftest {
 
       String result = res == null ? null : res.result.name();
       String extra;
-      if (res == null || (res.result == Result.SKIP && res.throwable == null)) {
+      if (res == null || ((res.result == Result.SKIP || res.result == Result.AUTOSKIP)
+          && res.throwable == null)) {
         result = "SKIP";
-        extra = "(skipped by user request)";
+        if (res != null && res.result == Result.AUTOSKIP) {
+          extra = "(skipped automatically)";
+        } else {
+          extra = "(skipped by user request)";
+        }
       } else if (res.summary == null) {
         extra = res.throwable == null ? "(unknown error)" : res.throwable.toString();
         fail = true;
@@ -429,14 +637,12 @@ public class Selftest {
     out.println("Unsupported capabilities: " + unsupportedCapabilites);
     out.println();
 
-    if (fail || withIssues) {
-      if (inconclusive || modified) {
-        out.println("Selftest INCONCLUSIVE");
-      } else if (fail) {
-        out.println("Selftest FAILED");
-      } else if (withIssues) {
-        out.println("Selftest PASSED WITH ISSUES");
-      }
+    if (fail) {
+      out.println("Selftest FAILED");
+    } else if (inconclusive || modified) {
+      out.println("Selftest INCONCLUSIVE");
+    } else if (withIssues) {
+      out.println("Selftest PASSED WITH ISSUES");
     } else {
       out.println("Selftest PASSED");
     }
@@ -485,13 +691,15 @@ public class Selftest {
     SkipMode skipMode;
 
     if ((skipMode = getSkipModeForModule(module)).isSkip()) {
-      out.println("Skipping module " + module + "; skipped by request" + (skipMode.isForce()
-          ? " (force)" : ""));
+      boolean autoSkip = skipMode == SkipMode.SKIP_AUTO;
+
+      out.println("Skipping module " + module + "; skipped " + (autoSkip ? "automatically"
+          : "by user request" + (skipMode.isForce() ? " (force)" : "")));
       if (!skipMode.isForce()) {
         withIssues = true;
         modified = true;
       }
-      moduleResult = new ModuleResult(Result.SKIP, null, null);
+      moduleResult = new ModuleResult(autoSkip ? Result.AUTOSKIP : Result.SKIP, null, null);
     } else {
       List<Class<?>> list = new ArrayList<>(testClasses.length);
       for (Class<?> testClass : testClasses) {
@@ -530,7 +738,11 @@ public class Selftest {
           TestIdentifier tid = en.getKey();
           TestExecutionResult res = en.getValue();
           Optional<Throwable> t = res.getThrowable();
-          if (t.isPresent() && t.get() instanceof TestAbortedWithImportantMessageException) {
+          if (!t.isPresent()) {
+            continue;
+          }
+          Throwable throwable = t.get();
+          if (throwable instanceof TestAbortedWithImportantMessageException) {
             String key = module + ": " + ex.getTestIdentifier(tid.getParentId().get())
                 .getDisplayName() + "." + tid.getDisplayName();
             TestAbortedWithImportantMessageException ime =
@@ -538,13 +750,18 @@ public class Selftest {
 
             MessageType messageType = ime.messageType();
             if (messageType.isIncludeTestInfo()) {
-              important.add(ime.getMessage() + "; " + key);
+              important.add(ime.getSummaryMessage() + "; " + key);
             } else {
-              important.add(ime.getMessage());
+              String msg = ime.getSummaryMessage();
+              if (!msg.isEmpty()) {
+                important.add(msg);
+              }
             }
             if (!messageType.isWithIssues()) {
               numAbortedNonIssues++;
             }
+          } else if (throwable instanceof TestAbortedNotAnIssueException) {
+            numAbortedNonIssues++;
           }
         }
       } catch (Exception e) {
@@ -586,7 +803,7 @@ public class Selftest {
       return;
     }
     String p = file.getAbsolutePath();
-    System.out.println("BEGIN contents of file: " + p);
+    out.println("BEGIN contents of file: " + p);
 
     final int maxToRead = 4096;
     char[] buf = new char[4096];
@@ -594,7 +811,7 @@ public class Selftest {
     try (InputStreamReader isr = new InputStreamReader(new FileInputStream(file),
         StandardCharsets.UTF_8);) {
 
-      OutputStreamWriter outWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
+      OutputStreamWriter outWriter = new OutputStreamWriter(out, Charset.defaultCharset());
       int read = -1;
       boolean lastWasNewline = false;
       while (numRead < maxToRead && (read = isr.read(buf)) != -1) {
@@ -604,16 +821,16 @@ public class Selftest {
         lastWasNewline = (read > 0 && buf[read - 1] == '\n');
       }
       if (!lastWasNewline) {
-        System.out.println();
+        out.println();
       }
       if (read != -1) {
-        System.out.println("[...]");
+        out.println("[...]");
       }
     } catch (Exception e) {
-      System.out.println("ERROR while reading contents of file: " + p + ": " + e);
+      out.println("ERROR while reading contents of file: " + p + ": " + e);
     }
-    System.out.println("=END= contents of file: " + p);
-    System.out.println();
+    out.println("=END= contents of file: " + p);
+    out.println();
   }
 
   public void dumpOSReleaseFiles() throws IOException {
@@ -648,21 +865,34 @@ public class Selftest {
     }
   }
 
-  private static Throwable retrieveInitError() {
+  private Throwable retrieveInitError() {
+    return callStaticMethod(diagnosticsHelperClass, "initError", null);
+  }
+
+  private File retrieveTempDir() {
+    return callStaticMethod(diagnosticsHelperClass, "tempDir", null);
+  }
+
+  private Map<String, String> retrieveBuildProperties() {
+    return callStaticMethod(diagnosticsHelperClass, "buildProperties", () -> Collections
+        .emptyMap());
+  }
+
+  private static Class<?> resolveOptionalClass(String name) {
     try {
-      Class<?> clazz = Class.forName("org.newsclub.net.unix.SelftestDiagnosticsHelper");
-      return (Throwable) clazz.getMethod("initError").invoke(null);
+      return Class.forName(name);
     } catch (Exception e) {
       return null;
     }
   }
 
-  private static File retrieveTempDir() {
+  @SuppressWarnings({"unchecked", "null"})
+  private static <T> T callStaticMethod(Class<?> clazz, String methodName,
+      Supplier<T> defaultSupplier) {
     try {
-      Class<?> clazz = Class.forName("org.newsclub.net.unix.SelftestDiagnosticsHelper");
-      return (File) clazz.getMethod("tempDir").invoke(null);
+      return (T) clazz.getMethod(methodName).invoke(null);
     } catch (Exception e) {
-      return null;
+      return defaultSupplier == null ? (T) null : defaultSupplier.get();
     }
   }
 

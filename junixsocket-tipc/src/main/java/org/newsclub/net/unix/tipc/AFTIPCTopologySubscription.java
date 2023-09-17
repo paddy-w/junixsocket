@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ import org.newsclub.net.unix.NamedIntegerBitmask;
 public final class AFTIPCTopologySubscription {
   static final byte[] USR_EMPTY = new byte[8];
 
-  private static final WeakHashMap<ByteBuffer, @Nullable AFTIPCTopologySubscription> SUBSCRIPTIONS =
-      new WeakHashMap<>();
+  private static final WeakHashMap<ByteBuffer, // NOPMD.LooseCoupling
+      @Nullable AFTIPCTopologySubscription> SUBSCRIPTIONS = new WeakHashMap<>();
 
   /**
    * Special timeout value meaning "never timeout".

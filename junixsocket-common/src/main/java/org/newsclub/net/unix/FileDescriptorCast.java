@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,11 +73,6 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
   private static final Map<Class<?>, CastingProviderMap> PRIMARY_TYPE_PROVIDERS_MAP = Collections
       .synchronizedMap(new HashMap<>());
 
-  private final FileDescriptor fdObj;
-
-  private int localPort = 0;
-  private int remotePort = 0;
-
   private static final Function<FileDescriptor, FileInputStream> FD_IS_PROVIDER = System
       .getProperty("osv.version") != null ? LenientFileInputStream::new : FileInputStream::new;
 
@@ -137,6 +132,25 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
           return FD_IS_PROVIDER.apply(fdc.getFileDescriptor());
         }
       });
+      addProvider(FileDescriptor.class, new CastingProvider<FileDescriptor>() {
+        @Override
+        public FileDescriptor provideAs(FileDescriptorCast fdc,
+            Class<? super FileDescriptor> desiredType) throws IOException {
+          return fdc.getFileDescriptor();
+        }
+      });
+      addProvider(Integer.class, new CastingProvider<Integer>() {
+        @Override
+        public Integer provideAs(FileDescriptorCast fdc, Class<? super Integer> desiredType)
+            throws IOException {
+          FileDescriptor fd = fdc.getFileDescriptor();
+          int val = fd.valid() ? NativeUnixSocket.getFD(fd) : -1;
+          if (val == -1) {
+            throw new IOException("Not a valid file descriptor");
+          }
+          return val;
+        }
+      });
 
       if (AFSocket.supports(AFSocketCapability.CAPABILITY_FD_AS_REDIRECT)) {
         addProvider(Redirect.class, new CastingProvider<Redirect>() {
@@ -155,11 +169,34 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
     }
   };
 
+  private static final int FD_IN = getFdIfPossible(FileDescriptor.in);
+  private static final int FD_OUT = getFdIfPossible(FileDescriptor.out);
+  private static final int FD_ERR = getFdIfPossible(FileDescriptor.err);
+
+  private final FileDescriptor fdObj;
+
+  private int localPort = 0;
+  private int remotePort = 0;
+
   private final CastingProviderMap cpm;
 
   private FileDescriptorCast(FileDescriptor fdObj, CastingProviderMap cpm) {
     this.fdObj = Objects.requireNonNull(fdObj);
     this.cpm = Objects.requireNonNull(cpm);
+  }
+
+  private static int getFdIfPossible(FileDescriptor fd) {
+    if (!NativeUnixSocket.isLoaded()) {
+      return -1;
+    }
+    try {
+      if (!fd.valid()) {
+        return -1;
+      }
+      return NativeUnixSocket.getFD(fd);
+    } catch (IOException e) {
+      return -1;
+    }
   }
 
   private static void registerCastingProviders(Class<?> primaryType, CastingProviderMap cpm) {
@@ -223,6 +260,7 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
     private final Map<Class<?>, CastingProvider<?>> providers = new HashMap<>();
     private final Set<Class<?>> classes = Collections.unmodifiableSet(providers.keySet());
 
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     protected CastingProviderMap() {
       addProviders();
 
@@ -290,9 +328,64 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
     return new FileDescriptorCast(fdObj, map == null ? GLOBAL_PROVIDERS : map);
   }
 
+  /**
+   * Creates a {@link FileDescriptorCast} using the given native file descriptor value.
+   * <p>
+   * This method is inherently unsafe as it may
+   * <ol>
+   * <li>make assumptions on the internal system representation of a file descriptor (which differs
+   * between Windows and Unix, for example).</li>
+   * <li>provide access to resources that are otherwise not accessible</li>
+   * </ol>
+   * <p>
+   * Note that attempts are made to reuse {@link FileDescriptor#in}, {@link FileDescriptor#out}, and
+   * {@link FileDescriptor#err}, respectively.
+   *
+   * @param fd The system-native file descriptor value.
+   * @return The {@link FileDescriptorCast} instance.
+   * @throws IOException on error, especially if the given file descriptor is invalid or
+   *           unsupported, or when "unsafe" operations are unavailable or manually disabled for the
+   *           current environment.
+   */
+  @Unsafe
+  public static FileDescriptorCast unsafeUsing(int fd) throws IOException {
+    AFSocket.ensureUnsafeSupported();
+
+    FileDescriptor fdObj;
+    if (fd == -1) {
+      throw new IOException("Not a valid file descriptor");
+    } else if (fd == FD_IN) {
+      fdObj = FileDescriptor.in;
+    } else if (fd == FD_OUT) {
+      fdObj = FileDescriptor.out;
+    } else if (fd == FD_ERR) {
+      fdObj = FileDescriptor.err;
+    } else {
+      fdObj = null;
+    }
+
+    if (fdObj != null) {
+      int check = getFdIfPossible(fdObj);
+      if (fd == check) {
+        return using(fdObj);
+      }
+    }
+
+    fdObj = new FileDescriptor();
+    NativeUnixSocket.initFD(fdObj, fd);
+
+    return using(fdObj);
+  }
+
   private static void triggerInit() {
-    AFUNIXSocketAddress.addressFamily().getClass(); // trigger registration
-    AFTIPCSocketAddress.addressFamily().getClass(); // trigger registration
+    for (AFAddressFamily<?> family : new AFAddressFamily<?>[] {
+        AFUNIXSocketAddress.addressFamily(), //
+        AFTIPCSocketAddress.addressFamily(), //
+        AFVSOCKSocketAddress.addressFamily(), //
+        AFSYSTEMSocketAddress.addressFamily(), //
+    }) {
+      Objects.requireNonNull(family.getClass()); // trigger init
+    }
   }
 
   /**

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.rmi.server.RMISocketFactory;
  * @see RemoteCloseable
  * @param <T> The resource type.
  */
-public class RemoteCloseableImpl<T> implements RemoteCloseable<T> {
+public final class RemoteCloseableImpl<T> implements RemoteCloseable<T> {
   private final T remote;
 
   /**
@@ -45,7 +45,7 @@ public class RemoteCloseableImpl<T> implements RemoteCloseable<T> {
   }
 
   @Override
-  public final void close() throws IOException {
+  public void close() throws IOException {
     AFNaming.unexportObject(this);
     doClose(remote);
   }
@@ -56,7 +56,7 @@ public class RemoteCloseableImpl<T> implements RemoteCloseable<T> {
    * @param obj The object to close.
    * @throws IOException on error.
    */
-  protected void doClose(T obj) throws IOException {
+  private void doClose(T obj) throws IOException {
     if (obj instanceof Closeable) {
       ((Closeable) obj).close();
     }

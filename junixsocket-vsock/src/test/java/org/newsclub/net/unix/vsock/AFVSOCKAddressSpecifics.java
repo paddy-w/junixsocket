@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
   /**
    * Older kernels are unable to communicate locally when CID == 2 (VMADDR_CID_HOST).
    */
-  static final String KERNEL_TOO_OLD =
+  static final String KERNEL_NOT_CONFIGURED =
       "Kernel may be too old or not configured for full VSOCK support";
 
   /**
@@ -108,7 +108,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
   public CloseablePair<? extends SocketChannel> newSocketPair() throws IOException {
     try {
       return AFVSOCKSocketPair.open();
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, "");
     }
   }
@@ -117,7 +117,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
   public CloseablePair<? extends DatagramChannel> newDatagramSocketPair() throws IOException {
     try {
       return AFVSOCKSocketPair.openDatagram();
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, "");
     }
   }
@@ -126,25 +126,25 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
   public AFServerSocket<?> newServerSocketBindOn(SocketAddress addr) throws IOException {
     try {
       return AFVSOCKServerSocket.bindOn((AFVSOCKSocketAddress) addr);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, addr);
     }
   }
 
   private static SocketException handleSocketException(SocketException e, String msg)
       throws SocketException, IOException {
-
     final String shortMsg;
     if (e instanceof AddressUnavailableSocketException) {
       shortMsg = ACCESS_DENIED;
     } else if (e instanceof InvalidSocketException) {
-      shortMsg = KERNEL_TOO_OLD;
+      shortMsg = KERNEL_NOT_CONFIGURED;
     } else {
       return e;
     }
 
+    String message = msg == null || msg.isEmpty() ? shortMsg : shortMsg + ": " + msg;
     throw new TestAbortedWithImportantMessageException(MessageType.TEST_ABORTED_SHORT_INFORMATIONAL,
-        msg == null || msg.isEmpty() ? shortMsg : shortMsg + ": " + msg, e);
+        message, summaryImportantMessage0(), e);
   }
 
   private static SocketException handleSocketException(SocketException e, SocketAddress addr)
@@ -160,7 +160,12 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
         return handleSocketException(e, "Cannot connect to addresses with CID=" + sa.getVSOCKCID()
             + "; try \"modprobe vsock_loopback\"");
       default:
-        return e;
+        if (e instanceof InvalidSocketException) {
+          return handleSocketException(e, "Cannot connect to addresses with CID=" + sa.getVSOCKCID()
+              + "; try \"modprobe vsock_loopback\"");
+        } else {
+          return e;
+        }
     }
   }
 
@@ -169,7 +174,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
       throws IOException {
     try {
       serverSocket.bind(bindpoint);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, bindpoint);
     }
   }
@@ -179,7 +184,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
       throws IOException {
     try {
       serverSocket.bind(bindpoint, backlog);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, bindpoint);
     }
   }
@@ -189,7 +194,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
       throws IOException {
     try {
       serverSocketChannel.bind(bindpoint);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, bindpoint);
     }
   }
@@ -199,7 +204,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
       int backlog) throws IOException {
     try {
       serverSocketChannel.bind(bindpoint, backlog);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, bindpoint);
     }
   }
@@ -209,7 +214,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
     AFVSOCKSocketAddress sa = (AFVSOCKSocketAddress) addr;
     try {
       return AFVSOCKSocket.connectTo(sa);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, sa);
     }
   }
@@ -218,7 +223,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
   public void connectSocket(Socket sock, SocketAddress addr) throws IOException {
     try {
       sock.connect(addr);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, addr);
     }
   }
@@ -227,7 +232,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
   public boolean connectSocket(SocketChannel sock, SocketAddress addr) throws IOException {
     try {
       return sock.connect(addr);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, addr);
     }
   }
@@ -237,7 +242,7 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
       throws IOException {
     try {
       return AFVSOCKServerSocket.bindOn((AFVSOCKSocketAddress) addr, deleteOnClose);
-    } catch (InvalidSocketException e) {
+    } catch (SocketException e) {
       throw handleSocketException(e, addr);
     }
   }
@@ -246,5 +251,19 @@ public final class AFVSOCKAddressSpecifics implements AddressSpecifics<AFVSOCKSo
   public CloseablePair<? extends Socket> newInterconnectedSockets() throws IOException {
     CloseablePair<? extends SocketChannel> sp = newSocketPair();
     return new CloseablePair<>(sp.getFirst().socket(), sp.getSecond().socket());
+  }
+
+  @Override
+  public String addressFamilyString() {
+    return "AF_VSOCK";
+  }
+
+  @Override
+  public String summaryImportantMessage(String message) {
+    return summaryImportantMessage0();
+  }
+
+  private static String summaryImportantMessage0() {
+    return "Environment may not be configured for VSOCK. More information at https://kohlschutter.github.io/junixsocket/junixsocket-vsock/";
   }
 }

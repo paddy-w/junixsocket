@@ -34,6 +34,7 @@ static char *kExceptionClassnames[kExceptionMaxExcl] = {
     "org/newsclub/net/unix/InvalidArgumentSocketException", // kExceptionInvalidArgumentSocketException
     "org/newsclub/net/unix/AddressUnavailableSocketException", // kExceptionAddressUnavailableSocketException
     "org/newsclub/net/unix/OperationNotSupportedSocketException", // kExceptionOperationNotSupportedSocketException
+    "org/newsclub/net/unix/NoSuchDeviceSocketException", // kExceptionNoSuchDeviceSocketException
 };
 
 static jclass *kExceptionClasses;
@@ -46,6 +47,12 @@ void init_exceptions(JNIEnv *env) {
 
     for (int i=0; i<kExceptionMaxExcl; i++) {
         jclass exc = findClassAndGlobalRef(env, kExceptionClassnames[i]);
+        if(!exc) {
+#if DEBUG
+            fprintf(stderr, "Could not find exception class: %s\n", kExceptionClassnames[i]);
+#endif
+            exc = findClassAndGlobalRef(env, "java/lang/IllegalStateException"); // fallback
+        }
         kExceptionClasses[i] = exc;
 
         jmethodID m = (*env)->GetMethodID(env, exc, "<init>", "(Ljava/lang/String;)V");
@@ -97,6 +104,13 @@ void _throwException(JNIEnv* env, ExceptionType exceptionType, char* message)
 void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
 {
     ExceptionType exceptionType;
+
+#if ENOTSUP
+    if(errnum == ENOTSUP) {
+        errnum = EOPNOTSUPP;
+    }
+#endif
+
     switch(errnum) {
         case EAGAIN:
         case ETIMEDOUT:
@@ -115,7 +129,25 @@ void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
             exceptionType = kExceptionAddressUnavailableSocketException;
             break;
         case EOPNOTSUPP:
-            exceptionType = kExceptionAddressUnavailableSocketException;
+#if EPROTOTYPE
+        case EPROTOTYPE:
+#endif
+#if EPROTONOSUPPORT
+        case EPROTONOSUPPORT:
+#endif
+#if ESOCKTNOSUPPORT
+        case ESOCKTNOSUPPORT:
+#endif
+#if EPFNOSUPPORT
+        case EPFNOSUPPORT:
+#endif
+#if EAFNOSUPPORT
+        case EAFNOSUPPORT:
+#endif
+            exceptionType = kExceptionOperationNotSupportedSocketException;
+            break;
+        case ENODEV:
+            exceptionType = kExceptionNoSuchDeviceSocketException;
             break;
         case EPIPE:
         case EBADF:
@@ -135,7 +167,7 @@ void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
 
 #ifdef __linux__
     __auto_type otherBuf = strerror_r(errnum, message, buflen);
-    if(CK_IGNORE_CAST_BEGIN (int)otherBuf CK_IGNORE_CAST_END > 255) {
+    if(CK_IGNORE_CAST_BEGIN (unsigned int)otherBuf CK_IGNORE_CAST_END > 255) {
         // strerror_r is ill-defined.
         strncpy(message,
                 CK_IGNORE_CAST_BEGIN (char *)otherBuf CK_IGNORE_CAST_END,

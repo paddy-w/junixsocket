@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A simple bidirectional Unix socket client that reads from/writes to stdin/stdout.
  */
+@SuppressWarnings("CatchAndPrintStackTrace" /* errorprone */)
 public final class ReadWriteClient extends DemoClientBase {
   @Override
   protected void handleSocket(Socket socket) throws IOException {

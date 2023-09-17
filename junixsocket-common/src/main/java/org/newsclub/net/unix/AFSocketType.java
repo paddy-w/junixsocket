@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ public enum AFSocketType {
   SOCK_DGRAM(NativeUnixSocket.SOCK_DGRAM), //
 
   /**
-   * Sequential packet socket.
+   * Raw mode.
    */
-  SOCK_SEQPACKET(NativeUnixSocket.SOCK_SEQPACKET), //
+  SOCK_RAW(NativeUnixSocket.SOCK_RAW), //
 
   /**
    * Reliably-delivered datagram messages.
@@ -46,6 +46,10 @@ public enum AFSocketType {
    */
   SOCK_RDM(NativeUnixSocket.SOCK_RDM), //
 
+  /**
+   * Sequential packet socket.
+   */
+  SOCK_SEQPACKET(NativeUnixSocket.SOCK_SEQPACKET), //
   ;
 
   private final int id;

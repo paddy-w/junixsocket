@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,8 +79,9 @@ class AFCore extends CleanableState {
   }
 
   void doClose() throws IOException {
-    NativeUnixSocket.close(fd);
-    closed.set(true);
+    if (closed.compareAndSet(false, true)) {
+      NativeUnixSocket.close(fd);
+    }
   }
 
   FileDescriptor validFdOrException() throws SocketException {
@@ -116,33 +117,50 @@ class AFCore extends CleanableState {
     }
     FileDescriptor fdesc = validFdOrException();
 
+    int dstPos = dst.position();
+
     ByteBuffer buf;
-    if (dst.isDirect()) {
+    int pos;
+
+    boolean direct = dst.isDirect();
+    if (direct) {
       buf = dst;
+      pos = dstPos;
     } else {
       buf = getThreadLocalDirectByteBuffer(remaining);
       remaining = Math.min(remaining, buf.remaining());
+      pos = buf.position();
     }
 
     if (!blocking) {
       options |= NativeUnixSocket.OPT_NON_BLOCKING;
     }
 
-    int pos = dst.position();
-
     int count = NativeUnixSocket.receive(fdesc, buf, pos, remaining, socketAddressBuffer, options,
         ancillaryDataSupport, 0);
     if (count == -1) {
       return count;
     }
-    if (buf != dst) { // NOPMD
-      buf.limit(count);
-      dst.put(buf);
-    } else {
+
+    if (direct) {
       if (count < 0) {
         throw new IllegalStateException();
       }
       dst.position(pos + count);
+    } else {
+      int oldLimit = buf.limit();
+      if (count < oldLimit) {
+        buf.limit(count);
+      }
+      try {
+        while (buf.hasRemaining()) {
+          dst.put(buf);
+        }
+      } finally {
+        if (count < oldLimit) {
+          buf.limit(oldLimit);
+        }
+      }
     }
     return count;
   }
@@ -188,13 +206,7 @@ class AFCore extends CleanableState {
 
       bufPos = buf.position();
 
-      // Java 16: buf.put(bufPos, src, src.position(), Math.min(buf.limit(), src.limit()));
-      int limit = src.limit();
-      if (limit > buf.limit()) {
-        src.limit(buf.limit());
-        buf.put(src);
-        src.limit(limit);
-      } else {
+      while (src.hasRemaining() && buf.hasRemaining()) {
         buf.put(src);
       }
 

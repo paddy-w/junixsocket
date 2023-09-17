@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,9 @@ public class StreamClient {
           return sock.getOutputStream().transferFrom(in);
         }
       });
-      /* long received = */ sock.getInputStream().transferTo(System.out);
+      // /* long received = */ sock.getInputStream().transferTo(System.out); // Java 9+
+      /* long received = */ IOUtil.transfer(sock.getInputStream(), System.out);
+
       /* long sent = */ sentFuture.get();
       exc.shutdown();
     }

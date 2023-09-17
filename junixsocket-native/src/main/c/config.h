@@ -46,6 +46,12 @@ CK_IGNORE_RESERVED_IDENTIFIER_END
 #  define _POSIX_SOURCE
 #endif
 
+#if _TPF_SOURCE
+// s390x-ibm-tpf-gcc may errneously generate these
+#  undef __GLIBC__
+#  undef __linux__
+#endif
+
 #include <stddef.h>
 #include <errno.h>
 #if __TOS_MVS__
@@ -73,6 +79,16 @@ CK_IGNORE_UNUSED_MACROS_END
 #endif
 
 #if __TOS_MVS__
+// z/OS
+#  undef junixsocket_have_ancillary
+#  undef junixsocket_have_pipe2
+#  define junixsocket_use_poll_for_read
+#  define junixsocket_use_poll_for_accept
+#endif
+
+#if _TPF_SOURCE
+// z/TPF
+#  undef junixsocket_have_sun_len
 #  undef junixsocket_have_ancillary
 #  undef junixsocket_have_pipe2
 #  define junixsocket_use_poll_for_read
@@ -85,6 +101,11 @@ CK_IGNORE_UNUSED_MACROS_END
 #endif
 #if defined(_OS400)
 #  define JUNIXSOCKET_HARDEN_CMSG_NXTHDR 1
+#endif
+
+#if defined(__HAIKU__)
+#  define junixsocket_use_poll_for_accept
+#  undef junixsocket_have_pipe2
 #endif
 
 #if !defined(uint64_t) && !defined(_INT64_TYPE) && !defined(_UINT64_T) && !defined(_UINT64_T_DEFINED_)
@@ -205,22 +226,33 @@ extern "C" {
 
 // Linux
 #ifdef __linux__
-#undef junixsocket_have_sun_len
+#  undef junixsocket_have_sun_len
 
-#if !defined(JUNIXSOCKET_HARDEN_CMSG_NXTHDR)
+#  if !defined(JUNIXSOCKET_HARDEN_CMSG_NXTHDR)
 // workaround for systems using musl libc
-#  define JUNIXSOCKET_HARDEN_CMSG_NXTHDR 1
-#endif
+#    define JUNIXSOCKET_HARDEN_CMSG_NXTHDR 1
+#  endif
 
-#include <linux/tipc.h>
-#include <arpa/inet.h>
-#define junixsocket_have_tipc 1
+#  include <linux/tipc.h>
+#  include <arpa/inet.h>
+#  define junixsocket_have_tipc 1
+#endif // __linux__
+
+#if __TOS_MVS__
+// z/OS XLC doesn't have __has_include
+#else
 
 #if defined(AF_VSOCK) && __has_include(<linux/vm_sockets.h>)
 #include <linux/vm_sockets.h>
 #define junixsocket_have_vsock 1
 #endif
+
+#if defined(__MACH__) && __has_include(<sys/kern_control.h>)
+#  include <sys/kern_control.h>
+#  define junixsocket_have_system 1
 #endif
+
+#endif // not __TOS_MVS_
 
 // Solaris
 #if defined(__sun) || defined(__sun__)

@@ -83,10 +83,18 @@ int sockTypeToNative(JNIEnv *env, int type) {
             return SOCK_STREAM;
         case org_newsclub_net_unix_NativeUnixSocket_SOCK_DGRAM:
             return SOCK_DGRAM;
+        case org_newsclub_net_unix_NativeUnixSocket_SOCK_RAW:
+            return SOCK_RAW;
+#if defined(SOCK_RDM)
+        case org_newsclub_net_unix_NativeUnixSocket_SOCK_RDM:
+            return SOCK_RDM;
+#endif
+#if defined(SOCK_SEQPACKET)
         case org_newsclub_net_unix_NativeUnixSocket_SOCK_SEQPACKET:
             return SOCK_SEQPACKET;
+#endif
         default:
-            _throwException(env, kExceptionSocketException, "Illegal type");
+            _throwException(env, kExceptionSocketException, "Illegal or unsupported type");
             return -1;
     }
 }
@@ -127,10 +135,12 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_createSocket
         return;
     }
 
+    int protocol = 0;
+
 #if defined(junixsocket_have_socket_cloexec)
-    handle = socket(domain, type | SOCK_CLOEXEC, 0);
+    handle = socket(domain, type | SOCK_CLOEXEC, protocol);
     if(handle == -1 && errno == EPROTONOSUPPORT) {
-        handle = socket(domain, type, 0);
+        handle = socket(domain, type, protocol);
         if(handle > 0) {
 #  if defined(FD_CLOEXEC)
             fcntl(handle, F_SETFD, FD_CLOEXEC); // best effort
@@ -138,7 +148,7 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_createSocket
         }
     }
 #else
-    handle = socket(domain, type, 0);
+    handle = socket(domain, type, protocol);
 #endif
     if(handle < 0) {
         _throwErrnumException(env, socket_errno, fd);
@@ -180,6 +190,7 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_socketStatus
      if(ret != 0) {
          int errnum = socket_errno;
          switch(errnum) {
+             case EOPNOTSUPP:
              case EINVAL:
              case ENOTCONN:
              case ENOTSOCK: // OSv socketpair
@@ -196,6 +207,7 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_socketStatus
      if(ret != 0) {
          int errnum = socket_errno;
          switch(errnum) {
+             case EOPNOTSUPP:
              case EINVAL:
              case ENOTCONN:
              case ENOTSOCK: // OSv socketpair

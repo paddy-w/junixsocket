@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2022 Christian Kohlschütter
+ * Copyright 2009-2023 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,12 @@ import org.newsclub.net.unix.AFSocketCapability;
 // This is a deliberate copy of the same class from junixsocket-common's tests.
 // CPD-OFF
 public class AFSocketCapabilityCondition implements ExecutionCondition {
+  /**
+   * Constructs a new {@link AFSocketCapabilityCondition}.
+   */
+  public AFSocketCapabilityCondition() {
+  }
+
   @SuppressWarnings("exports")
   @Override
   public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {

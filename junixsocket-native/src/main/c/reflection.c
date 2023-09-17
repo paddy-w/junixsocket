@@ -27,12 +27,30 @@ static jboolean doSetServerSocket = true;
 static jclass kClassAbstractSelectableChannel;
 static jmethodID kMethodRemoveKey;
 
+static jboolean cap_largePorts = false;
+
+static jboolean checkCapLargePorts(JNIEnv *env);
+
+static jboolean dontInitServerImpl = false;
+
 void init_reflection(JNIEnv *env) {
     kClassAbstractSelectableChannel = findClassAndGlobalRef(env, "java/nio/channels/spi/AbstractSelectableChannel");
     if(kClassAbstractSelectableChannel) {
         kMethodRemoveKey = (*env)->GetMethodID(env, kClassAbstractSelectableChannel, "removeKey", "(Ljava/nio/channels/SelectionKey;)V");
+        if(kMethodRemoveKey == NULL) {
+            (*env)->ExceptionClear(env);
+
+            // https://android.googlesource.com/platform/libcore/+/cff1616/luni/src/main/java/java/nio/channels/spi/AbstractSelectableChannel.java
+            kMethodRemoveKey = (*env)->GetMethodID(env, kClassAbstractSelectableChannel, "deregister", "(Ljava/nio/channels/SelectionKey;)V");
+            if(kMethodRemoveKey == NULL) {
+                (*env)->ExceptionClear(env);
+            }
+        }
     }
+
+    cap_largePorts = checkCapLargePorts(env);
 }
+
 void destroy_reflection(JNIEnv *env) {
     releaseClassGlobalRef(env, kClassAbstractSelectableChannel);
 }
@@ -45,10 +63,26 @@ void destroy_reflection(JNIEnv *env) {
 JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_initServerImpl(
                                                                                   JNIEnv * env, jclass clazz CK_UNUSED, jobject serverSocket, jobject impl)
 {
+    if(dontInitServerImpl) {
+        return;
+    }
+
+    callObjectSetter(env, serverSocket, "<init>", "(Ljava/net/SocketImpl;)V", impl);
+    if(!(*env)->ExceptionCheck(env)) {
+        // all done
+        return;
+    }
+    (*env)->ExceptionClear(env);
+
     setObjectFieldValue(env, serverSocket, "impl", "Ljava/net/SocketImpl;",
                         impl);
+    if((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        // cannot access impl (probably Android)
 
-    if (doSetServerSocket) {
+        dontInitServerImpl = true;
+        return;
+    } else if(doSetServerSocket) {
         // no longer present in Java 16
         doSetServerSocket = setObjectFieldValueIfPossible(env, impl, "serverSocket", "Ljava/net/ServerSocket;",
                                       serverSocket);
@@ -63,21 +97,22 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_initServerImp
 JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_setPort(
                                                                            JNIEnv * env, jclass clazz CK_UNUSED, jobject addr, jint port)
 {
-    jclass fileDescriptorClass = (*env)->GetObjectClass(env, addr);
+    jclass clsInetSocketAddress = (*env)->GetObjectClass(env, addr);
 
     jobject fieldObject = addr;
 
     jfieldID portField;
-    jfieldID holderField = (*env)->GetFieldID(env, fileDescriptorClass,
+    jfieldID holderField = (*env)->GetFieldID(env, clsInetSocketAddress,
                                               "holder", "Ljava/net/InetSocketAddress$InetSocketAddressHolder;");
     if(holderField != NULL) {
         fieldObject = (*env)->GetObjectField(env, addr, holderField);
         jclass holderClass = (*env)->GetObjectClass(env, fieldObject);
         portField = (*env)->GetFieldID(env, holderClass, "port", "I");
     } else {
-        portField = (*env)->GetFieldID(env, fileDescriptorClass, "port", "I");
+        portField = (*env)->GetFieldID(env, clsInetSocketAddress, "port", "I");
     }
     if(portField == NULL) {
+        (*env)->ExceptionClear(env);
         _throwException(env, kExceptionSocketException,
                         "Cannot find field \"port\" in java.net.InetSocketAddress. Unsupported JVM?");
         return;
@@ -129,7 +164,7 @@ JNIEXPORT jobject JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_currentRMI
     }
     jobject connHandler = (*env)->CallObjectMethod(env, tl,
                                                    tlGet);
-    if(connHandler == NULL) {
+    if((*env)->ExceptionCheck(env) || connHandler == NULL) {
         return NULL;
     }
     jclass connHandlerClass = (*env)->GetObjectClass(env, connHandler);
@@ -159,7 +194,43 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_deregisterSel
     }
     if(kMethodRemoveKey != NULL) {
         (*env)->CallVoidMethod(env, chann, kMethodRemoveKey, key);
+        if((*env)->ExceptionCheck(env)) {
+            return;
+        }
     } else {
         // FIXME
+    }
+}
+
+jboolean supportsLargePorts(void) {
+    return cap_largePorts;
+}
+
+static jboolean checkCapLargePorts(JNIEnv *env) {
+    jclass cls = (*env)->FindClass(env, "java/net/InetSocketAddress");
+    if((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        return false;
+    }
+
+    jmethodID constructor = (*env)->GetMethodID(env, cls, "<init>", "(I)V");
+    if((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        return false;
+    }
+
+    jobject instance = (*env)->NewObject(env, cls, constructor, 0);
+    if(instance == NULL) {
+        (*env)->ExceptionClear(env);
+        return false;
+    }
+
+    Java_org_newsclub_net_unix_NativeUnixSocket_setPort(env, cls, instance, 65536);
+
+    if((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        return false;
+    } else {
+        return true;
     }
 }
