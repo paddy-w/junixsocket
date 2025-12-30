@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ JNIEXPORT jboolean JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_accept
 
     int serverHandle = _getFD(env, fdServer);
     if(serverHandle < 0) {
-        _throwException(env, kExceptionSocketException, "Socket is closed");
+        _throwException(env, kExceptionSocketClosedException, "Socket is closed");
         return false;
     }
 

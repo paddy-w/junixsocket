@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,7 +177,7 @@ JNIEXPORT jobject JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_peerCreden
         ucred_free(uc);
     }
 #  elif defined(LOCAL_PEERCRED)
-    struct xucred cr = {};
+    struct xucred cr = {0};
     {
         socklen_t len = sizeof(cr);
 

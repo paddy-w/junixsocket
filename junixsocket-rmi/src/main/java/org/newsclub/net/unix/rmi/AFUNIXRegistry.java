@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
  */
 package org.newsclub.net.unix.rmi;
 
-import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 
 /**
@@ -29,7 +28,7 @@ import java.rmi.registry.Registry;
  * @author Christian Kohlschütter
  */
 public class AFUNIXRegistry extends AFRegistry {
-  AFUNIXRegistry(AFNaming naming, Registry impl) throws RemoteException {
+  AFUNIXRegistry(AFNaming naming, Registry impl) {
     super(naming, impl);
   }
 }

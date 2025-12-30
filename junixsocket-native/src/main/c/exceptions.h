@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,14 @@ typedef enum {
     kExceptionAddressUnavailableSocketException,
     kExceptionOperationNotSupportedSocketException,
     kExceptionNoSuchDeviceSocketException,
+    kExceptionBrokenPipeSocketException,
+    kExceptionConnectionResetSocketException,
+    kExceptionSocketClosedException,
+    kExceptionNotConnectedSocketException,
+    kExceptionFileNotFoundException,
+    kExceptionFileAlreadyExistsException,
+    kExceptionIOException,
+    kExceptionOperationNotSupportedIOException,
     kExceptionMaxExcl
 } ExceptionType;
 
@@ -45,6 +53,9 @@ void _throwException(JNIEnv* env, ExceptionType exceptionType, char* message);
 void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose);
 
 void _throwSockoptErrnumException(JNIEnv* env, int errnum, jobject fd);
+
 CK_IGNORE_RESERVED_IDENTIFIER_END
+
+void throwIOErrnumException(JNIEnv* env, int errnum, jobject fdToClose);
 
 #endif /* exceptions_h */

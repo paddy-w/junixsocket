@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@ import java.net.SocketException;
 import org.newsclub.net.unix.AFSocketFactory;
 import org.newsclub.net.unix.AFVSOCKSocketAddress;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
-
 /**
  * The base for a SocketFactory that connects to VSOCK sockets.
  */
@@ -34,7 +32,7 @@ public abstract class AFVSOCKSocketFactory extends AFSocketFactory<AFVSOCKSocket
    * Creates a {@link AFVSOCKSocketFactory}.
    */
   protected AFVSOCKSocketFactory() {
-    super();
+    super(AFVSOCKSocketAddress.class);
   }
 
   @Override
@@ -63,7 +61,7 @@ public abstract class AFVSOCKSocketFactory extends AFSocketFactory<AFVSOCKSocket
    *
    * @author Christian Kohlschütter
    */
-  public static class FixedAddress extends AFVSOCKSocketFactory {
+  public static final class FixedAddress extends AFVSOCKSocketFactory {
     private final AFVSOCKSocketAddress addr;
 
     /**
@@ -82,16 +80,13 @@ public abstract class AFVSOCKSocketFactory extends AFSocketFactory<AFVSOCKSocket
      *
      * @param addr The address.
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public FixedAddress(AFVSOCKSocketAddress addr) {
       super();
       this.addr = addr;
     }
 
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     @Override
-    public final AFVSOCKSocketAddress addressFromHost(String host, int javaPort)
-        throws SocketException {
+    public AFVSOCKSocketAddress addressFromHost(String host, int javaPort) throws SocketException {
       return addr;
     }
   }

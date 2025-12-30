@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.newsclub.net.unix.domain;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,7 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.time.Duration;
 
@@ -44,10 +45,10 @@ import org.newsclub.net.unix.AFSocketCapabilityRequirement;
 import org.newsclub.net.unix.AFUNIXDatagramSocket;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
+import org.newsclub.net.unix.AFUNIXSocketChannel;
 import org.newsclub.net.unix.ImplUtil;
 import org.newsclub.net.unix.SocketTestBase;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.util.IOUtil;
 
 //CPD-OFF - Skip code-duplication checks
@@ -59,8 +60,6 @@ import com.kohlschutter.util.IOUtil;
  */
 @AFSocketCapabilityRequirement({
     AFSocketCapability.CAPABILITY_UNIX_DOMAIN, AFSocketCapability.CAPABILITY_FILE_DESCRIPTORS})
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddress> {
 
   public FileDescriptorsTest() {
@@ -76,7 +75,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
           socket.setOutboundFileDescriptors(FileDescriptor.in, FileDescriptor.err);
           assertTrue(socket.hasOutboundFileDescriptors());
           try (OutputStream outputStream = socket.getOutputStream()) {
-            outputStream.write("HELLO".getBytes("UTF-8"));
+            outputStream.write("HELLO".getBytes(UTF_8));
           }
           assertFalse(socket.hasOutboundFileDescriptors());
 
@@ -95,7 +94,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
 
         numRead = in.read(buf);
         assertEquals(5, numRead, "'HELLO' is five bytes long");
-        assertEquals("HELLO", new String(buf, 0, numRead, "UTF-8"));
+        assertEquals("HELLO", new String(buf, 0, numRead, UTF_8));
 
         fds = socket.getReceivedFileDescriptors();
         assertEquals(2, fds.length, "Now, we should have two file descriptors");
@@ -111,6 +110,114 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
           assertArrayEquals(new FileDescriptor[0], fds,
               "There shouldn't be any new file descriptors");
         }
+      }
+    });
+  }
+
+  @SuppressWarnings("cast")
+  @Test
+  public void testSendRecvFileDescriptorsChannel() throws Exception {
+    assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+      try (AFUNIXServerThread serverThread = new AFUNIXServerThread() {
+        @Override
+        protected void handleConnection(final AFUNIXSocket socket) throws IOException {
+          AFUNIXSocketChannel channel = socket.getChannel();
+          channel.setOutboundFileDescriptors(FileDescriptor.in, FileDescriptor.err);
+          assertTrue(socket.hasOutboundFileDescriptors());
+          ByteBuffer bb = ByteBuffer.allocate(64);
+          bb.put("HELLO".getBytes(UTF_8));
+          bb.flip();
+          channel.write(bb);
+          assertFalse(socket.hasOutboundFileDescriptors());
+
+          stopAcceptingConnections();
+        }
+      };
+          AFUNIXSocketChannel channel = ((AFUNIXSocket) connectTo(serverThread.getServerAddress()))
+              .getChannel()) {
+        channel.setAncillaryReceiveBufferSize(1024);
+
+        FileDescriptor[] fds;
+        int numRead;
+        fds = channel.getReceivedFileDescriptors();
+        assertArrayEquals(new FileDescriptor[0], fds, "Initially, there are no file descriptors");
+
+        ByteBuffer buf = ByteBuffer.allocate(64);
+
+        numRead = channel.read(buf);
+        assertEquals(5, numRead, "'HELLO' is five bytes long");
+        assertEquals("HELLO", new String((byte[]) buf.flip().array(), 0, numRead, UTF_8));
+
+        fds = channel.getReceivedFileDescriptors();
+        assertEquals(2, fds.length, "Now, we should have two file descriptors");
+
+        fds = channel.getReceivedFileDescriptors();
+        assertArrayEquals(new FileDescriptor[0], fds,
+            "If we ask again, these new file descriptors should be gone");
+
+        buf.clear();
+        numRead = channel.read(buf);
+        assertEquals(-1, numRead, "There shouldn't be anything left to read");
+        fds = channel.getReceivedFileDescriptors();
+        assertArrayEquals(new FileDescriptor[0], fds,
+            "There shouldn't be any new file descriptors");
+      }
+    });
+  }
+
+  @SuppressWarnings("cast")
+  @Test
+  public void testSendRecvFileDescriptorsChannelNonBlocking() throws Exception {
+    assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+      try (AFUNIXServerThread serverThread = new AFUNIXServerThread() {
+        @Override
+        protected void handleConnection(final AFUNIXSocket socket) throws IOException {
+          AFUNIXSocketChannel channel = socket.getChannel();
+          channel.configureBlocking(false);
+          channel.setOutboundFileDescriptors(FileDescriptor.in, FileDescriptor.err);
+          assertTrue(socket.hasOutboundFileDescriptors());
+          ByteBuffer bb = ByteBuffer.allocate(64);
+          bb.put("HELLO".getBytes(UTF_8));
+          bb.flip();
+          channel.write(bb);
+          assertFalse(socket.hasOutboundFileDescriptors());
+
+          stopAcceptingConnections();
+        }
+      };
+          AFUNIXSocketChannel channel = ((AFUNIXSocket) connectTo(serverThread.getServerAddress()))
+              .getChannel()) {
+        channel.configureBlocking(false);
+        channel.setAncillaryReceiveBufferSize(1024);
+
+        FileDescriptor[] fds;
+        int numRead;
+        fds = channel.getReceivedFileDescriptors();
+        assertArrayEquals(new FileDescriptor[0], fds, "Initially, there are no file descriptors");
+
+        ByteBuffer buf = ByteBuffer.allocate(64);
+
+        do {
+          numRead = channel.read(buf);
+        } while (numRead >= 0 && buf.position() < 5);
+        assertEquals(5, buf.position(), "'HELLO' is five bytes long");
+        assertEquals("HELLO", new String((byte[]) buf.flip().array(), 0, numRead, UTF_8));
+
+        fds = channel.getReceivedFileDescriptors();
+        assertEquals(2, fds.length, "Now, we should have two file descriptors");
+
+        fds = channel.getReceivedFileDescriptors();
+        assertArrayEquals(new FileDescriptor[0], fds,
+            "If we ask again, these new file descriptors should be gone");
+
+        buf.clear();
+        numRead = channel.read(buf);
+        if (numRead != 0) {
+          assertEquals(-1, numRead, "There shouldn't be anything left to read");
+        }
+        fds = channel.getReceivedFileDescriptors();
+        assertArrayEquals(new FileDescriptor[0], fds,
+            "There shouldn't be any new file descriptors");
       }
     });
   }
@@ -294,12 +401,12 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
         @Override
         protected void handleConnection(final AFUNIXSocket socket) throws IOException {
           try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
-            fos.write("WORLD!".getBytes("UTF-8"));
+            fos.write("WORLD!".getBytes(UTF_8));
           }
           try (FileInputStream fin = new FileInputStream(tmpFile)) {
             socket.setOutboundFileDescriptors(fin.getFD());
             try (OutputStream outputStream = socket.getOutputStream()) {
-              outputStream.write("HELLO".getBytes("UTF-8"));
+              outputStream.write("HELLO".getBytes(UTF_8));
             }
           }
 
@@ -316,7 +423,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
 
         numRead = in.read(buf);
         assertEquals(5, numRead, "'HELLO' is five bytes long");
-        assertEquals("HELLO", new String(buf, 0, numRead, "UTF-8"));
+        assertEquals("HELLO", new String(buf, 0, numRead, UTF_8));
 
         fds = socket.getReceivedFileDescriptors();
         assertEquals(1, fds.length, "Now, we should have two file descriptors");
@@ -325,7 +432,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
         try (FileInputStream fin = new FileInputStream(fdesc)) {
           numRead = fin.read(buf);
           assertEquals(6, numRead, "'WORLD!' is six bytes long");
-          assertEquals("WORLD!", new String(buf, 0, numRead, "UTF-8"));
+          assertEquals("WORLD!", new String(buf, 0, numRead, UTF_8));
         }
       } finally {
         Files.deleteIfExists(tmpFile.toPath());
@@ -343,7 +450,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
         @Override
         protected void handleConnection(final AFUNIXSocket socket) throws IOException {
           try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
-            fos.write("WORLD!".getBytes("UTF-8"));
+            fos.write("WORLD!".getBytes(UTF_8));
           }
           try (FileInputStream fin = new FileInputStream(tmpFile)) {
             assertEquals('W', fin.read());
@@ -351,7 +458,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
             // We send the file descriptor of fin, from which we already consumed one byte.
             socket.setOutboundFileDescriptors(fin.getFD());
             try (OutputStream outputStream = socket.getOutputStream()) {
-              outputStream.write("HELLO".getBytes("UTF-8"));
+              outputStream.write("HELLO".getBytes(UTF_8));
             }
           }
 
@@ -368,7 +475,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
 
         numRead = in.read(buf);
         assertEquals(5, numRead, "'HELLO' is five bytes long");
-        assertEquals("HELLO", new String(buf, 0, numRead, "UTF-8"));
+        assertEquals("HELLO", new String(buf, 0, numRead, UTF_8));
 
         fds = socket.getReceivedFileDescriptors();
         assertEquals(1, fds.length, "Now, we should have two file descriptors");
@@ -377,7 +484,7 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
         try (FileInputStream fin = new FileInputStream(fdesc)) {
           numRead = fin.read(buf);
           assertEquals(5, numRead, "'ORLD!' is five bytes long");
-          assertEquals("ORLD!", new String(buf, 0, numRead, "UTF-8"));
+          assertEquals("ORLD!", new String(buf, 0, numRead, UTF_8));
         }
       } finally {
         Files.deleteIfExists(tmpFile.toPath());
@@ -414,16 +521,16 @@ public final class FileDescriptorsTest extends SocketTestBase<AFUNIXSocketAddres
           assertEquals(1, fds.length);
 
           try (FileOutputStream fos2 = new FileOutputStream(fds[0])) {
-            fos2.write("Hello".getBytes(StandardCharsets.UTF_8));
+            fos2.write("Hello".getBytes(UTF_8));
             // closing the received file descriptor will not close the original one ...
           }
 
           // ... which is why we can append the data here
-          fos.write("World".getBytes(StandardCharsets.UTF_8));
+          fos.write("World".getBytes(UTF_8));
         }
 
         try (FileInputStream fin = new FileInputStream(tmpOut)) {
-          String text = new String(IOUtil.readAllBytes(fin), StandardCharsets.UTF_8);
+          String text = new String(IOUtil.readAllBytes(fin), UTF_8);
           // ... and the final output will contain both parts
           assertEquals("HelloWorld", text);
         }

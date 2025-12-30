@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,22 +31,22 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
+import com.kohlschutter.testutil.TestAsyncUtil;
+import com.kohlschutter.testutil.TestStackTraceUtil;
 
 /**
  * Verifies that accept properly times out when an soTimeout was specified.
  *
  * @author Christian Kohlschütter
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketTestBase<A> {
   private static final int TIMING_INACCURACY_MILLIS = 5000;
 
@@ -87,7 +87,6 @@ public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketT
 
   @Test
   @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.ExcessiveMethodLength"})
-  @SuppressFBWarnings("NP_NONNULL_PARAM_VIOLATION")
   public void testTimeoutAfterDelay() throws Exception {
     final int timeoutMillis = 5000;
 
@@ -117,47 +116,41 @@ public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketT
           SocketAddress serverAddress = serverSock.getLocalSocketAddress();
           serverAddressCF.complete(serverAddress);
 
-          new Thread() {
-            private final Socket socket = newSocket();
+          final Socket threadSocket = newSocket();
+          Thread t = new Thread(() -> {
+            int i = 0;
+            while (keepRunning.get()) {
+              i++;
+              try {
+                Thread.sleep(connectDelayMillis);
+              } catch (InterruptedException e) {
+                return;
+              }
 
-            {
-              setDaemon(true);
-            }
-
-            @Override
-            public void run() {
-              int i = 0;
-              while (keepRunning.get()) {
-                i++;
-                try {
-                  Thread.sleep(connectDelayMillis);
-                } catch (InterruptedException e) {
+              try {
+                connectSocket(threadSocket, serverAddress);
+                runtimeExceptionCF.complete(null);
+              } catch (SocketTimeoutException e) {
+                if (!keepRunning.get()) {
                   return;
                 }
 
-                try {
-                  connectSocket(socket, serverAddress);
-                  runtimeExceptionCF.complete(null);
-                } catch (SocketTimeoutException e) {
-                  if (!keepRunning.get()) {
-                    return;
-                  }
-
-                  System.out.println("SocketTimeout, trying connect again (" + i + ")");
-                  continue;
-                } catch (TestAbortedWithImportantMessageException e) {
-                  runtimeExceptionCF.complete(e);
-                } catch (IOException e) {
-                  // ignore "connection reset by peer", etc. after connection was accepted
-                  if (!accepted.get()) {
-                    e.printStackTrace();
-                  }
+                System.out.println("SocketTimeout, trying connect again (" + i + ")");
+                continue;
+              } catch (TestAbortedWithImportantMessageException e) {
+                runtimeExceptionCF.complete(e);
+              } catch (IOException e) {
+                // ignore "connection reset by peer", etc. after connection was accepted
+                if (!accepted.get()) {
+                  e.printStackTrace();
                 }
-
-                break; // NOPMD.AvoidBranchingStatementAsLastInLoop
               }
+
+              break; // NOPMD.AvoidBranchingStatementAsLastInLoop
             }
-          }.start();
+          });
+          t.setDaemon(true);
+          t.start();
 
           long time = System.currentTimeMillis();
           try (Socket socket = serverSock.accept();) {
@@ -224,9 +217,59 @@ public abstract class AcceptTimeoutTest<A extends SocketAddress> extends SocketT
   public void testAcceptWithoutBindToService() throws Exception {
     ServerSocket ss = newServerSocket();
     assertThrows(SocketException.class, () -> {
-      try (Socket s = ss.accept()) {
+      try (Socket unused = ss.accept()) {
         fail("Should not be reached");
       }
     });
+  }
+
+  @Test
+  public void testPendingAcceptCloseServerSocketImmediately() throws Exception {
+    testPendingAcceptCloseServerSocket(false);
+  }
+
+  @Test
+  public void testPendingAcceptCloseServerSocketDelayed() throws Exception {
+    testPendingAcceptCloseServerSocket(true);
+  }
+
+  private void testPendingAcceptCloseServerSocket(boolean delayed) throws Exception {
+    SocketAddress addr = newTempAddress();
+    ServerSocket ss = newServerSocketBindOn(addr);
+
+    Runnable doClose = () -> {
+      try {
+        ss.close();
+      } catch (IOException e) {
+        TestStackTraceUtil.printStackTrace(e);
+      }
+    };
+
+    if (delayed) {
+      TestAsyncUtil.runAsyncDelayed(1, TimeUnit.SECONDS, doClose);
+    } else {
+      doClose.run();
+    }
+
+    try {
+      assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+        // Should be SocketClosedException or InvalidArgumentSocketException, but no guarantee
+        assertThrows(SocketException.class, () -> {
+          try (Socket unused = ss.accept()) {
+            fail("Should not be reached");
+          } catch (SocketException e) {
+            throw e;
+          }
+        });
+      });
+    } catch (AssertionFailedError e) {
+      String msg = checkKnownBugAcceptTimeout(addr);
+      if (msg == null) {
+        throw e;
+      } else {
+        throw new TestAbortedWithImportantMessageException(
+            MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg), e);
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import java.util.Objects;
 
 import javax.net.SocketFactory;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * The base for a SocketFactory that connects to UNIX sockets.
  *
@@ -35,14 +37,20 @@ import javax.net.SocketFactory;
  * @see AFUNIXSocketFactory
  * @param <A> The supported address type.
  */
+@SuppressFBWarnings("UNENCRYPTED_SOCKET")
 public abstract class AFSocketFactory<A extends AFSocketAddress> extends SocketFactory implements
     AFSocketAddressFromHostname<A> {
 
+  private final Class<? extends AFSocketAddress> socketAddressClass;
+
   /**
    * Creates a new socket factory instance.
+   *
+   * @param socketAddressClass The AFSocketAddress subclass.
    */
-  protected AFSocketFactory() {
+  protected AFSocketFactory(Class<? extends AFSocketAddress> socketAddressClass) {
     super();
+    this.socketAddressClass = socketAddressClass;
   }
 
   /**
@@ -72,9 +80,10 @@ public abstract class AFSocketFactory<A extends AFSocketAddress> extends SocketF
   protected abstract Socket connectTo(A addr) throws IOException;
 
   @SuppressWarnings("unchecked")
+  @SuppressFBWarnings("UNENCRYPTED_SOCKET")
   private Socket connectTo(SocketAddress addr) throws IOException {
-    if (addr instanceof AFSocketAddress) {
-      return connectTo((A) addr);
+    if (AFSocketAddress.canMap(addr, socketAddressClass)) {
+      return connectTo((A) AFSocketAddress.mapOrFail(addr, socketAddressClass));
     } else {
       Socket sock = new Socket();
       sock.connect(addr);
@@ -145,7 +154,7 @@ public abstract class AFSocketFactory<A extends AFSocketAddress> extends SocketF
      * @param address The address to use for all connections.
      */
     public FixedAddressSocketFactory(SocketAddress address) {
-      super();
+      super(AFSocketAddress.class);
       this.forceAddr = Objects.requireNonNull(address);
     }
 
@@ -162,8 +171,8 @@ public abstract class AFSocketFactory<A extends AFSocketAddress> extends SocketF
     @Override
     public Socket createSocket() throws SocketException {
       try {
-        if (forceAddr instanceof AFSocketAddress) {
-          AFSocket<?> socket = ((AFSocketAddress) forceAddr).getAddressFamily().newSocket();
+        if (AFSocketAddress.canMap(forceAddr)) {
+          AFSocket<?> socket = AFSocketAddress.mapOrFail(forceAddr).getAddressFamily().newSocket();
           socket.forceConnectAddress(forceAddr);
           return socket;
         } else {

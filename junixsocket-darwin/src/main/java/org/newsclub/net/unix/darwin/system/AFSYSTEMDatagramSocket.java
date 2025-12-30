@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,5 +107,10 @@ public final class AFSYSTEMDatagramSocket extends AFDatagramSocket<AFSYSTEMSocke
    */
   public int getNodeIdentity(WellKnownKernelControlNames name) throws IOException {
     return getNodeIdentity(name.getControlName());
+  }
+
+  @Override
+  protected AFDatagramSocket<AFSYSTEMSocketAddress> newDatagramSocketInstance() throws IOException {
+    return new AFSYSTEMDatagramSocket(null);
   }
 }

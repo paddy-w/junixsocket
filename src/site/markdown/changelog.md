@@ -10,7 +10,113 @@ artifact (`<type>pom</type>`); see [Add junixsocket to your project](dependency.
 
 ## Noteworthy changes
 
-**Users of junixsocket are strongly advised to upgrade to version 2.7.2 or newer**
+**Users of junixsocket are strongly advised to upgrade to version 2.10.1 or newer**
+
+### _(XXXX-XX-XX)_ **junixsocket 2.11.0**
+
+- Add junixsocket-memory, a new Java 22+ module to support Shared Memory in a platform-agnostic way via MemorySegment, including
+support for Linux memfd_secret, Futex-based Mutexes, and even Windows.
+- Fix an unecessary exception being thrown for `TIPC_GROUP_LEAVE` (AFTIPCSocket)
+- Improve support for casting FileDescriptor to FileChannel; allow specifying open mode.
+- Building now requires Java 22 or newer
+- Code cleanup
+
+### _(2024-09-23)_ **junixsocket 2.10.1**
+
+- Fix left-over temporary library files on Windows
+- Fix duplicate file descriptors being received sporadically for non-blocking sockets and upon error
+- Fix a flaky selftest when VSOCK is not supported
+- Fix a flaky selftest with GraalvM 17
+- Fix a flaky selftest with old-style finalizers
+- Improve interoperability with exotic Linux/Java combinations
+- Add support for loongarch64 Linux
+- Add more tests
+- Code cleanup
+
+### _(2024-07-08)_ **junixsocket 2.10.0**
+
+- Fix compatibility with Java 7
+- Fix error handling for non-blocking operations on Windows
+- Fix interoperability of junixsocket-mysql and GraalVM native-image
+- Fix socket-closed state upon exceptions indicating a closed socket descriptor
+- Fix exceptions for channels: Throw ClosedChannelException instead of SocketClosedException, etc.
+- Fix a flaky selftest when VSOCK is not supported
+- Improve compatibility and performance with Virtual Threads in Java 21 or newer (JEP 444)
+- Improve interopability with Java 15 UnixDomainSocketAddress and StandardProtocolFamily.UNIX
+- Improve selftest stability and logging, more tests
+- Add support for ServerSocketChannel.bind(null) for AF_UNIX socket addresses.
+- Add more tests for mysql interoperability, optionally include mysql tests in selftest
+- Add NotConnectedSocketException, NotBoundSocketException
+- Building now requires Java 21, Maven 3.8.8 or newer
+- Update build-time dependencies
+- Code cleanup
+
+### _(2024-04-05)_ **junixsocket 2.9.1**
+
+- Fix ignored timeouts for Mysql-specific AFUNIXDatabaseSocketFactoryCJ
+- Fix GraalVM configuration, support AFUNIXSocketFactory for native-image
+- Fix compatibility with jetty 12.0.7
+- Fix unnecessary failures in some tests, error handling in selftest
+- Improve SocketException handling (throw SocketClosedException subclass upon accept error)
+- Make native library code compile on Minix
+- Add availability check of abstract namespace on emulated Linux environments (BSD)
+- Add junixsocket-demo-jpackagejlink artifact to show how to use jpackage/jlink with junixsocket
+- Update crossclang scripts, fix compatibility with Xcode 15.3
+- Code cleanup
+
+### _(2024-02-14)_ **junixsocket 2.9.0**
+
+- Add generic socket fallback for FileDescriptors received from other processes
+- Add "dup"/"dup2" support via FileDescriptorCast.duplicating
+- Add listen/accept support to AFDatagramSocket, so we can serve SEQPACKETs
+- Add more SocketException subclasses (such as BrokenPipe-/ConnectionResetSocketException)
+- Add support to make shutdown-upon-close configurable
+- Add support for undocumented "ECLOSED" (errno 3417) condition on IBM i PASE
+- Add test for the "close-during-accept" condition
+- Fix native library loading for AIX/IBM i on Java 15 and newer
+- Fix blocking state when using FileDescriptorCast
+- Fix module-info.java: Don't mark requirements transient (annotations, mysql connector)
+- Fix TIPC tests on some old environments (which didn't time out)
+- Fix compilation for z/OS 32-bit
+- Fix AFServerSocketChannel.getLocalAddress to return AFSocketAddress subclass
+- Fix unnecessary failures in some tests, error handling in selftest
+- Fix "force override" path parsing for native library on Windows
+- Update build/plugin/test/demo dependencies
+- Update crossclang scripts; no longer requires root to install Xcode components
+- Improve error handling on broken Java VMs (e.g., IBM Semeru 8.0.7 and older)
+- Improve demo code, use slf4j-simple for logging
+- Code cleanup
+
+Backwards-incompatible change: Some AF*Socket* classes are now final or no longer declare constructor exceptions.
+
+### _(2023-11-12)_ **junixsocket 2.8.3**
+
+- Fix concurrency issue with AFSocketServerConnector, AFSelectionKey; take two
+- Fix regression introduced in 2.8.2 that leaked FileDescriptors
+- Reduce allocation overhead during select
+
+### _(2023-10-27)_ **junixsocket 2.8.2** (do not use; has a regression)
+
+- Fix concurrency issue with AFSocketServerConnector, AFSelectionKey
+
+### _(2023-09-29)_ **junixsocket 2.8.1**
+
+- Fix UnsatisfiedLinkError with noexec temporary directory on RHEL 9 and others
+
+### _(2023-09-28)_ **junixsocket 2.8.0**
+
+- Java 7 support is back! (junixsocket-common only, as it was before version 2.5.0)
+- Fix AFSocket shutdown to ignore InvalidSocketException upon setTimeout
+- Fix two potential hangs in selftest
+- Fix loading of the native library when running under macOS Rosetta 2
+- Fix a potential exception when trying to serialize an AFRMISocketFactory
+- Fix a potential race condition when working with native addresses
+- Fix a potential crash in TIPC code when compiling the native library against an old Linux SDK
+- Improve AFSocketServer, add new methods
+- Improve crossclang to support Xcode 15
+- Enable RMI support for GraalVM native-image; selftest now passes without issues
+- Add junixsocket-ssl, to simplify securing junixsocket connections
+- Requires Java 17 to build (and JDK 8 if Java 7 support is desired); build instructions have changed
 
 ### _(2023-09-15)_ **junixsocket 2.7.2**
 
@@ -87,7 +193,7 @@ artifact (`<type>pom</type>`); see [Add junixsocket to your project](dependency.
  - Fix support for very large datagrams (> 1MB)
  - Fix InetAddress-wrapping of long addresses
  - Update Xcode support script, crossclang
- - Bump postgresql version in demo code 
+ - Bump postgresql version in demo code
  - Fix dependency for custom architecture artifact
 
 ### _(2022-07-01)_ **junixsocket 2.5.1**
@@ -100,7 +206,7 @@ artifact (`<type>pom</type>`); see [Add junixsocket to your project](dependency.
 
 ### _(2022-06-06)_ **junixsocket 2.5.0**
 
- - New supported platforms: AIX 7 Power64, IBM i Power64, Windows ARM64, Windows Server 2019 & 2022 
+ - New supported platforms: AIX 7 Power64, IBM i Power64, Windows ARM64, Windows Server 2019 & 2022
  - Generic rework to support more than just Unix Domain sockets
  - Add support for AF_TIPC (on Linux)
  - Add support for using sockets passed as standard input
@@ -198,7 +304,7 @@ artifact (`<type>pom</type>`); see [Add junixsocket to your project](dependency.
  - Add support for sending and receiving file descriptors
  - Add support for the abstract namespace on Linux and Windows
  - Add AFUNIXSocketServer, a multi-threaded UNIX domain server implementation
- - Introduced AFUNIXSocketCapabilities to check which capabilities are supported on your platform  
+ - Introduced AFUNIXSocketCapabilities to check which capabilities are supported on your platform
  - AFUNIXServerSocket#setReuseAddress can now control whether reusing an existing socket is permitted
  - Exception handling: No longer wrap SocketExceptions, throw SocketTimeoutException upon EAGAIN for read
  - Improve handling of closed sockets
@@ -211,17 +317,15 @@ artifact (`<type>pom</type>`); see [Add junixsocket to your project](dependency.
  - Introduced "crossclang": junixsocket can now be cross-compiled with clang/LLVM
  - Improved demo code, new demo client
 
+### _(2018-12-29)_ **junixsocket 2.1.2**
 
-#### _(2018-12-29)_ **junixsocket 2.1.2**      
-    
 - Add AFUNIXSocketFactory, support for PostgreSQL
 - Add support for new MySQL Connector/J SocketFactory
 - Prevent a case of file descriptor leakage
 - Handle EINTR errors from system calls
 
+### _(2018-12-26)_ **junixsocket 2.1.1**
 
-#### _(2018-12-26)_ **junixsocket 2.1.1**
-  
 - Support for Java 8, 9, 10 and 11
 - Building junixsocket requires Java 9 or later
 - Jigsaw module support
@@ -237,24 +341,50 @@ artifact (`<type>pom</type>`); see [Add junixsocket to your project](dependency.
 - Documentation updates
 - Updated Maven dependencies
 
-
-#### _(2014-09-29)_ **junixsocket 2.0.1**
+### _(2014-09-29)_ **junixsocket 2.0.1**
 
 - **Bugfix:** Add byte array bounds checking to read/write methods.
 - Fix C compiler warnings
 - Remove synchronized byte[] array for single-byte reads/writes.
 
+### _(2014-09-28)_ **junixsocket 2.0.0**
 
-
-#### _(2014-09-28)_ **junixsocket 2.0.0**
-  
 - Move from *Google Code* to *GitHub*.
 - Use Maven as the build system, code is distributed to the *Maven Central* repository.
 - Build native C code using *nar-maven-plugin*, and load JNI libraries *native-lib-loader*
 
+### _(2013-02-20)_ **junixsocket 1.4**
 
-#### 
+- Fix InetSocketAddress.port issue with recent JDK
+- Fix setOption: SO_RCVBUF and SO_SNDBUF take integers
+- Fix native library load issue on RHEL4 32-bit
+- Fix some test failures
 
-See the commit log for more details.
+### _(2010-08-11)_ **junixsocket 1.3**
 
-The changelog for 1.x release is archived on [Google Code](https://code.google.com/archive/p/junixsocket/) 
+- Solaris support
+- InputStream#available() may now return values > 0
+- Added explicit mapping of java.net.SocketOptions values
+- Fixed "protocol not available" and "invalid argument" errors occuring in rare cases
+- Improved some warnings and error messages
+- Improved build process, can now skip building for 32/64 bit
+
+### _(2010-04-22)_ **junixsocket 1.2**
+
+- Bugfixes and improvements
+- MySQL unix socket factory now available as a separate jar (and with demo code)
+- Now compiles under FreeBSD
+- Initial support for Tru64
+- Improved handling of stale socket files
+
+### _(2009-12-03)_ **junixsocket 1.1**
+
+- Bugfixes and improvements
+
+### _(2009-08-28)_ **junixsocket 1.0**
+
+- Initial release
+
+####
+
+See the [commit log](https://github.com/kohlschutter/junixsocket/commits/main/) for more details.

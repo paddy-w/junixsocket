@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,11 @@ import java.nio.channels.Selector;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.AbstractSelector;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 final class AFSelector extends AbstractSelector {
   private final AFPipe selectorPipe;
@@ -41,11 +42,16 @@ final class AFSelector extends AbstractSelector {
   private final ByteBuffer pipeMsgWakeUp = ByteBuffer.allocate(1);
   private final ByteBuffer pipeMsgReceiveBuffer = ByteBuffer.allocateDirect(256);
 
-  private final Set<AFSelectionKey> keysRegistered = ConcurrentHashMap.newKeySet();
+  private final Map<AFSelectionKey, Integer> keysRegistered = new ConcurrentHashMap<>();
+  private final Set<AFSelectionKey> keysRegisteredKeySet = keysRegistered.keySet();
   private final Set<SelectionKey> keysRegisteredPublic = Collections.unmodifiableSet(
-      keysRegistered);
+      keysRegisteredKeySet);
 
-  private final Set<SelectionKey> selectedKeysSet = new HashSet<>();
+  private final AtomicInteger selectCount = new AtomicInteger(0);
+
+  @SuppressWarnings("PMD.LooseCoupling")
+  private final MapValueSet<SelectionKey, Integer> selectedKeysSet =
+      new MapValueSet<SelectionKey, Integer>(keysRegistered, selectCount::get, 0);
   private final Set<SelectionKey> selectedKeysPublic = new UngrowableSet<>(selectedKeysSet);
 
   private PollFd pollFd = null;
@@ -62,7 +68,7 @@ final class AFSelector extends AbstractSelector {
     AFSelectionKey key = new AFSelectionKey(this, ch, ops, att);
     synchronized (this) {
       pollFd = null;
-      keysRegistered.add(key);
+      selectedKeysSet.markRemoved(key);
     }
     return key;
   }
@@ -105,12 +111,15 @@ final class AFSelector extends AbstractSelector {
   @SuppressWarnings("PMD.CognitiveComplexity")
   private int select0(int timeout) throws IOException {
     PollFd pfd;
+
+    int selectId = updateSelectCount();
+
     synchronized (this) {
       if (!isOpen()) {
         throw new ClosedSelectorException();
       }
+
       pfd = pollFd = initPollFd(pollFd);
-      selectedKeysSet.clear();
     }
     int num;
     try {
@@ -120,7 +129,6 @@ final class AFSelector extends AbstractSelector {
       end();
     }
     synchronized (this) {
-      selectedKeysSet.clear();
       pfd = pollFd;
       if (pfd != null) {
         AFSelectionKey[] keys = pfd.keys;
@@ -137,7 +145,7 @@ final class AFSelector extends AbstractSelector {
       }
       if (num > 0) {
         consumeAllBytesAfterPoll();
-        setOpsReady(pfd); // updates keysSelected and numKeysSelected
+        setOpsReady(pfd, selectId); // updates keysSelected and numKeysSelected
       }
       return selectedKeysSet.size();
     }
@@ -158,8 +166,7 @@ final class AFSelector extends AbstractSelector {
     synchronized (pipeMsgReceiveBuffer) {
       pipeMsgReceiveBuffer.clear();
       maxReceive = pipeMsgReceiveBuffer.remaining();
-      bytesReceived = NativeUnixSocket.receive(pollFd.fds[0], pipeMsgReceiveBuffer, 0, maxReceive,
-          null, options, null, 1);
+      bytesReceived = receive(maxReceive, options);
     }
 
     if (bytesReceived == maxReceive && maxReceive > 0) {
@@ -169,22 +176,80 @@ final class AFSelector extends AbstractSelector {
         if ((read = NativeUnixSocket.poll(selectorPipePollFd, 0)) > 0) {
           synchronized (pipeMsgReceiveBuffer) {
             pipeMsgReceiveBuffer.clear();
-            read = NativeUnixSocket.receive(selectorPipePollFd.fds[0], pipeMsgReceiveBuffer, 0,
-                maxReceive, null, options, null, 1);
+            read = receive(maxReceive, options);
           }
         }
       } while (read == maxReceive && read > 0);
     }
   }
 
-  private synchronized void setOpsReady(PollFd pfd) {
+  @SuppressWarnings("PMD.CognitiveComplexity")
+  private int receive(int maxReceive, int options) throws IOException {
+    final boolean virtualBlocking = ThreadUtil.isVirtualThread();
+    final long now;
+    if (virtualBlocking) {
+      now = System.currentTimeMillis();
+      options |= NativeUnixSocket.OPT_NON_BLOCKING;
+    } else {
+      now = 0;
+    }
+
+    FileDescriptor fdesc = selectorPipePollFd.fds[0];
+
+    boolean park = false;
+    int count;
+    virtualThreadLoop : do {
+      if (virtualBlocking) {
+        if (park) {
+          VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_WRITE, now,
+              AFPipe.DUMMY_TIMEOUT, this::close);
+        }
+        NativeUnixSocket.configureBlocking(fdesc, false);
+      }
+      try {
+        count = NativeUnixSocket.receive(fdesc, pipeMsgReceiveBuffer, 0, maxReceive, null, options,
+            null, 1);
+        if (count == 0 && virtualBlocking) {
+          // try again
+          park = true;
+          continue virtualThreadLoop;
+        }
+      } catch (SocketTimeoutException e) {
+        if (virtualBlocking) {
+          // try again
+          park = true;
+          continue virtualThreadLoop;
+        } else {
+          throw e;
+        }
+      } finally {
+        if (virtualBlocking) {
+          NativeUnixSocket.configureBlocking(fdesc, true);
+        }
+      }
+      break; // NOPMD.AvoidBranchingStatementAsLastInLoop virtualThreadLoop
+    } while (true); // NOPMD.WhileLoopWithLiteralBoolean
+    return count;
+  }
+
+  private int updateSelectCount() {
+    int selectId = selectCount.incrementAndGet();
+    if (selectId == 0) {
+      // overflow (unlikely)
+      selectedKeysSet.markAllRemoved();
+      selectId = selectCount.incrementAndGet();
+    }
+    return selectId;
+  }
+
+  private void setOpsReady(PollFd pfd, int selectId) {
     if (pfd != null) {
       for (int i = 1; i < pfd.rops.length; i++) {
         int rops = pfd.rops[i];
         AFSelectionKey key = pfd.keys[i];
         key.setOpsReady(rops);
-        if (rops != 0 && key.isValid()) {
-          selectedKeysSet.add(key);
+        if (rops != 0 && keysRegistered.containsKey(key)) {
+          keysRegistered.put(key, selectId);
         }
       }
     }
@@ -193,9 +258,9 @@ final class AFSelector extends AbstractSelector {
   @SuppressWarnings({"resource", "PMD.CognitiveComplexity"})
   private PollFd initPollFd(PollFd existingPollFd) throws IOException {
     synchronized (this) {
-      for (Iterator<AFSelectionKey> it = keysRegistered.iterator(); it.hasNext();) {
+      for (Iterator<AFSelectionKey> it = keysRegisteredKeySet.iterator(); it.hasNext();) {
         AFSelectionKey key = it.next();
-        if (!key.getAFCore().fd.valid() || key.hasOpInvalid()) {
+        if (!key.getAFCore().fd.valid() || !key.isValid()) {
           key.cancelNoRemove();
           it.remove();
           existingPollFd = null;
@@ -209,7 +274,7 @@ final class AFSelector extends AbstractSelector {
           (existingPollFd.keys.length - 1) == keysRegistered.size()) {
         boolean needsUpdate = false;
         int i = 1;
-        for (AFSelectionKey key : keysRegistered) {
+        for (AFSelectionKey key : keysRegisteredKeySet) {
           if (existingPollFd.keys[i] != key || !key.isValid()) { // NOPMD
             needsUpdate = true;
             break;
@@ -225,7 +290,7 @@ final class AFSelector extends AbstractSelector {
       }
 
       int keysToPoll = keysRegistered.size();
-      for (AFSelectionKey key : keysRegistered) {
+      for (AFSelectionKey key : keysRegisteredKeySet) {
         if (!key.isValid()) {
           keysToPoll--;
         }
@@ -240,7 +305,7 @@ final class AFSelector extends AbstractSelector {
       ops[0] = SelectionKey.OP_READ;
 
       int i = 1;
-      for (AFSelectionKey key : keysRegistered) {
+      for (AFSelectionKey key : keysRegisteredKeySet) {
         if (!key.isValid()) {
           continue;
         }
@@ -328,6 +393,10 @@ final class AFSelector extends AbstractSelector {
       this.ops = new int[] {op};
       this.rops = new int[1];
       this.keys = null;
+    }
+
+    PollFd(FileDescriptor[] fds, int[] ops) {
+      this(null, fds, ops);
     }
 
     @SuppressWarnings("PMD.ArrayIsStoredDirectly")

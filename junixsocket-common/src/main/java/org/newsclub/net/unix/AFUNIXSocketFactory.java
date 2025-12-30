@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import java.util.Objects;
 
 import javax.net.SocketFactory;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * The base for a SocketFactory that connects to UNIX sockets.
  *
@@ -41,7 +43,7 @@ public abstract class AFUNIXSocketFactory extends AFSocketFactory<AFUNIXSocketAd
    * Creates a {@link AFUNIXSocketFactory}.
    */
   protected AFUNIXSocketFactory() {
-    super();
+    super(AFUNIXSocketAddress.class);
   }
 
   @Override
@@ -89,6 +91,7 @@ public abstract class AFUNIXSocketFactory extends AFSocketFactory<AFUNIXSocketAd
    * This is particularly useful for JDBC drivers that take a "socketFactory" and a
    * "socketFactoryArg". The latter will be passed as a constructor argument.
    */
+  @SuppressFBWarnings("PATH_TRAVERSAL_IN")
   public static final class FactoryArg extends DefaultSocketHostnameSocketFactory {
     private final File socketFile;
 
@@ -167,6 +170,7 @@ public abstract class AFUNIXSocketFactory extends AFSocketFactory<AFUNIXSocketAd
    * encoded and without the closing bracket. Since this is an invalid hostname, it will not trigger
    * a DNS lookup, but can still be used within a JDBC Connection URL.
    */
+  @SuppressFBWarnings("PATH_TRAVERSAL_IN")
   public static final class URIScheme extends AFUNIXSocketFactory {
     private static final String FILE_SCHEME_PREFIX = "file://";
     private static final String FILE_SCHEME_PREFIX_ENCODED = "file%";

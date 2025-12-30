@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,21 @@ package org.newsclub.net.unix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.NotYetBoundException;
+import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
@@ -111,17 +118,29 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
       final SocketAddress sa = resolveAddressForSecondBind(sa0, ssc1);
 
       AtomicBoolean connectMustSucceed = new AtomicBoolean(false);
+      AtomicBoolean wasRebound = new AtomicBoolean(false);
 
       acceptCall = TestAsyncUtil.supplyAsync(() -> {
         try {
-          SocketChannel sc = ssc1.accept();
+          SocketChannel sc;
+          try {
+            sc = ssc1.accept();
+          } catch (ClosedChannelException | SocketClosedException e) {
+            if (wasRebound.get()) {
+              // The system terminated our accept because another socket was rebound
+              // This may not occur on all systems, but we have to handle it.
+              return null;
+            } else {
+              throw e;
+            }
+          }
           socketDomainWillAcceptCallOnFirstBind.set(false);
           Objects.requireNonNull(sc);
           if (reuseAddress && !connectMustSucceed.get()) {
-            fail("Did not throw SocketException");
+            // fail("Did not throw SocketException"); // no longer thrown in Sonoma 14.2.1?
           }
           return sc;
-        } catch (SocketException e) {
+        } catch (ClosedChannelException | SocketException e) { // NOPMD.ExceptionAsFlowControl
           String msg = checkKnownBugAcceptFailure(e);
           if (msg != null) {
             throw new TestAbortedWithImportantMessageException(
@@ -139,21 +158,26 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
                 MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg), e);
           }
           fail(e);
-        } catch (IOException e) {
+        } catch (IOException e) { // NOPMD.ExceptionAsFlowControl
           fail(e);
         }
         return null;
       });
 
       try (ServerSocketChannel ssc2 = selectorProvider().openServerSocketChannel()) {
-        ssc2.socket().setReuseAddress(reuseAddress);
+        try {
+          ssc2.setOption(StandardSocketOptions.SO_REUSEADDR, reuseAddress);
+        } catch (UnsupportedOperationException e) {
+          // ignore
+        }
 
         try {
+          wasRebound.set(true);
           bindServerSocket(ssc2, sa, 1);
           if (!reuseAddress && !socketDomainPermitsDoubleBind()) {
             fail("Did not throw expected SocketException (Address already in use)");
           }
-        } catch (SocketException e) {
+        } catch (ClosedChannelException | SocketException e) {
           if (!reuseAddress) {
             // expected
           } else {
@@ -192,6 +216,8 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
           connectCall = TestAsyncUtil.supplyAsync(() -> {
             try {
               newSocket().connect(sa);
+            } catch (ClosedChannelException | SocketClosedException e) {
+              // ignore
             } catch (SocketException e) {
               if (connectMustSucceed.get()) {
                 fail("Connect should have succeeded", e);
@@ -224,7 +250,9 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
     } catch (ExecutionException e) {
       // ignore socket closed etc.
       if (e.getCause() instanceof TestAbortedWithImportantMessageException) {
-        throw (TestAbortedWithImportantMessageException) e.getCause();
+        throw (TestAbortedWithImportantMessageException) e.getCause(); // NOPMD.PreserveStackTrace
+      } else {
+        throw e;
       }
     } catch (TimeoutException e) {
       triggerWithIssues = checkKnownBugFirstAcceptCallNotTerminated();
@@ -254,17 +282,7 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
    * @param e The exception
    * @return An explanation iff this should not cause a test failure but trigger "With issues".
    */
-  protected String checkKnownBugAcceptFailure(SocketException e) {
-    return null;
-  }
-
-  /**
-   * Subclasses may override this to tell that there is a known issue with "accept".
-   *
-   * @param e The exception
-   * @return An explanation iff this should not cause a test failure but trigger "With issues".
-   */
-  protected String checkKnownBugAcceptFailure(SocketTimeoutException e) {
+  protected String checkKnownBugAcceptFailure(IOException e) {
     return null;
   }
 
@@ -397,5 +415,68 @@ public abstract class SocketChannelTest<A extends SocketAddress> extends SocketT
    */
   protected boolean socketDomainPermitsDoubleBind() {
     return false;
+  }
+
+  @Test
+  public void testReadNotConnectedYet() throws Exception {
+    SocketChannel sc = newSocketChannel();
+    assertThrows(NotYetConnectedException.class, () -> sc.read(ByteBuffer.allocate(1)));
+  }
+
+  @Test
+  public void testWriteNotConnectedYet() throws Exception {
+    SocketChannel sc = newSocketChannel();
+    assertThrows(NotYetConnectedException.class, () -> sc.write(ByteBuffer.allocate(1)));
+  }
+
+  @Test
+  public void testAcceptNotBoundYet() throws Exception {
+    ServerSocketChannel sc = newServerSocketChannel();
+    assertThrows(NotYetBoundException.class, sc::accept);
+  }
+
+  protected boolean mayTestBindNullThrowUnsupportedOperationException() {
+    return true;
+  }
+
+  protected boolean mayTestBindNullHaveNullLocalSocketAddress() {
+    return true;
+  }
+
+  protected void cleanupTestBindNull(ServerSocketChannel sc, SocketAddress addr) throws Exception {
+  }
+
+  protected ServerSocket socketIfPossible(ServerSocketChannel channel) {
+    try {
+      return channel.socket();
+    } catch (UnsupportedOperationException e) {
+      return null;
+    }
+  }
+
+  @Test
+  public void testBindNull() throws Exception {
+    try (ServerSocketChannel sc = newServerSocketChannel()) {
+      ServerSocket s = socketIfPossible(sc);
+      assertTrue(s == null || !s.isBound());
+      try {
+        sc.bind(null);
+      } catch (UnsupportedOperationException e) {
+        if (mayTestBindNullThrowUnsupportedOperationException()) {
+          // OK
+          return;
+        } else {
+          throw e;
+        }
+      }
+      assertTrue(s == null || s.isBound());
+
+      SocketAddress addr = sc.getLocalAddress();
+      if (!mayTestBindNullHaveNullLocalSocketAddress()) {
+        assertNotNull(addr);
+      }
+
+      cleanupTestBindNull(sc, addr);
+    }
   }
 }

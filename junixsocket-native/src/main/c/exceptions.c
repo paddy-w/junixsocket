@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,14 @@ static char *kExceptionClassnames[kExceptionMaxExcl] = {
     "org/newsclub/net/unix/AddressUnavailableSocketException", // kExceptionAddressUnavailableSocketException
     "org/newsclub/net/unix/OperationNotSupportedSocketException", // kExceptionOperationNotSupportedSocketException
     "org/newsclub/net/unix/NoSuchDeviceSocketException", // kExceptionNoSuchDeviceSocketException
+    "org/newsclub/net/unix/BrokenPipeSocketException", // kExceptionBrokenPipeSocketException
+    "org/newsclub/net/unix/ConnectionResetSocketException", // kExceptionConnectionResetSocketException
+    "org/newsclub/net/unix/SocketClosedException", // kExceptionSocketClosedException
+    "org/newsclub/net/unix/NotConnectedSocketException", // kExceptionNotConnectedSocketException
+    "java/io/FileNotFoundException", // kExceptionFileNotFoundException
+    "java/nio/file/FileAlreadyExistsException", // kExceptionFileAlreadyExistsException
+    "java/io/IOException", // kExceptionIOException
+    "org/newsclub/net/unix/OperationNotSupportedIOException", // kExceptionOperationNotSupportedIOException
 };
 
 static jclass *kExceptionClasses;
@@ -101,33 +109,34 @@ void _throwException(JNIEnv* env, ExceptionType exceptionType, char* message)
     (*env)->Throw(env, t);
 }
 
-void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
+void throwErrnumException1(JNIEnv* env, int errnum, jobject fdToClose, jboolean isSocket)
 {
     ExceptionType exceptionType;
-
-#if ENOTSUP
-    if(errnum == ENOTSUP) {
-        errnum = EOPNOTSUPP;
-    }
-#endif
 
     switch(errnum) {
         case EAGAIN:
         case ETIMEDOUT:
-#if defined(_WIN32)
-        case WSAETIMEDOUT:
-#endif
             exceptionType = kExceptionSocketTimeoutException;
             break;
         case EHOSTUNREACH:
             exceptionType = kExceptionNoRouteToHostException;
             break;
+#if defined(_WIN32)
+        case 87 /*ERROR_INVALID_PARAMETER*/:
+#endif
         case EINVAL:
-            exceptionType = kExceptionInvalidArgumentSocketException;
+            if(isSocket) {
+                exceptionType = kExceptionInvalidArgumentSocketException;
+            } else {
+                exceptionType = kExceptionIOException;
+            }
             break;
         case EADDRNOTAVAIL:
             exceptionType = kExceptionAddressUnavailableSocketException;
             break;
+#if ENOTSUP != EOPNOTSUPP
+        case ENOTSUP:
+#endif
         case EOPNOTSUPP:
 #if EPROTOTYPE
         case EPROTOTYPE:
@@ -144,22 +153,76 @@ void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
 #if EAFNOSUPPORT
         case EAFNOSUPPORT:
 #endif
-            exceptionType = kExceptionOperationNotSupportedSocketException;
+        case ENOSYS:
+            if(isSocket) {
+                exceptionType = kExceptionOperationNotSupportedSocketException;
+            } else {
+                exceptionType = kExceptionOperationNotSupportedIOException;
+            }
             break;
         case ENODEV:
-            exceptionType = kExceptionNoSuchDeviceSocketException;
+            if(isSocket) {
+                exceptionType = kExceptionNoSuchDeviceSocketException;
+            } else {
+                exceptionType = kExceptionIOException;
+            }
+            break;
+        case ENOTCONN:
+            exceptionType = kExceptionNotConnectedSocketException;
+            if(fdToClose != NULL) {
+                _closeFd(env, fdToClose, -1);
+            }
             break;
         case EPIPE:
-        case EBADF:
+            exceptionType = kExceptionBrokenPipeSocketException;
+            if(fdToClose != NULL) {
+                _closeFd(env, fdToClose, -1);
+            }
+            break;
         case ECONNRESET:
-            // broken pipe, etc. -> close socket fd, so Socket#isClosed returns true
+            exceptionType = kExceptionConnectionResetSocketException;
+            if(fdToClose != NULL) {
+                _closeFd(env, fdToClose, -1);
+            }
+            break;
+#if ECLOSED
+        case ECLOSED:
+#endif
+        case ECONNABORTED:
+            // upon accept(2) either ECONNABORTED (seen on macOS) or ECLOSED (seen on IBM i OS/400)
+            // may indicate that the server socket has been closed
+            exceptionType = kExceptionSocketClosedException;
+            if(fdToClose != NULL) {
+                _closeFd(env, fdToClose, -1);
+            }
+            break;
+        case ENOENT:
+            if(isSocket) {
+                exceptionType = kExceptionSocketException; // unexpected
+            } else {
+                exceptionType = kExceptionFileNotFoundException;
+            }
+            break;
+        case EEXIST:
+            if(isSocket) {
+                exceptionType = kExceptionSocketException; // unexpected
+            } else {
+                exceptionType = kExceptionFileAlreadyExistsException;
+            }
+            break;
+        case EBADF:
+            // close socket fd, so Socket#isClosed returns true
             if(fdToClose != NULL) {
                 _closeFd(env, fdToClose, -1);
             }
 
             CK_FALLTHROUGH;
         default:
-            exceptionType = kExceptionSocketException;
+            if(isSocket) {
+                exceptionType = kExceptionSocketException;
+            } else {
+                exceptionType = kExceptionIOException;
+            }
     }
 
     size_t buflen = 255;
@@ -174,19 +237,25 @@ void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
                 buflen);
     }
 #elif defined(_WIN32)
-    if(errnum == 232) {
-        // Windows may throw this error code. "Connection reset by peer"
-        errnum = ECONNRESET;
-    }
     if(errnum >= 10000) {
         // winsock error
         FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        NULL, errnum, MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
                        message, buflen, NULL);
-    } else if(errnum == 138) {
-        strcpy(message, "Permission to access the network was denied.");
     } else {
-        strncpy(message, strerror(errnum), buflen);
+        switch(errnum) {
+            case 87:
+                strcpy(message, "Invalid parameter");
+                break;
+            case 138:
+                strcpy(message, "Permission to access the network was denied.");
+                break;
+            case 487:
+                strcpy(message, "Invalid address");
+                break;
+            default:
+                strncpy(message, strerror(errnum), buflen);
+        }
     }
 #elif !defined(strerror_r)
     strncpy(message, strerror(errnum), buflen);
@@ -215,12 +284,22 @@ void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
     free(message);
 }
 
+CK_INLINE_IF_POSSIBLE void _throwErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
+{
+    throwErrnumException1(env, errnum, fdToClose, true);
+}
+
+CK_INLINE_IF_POSSIBLE void throwIOErrnumException(JNIEnv* env, int errnum, jobject fdToClose)
+{
+    throwErrnumException1(env, errnum, fdToClose, false);
+}
+
 void _throwSockoptErrnumException(JNIEnv* env, int errnum, jobject fd)
 {
     // when setsockopt returns an error with EINVAL, it may mean the socket was shut down already
     if(errnum == EINVAL) {
         int handle = _getFD(env, fd);
-        struct sockaddr addr = {};
+        struct sockaddr addr = {0};
         socklen_t len = 0;
         int ret = getsockname(handle, &addr, &len);
         if(ret == -1) {

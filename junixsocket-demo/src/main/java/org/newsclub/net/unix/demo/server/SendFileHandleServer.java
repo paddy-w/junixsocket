@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 
 import org.newsclub.net.unix.AFUNIXSocket;
 
@@ -55,7 +56,7 @@ public final class SendFileHandleServer extends DemoServerBase {
         OutputStream os = socket.getOutputStream();
         FileInputStream fin = new FileInputStream(file)) {
       socket.setOutboundFileDescriptors(fin.getFD());
-      os.write("FD sent via ancillary message.".getBytes("UTF-8"));
+      os.write("FD sent via ancillary message.".getBytes(StandardCharsets.UTF_8));
     }
   }
 }

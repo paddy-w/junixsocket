@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.newsclub.net.unix.java.JavaAddressSpecifics;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 
 /**
  * Some base functionality for socket tests.
@@ -62,8 +64,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @author Christian Kohlschuetter
  */
 @SuppressWarnings({"PMD.AbstractClassWithoutAbstractMethod", "PMD.CouplingBetweenObjects"})
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
+@SuppressFBWarnings({"PREDICTABLE_RANDOM"})
 public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs to be public for
                                                                 // junit
 
@@ -86,6 +87,11 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
     }
   }
 
+  @SuppressWarnings("all")
+  @Deprecated
+  protected final void finalize() {
+  }
+
   private static File initSocketFile() {
     return SocketTestBase.newTempFile(System.getProperty("org.newsclub.net.unix.testsocket"));
   }
@@ -94,7 +100,7 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
     return SOCKET_FILE;
   }
 
-  protected final SocketAddress newTempAddress() throws IOException {
+  protected SocketAddress newTempAddress() throws IOException {
     return asp.newTempAddress();
   }
 
@@ -174,6 +180,11 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
 
       start();
       readySema.acquire();
+    }
+
+    @SuppressWarnings("all")
+    @Deprecated
+    protected final void finalize() {
     }
 
     @Override
@@ -265,6 +276,7 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
       return ExceptionHandlingDecision.RAISE;
     }
 
+    @SuppressWarnings("PatternMatchingInstanceof")
     protected void acceptAndHandleConnection() throws IOException {
       boolean acceptSuccess = false;
       sema.release();
@@ -303,6 +315,7 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidInstanceofChecksInCatchClause")
     public final void run() {
       try {
         loop.set(true);
@@ -315,8 +328,14 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
         if (!loop.get()) {
           // ignore
         } else if (handleException(e) != ExceptionHandlingDecision.IGNORE) {
-          e.addSuppressed(caller);
-          exception = e;
+          if (e instanceof TimeoutException
+              && caller instanceof TestAbortedWithImportantMessageException) {
+            caller.addSuppressed(e);
+            exception = caller;
+          } else {
+            e.addSuppressed(caller);
+            exception = e;
+          }
         }
       } catch (Error e) {
         error = e;
@@ -386,6 +405,16 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
     return asp.newSocket();
   }
 
+  protected final Socket newConnectedSocket(SocketAddress addr) throws IOException {
+    Socket s = asp.newSocket();
+    s.connect(addr);
+    return s;
+  }
+
+  protected final SocketChannel newSocketChannel() throws IOException {
+    return asp.newSocketChannel();
+  }
+
   protected final Socket newStrictSocket() throws IOException {
     return asp.newStrictSocket();
   }
@@ -400,6 +429,17 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
 
   protected final ServerSocket newServerSocket() throws IOException {
     return asp.newServerSocket();
+  }
+
+  protected ServerSocketChannel newServerSocketChannel() throws IOException {
+    return asp.newServerSocketChannel();
+  }
+
+  protected ServerSocketChannel newServerSocketChannelBindOn(SocketAddress addr)
+      throws IOException {
+    ServerSocketChannel ssc = asp.newServerSocketChannel();
+    ssc.bind(addr);
+    return ssc;
   }
 
   protected final ServerSocket newServerSocketBindOn(SocketAddress addr) throws IOException {
@@ -456,7 +496,22 @@ public abstract class SocketTestBase<A extends SocketAddress> { // NOTE: needs t
 
   protected final boolean connectSocket(SocketChannel socketChannel, SocketAddress endpoint)
       throws IOException {
-    return asp.connectSocket(socketChannel, endpoint);
+    try {
+      return asp.connectSocket(socketChannel, endpoint);
+    } catch (IllegalStateException | IOException e) {
+      throw handleConnectSocketException(socketChannel, endpoint, e);
+    }
+  }
+
+  protected IOException handleConnectSocketException(SocketChannel socketChannel,
+      SocketAddress endpoint, Exception e) {
+    if (e instanceof IOException) {
+      return (IOException) e;
+    } else if (e instanceof RuntimeException) {
+      throw (RuntimeException) e;
+    } else {
+      throw new IllegalStateException(e);
+    }
   }
 
   protected CloseablePair<? extends Socket> newInterconnectedSockets() throws IOException {

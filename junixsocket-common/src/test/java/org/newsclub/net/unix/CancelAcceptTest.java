@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
 import com.kohlschutter.testutil.TestStackTraceUtil;
@@ -39,14 +38,11 @@ import com.kohlschutter.testutil.TestStackTraceUtil;
 /**
  * Tests breaking out of accept.
  *
- * @see <a href="http://code.google.com/p/junixsocket/issues/detail?id=6">Issue 6</a>
+ * @see <a href="https://code.google.com/archive/p/junixsocket/issues/6">Issue 6</a>
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected static final String NO_SOCKETEXCEPTION_CLOSED_SERVER =
       "Did not throw SocketException when connecting to closed server socket";
-  private boolean serverSocketClosed = false;
 
   protected CancelAcceptTest(AddressSpecifics<A> asp) {
     super(asp);
@@ -54,7 +50,7 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
 
   @Test
   public void issue6test1() throws Exception {
-    serverSocketClosed = false;
+    AtomicBoolean serverSocketClosed = new AtomicBoolean(false);
 
     AtomicBoolean ignoreServerSocketClosedException = new AtomicBoolean(false);
     try (ServerThread serverThread = new ServerThread() {
@@ -65,7 +61,7 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
 
       @Override
       protected void onServerSocketClose() {
-        serverSocketClosed = true;
+        serverSocketClosed.set(true);
       }
 
       @Override
@@ -92,7 +88,7 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
       @SuppressWarnings("resource")
       final ServerSocket serverSocket = serverThread.getServerSocket();
 
-      assertFalse(serverSocketClosed && !serverSocket.isClosed(),
+      assertFalse(serverSocketClosed.get() && !serverSocket.isClosed(),
           "ServerSocket should not be closed now");
 
       // serverSocket.close() may throw a "Socket is closed" exception in the server thread
@@ -102,9 +98,14 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
       SocketAddress serverAddress = serverThread.getServerAddress();
 
       serverSocket.close();
+
       try {
-        try (Socket unused = connectTo(serverAddress)) {
-          // open and close
+        for (int i = 0; i < 2; i++) {
+          try (Socket unused = connectTo(serverAddress)) {
+            // open and close
+          }
+          // race condition: exception may be thrown only after a successful connect
+          // (seen with TIPC only)
         }
 
         String noticeNoSocketException = checkKnownConditionDidNotThrowSocketException();
@@ -118,7 +119,7 @@ public abstract class CancelAcceptTest<A extends SocketAddress> extends SocketTe
         // as expected
       }
 
-      assertTrue(serverSocketClosed || serverSocket.isClosed(),
+      assertTrue(serverSocketClosed.get() || serverSocket.isClosed(),
           "ServerSocket should be closed now");
 
       try {

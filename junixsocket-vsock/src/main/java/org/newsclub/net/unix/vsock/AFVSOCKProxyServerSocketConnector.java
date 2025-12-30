@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.newsclub.net.unix.AFUNIXSocketAddress;
 import org.newsclub.net.unix.AFVSOCKSocketAddress;
 import org.newsclub.net.unix.AddressUnavailableSocketException;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * Provides access to AF_VSOCK connections that aren't directly accessible but exposed via a
  * proxying/multiplexing Unix domain socket.
@@ -35,6 +37,7 @@ import org.newsclub.net.unix.AddressUnavailableSocketException;
  * @see #openFirecrackerStyleConnector(File, int)
  * @see #openDirectConnector()
  */
+@SuppressFBWarnings("PATH_TRAVERSAL_IN")
 public final class AFVSOCKProxyServerSocketConnector implements
     AFServerSocketConnector<AFVSOCKSocketAddress, AFSocketAddress> {
   private static final AFServerSocketConnector<AFVSOCKSocketAddress, AFSocketAddress> DIRECT_CONNECTOR =

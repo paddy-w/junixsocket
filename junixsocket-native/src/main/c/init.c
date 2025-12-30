@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include "config.h"
 #include "init.h"
 
+#include "logging.h"
 #include "exceptions.h"
 #include "capabilities.h"
 #include "reflection.h"
@@ -27,6 +28,8 @@
 #include "polling.h"
 #include "socketoptions.h"
 #include "vsock.h"
+#include "shm.h"
+#include "futex.h"
 
 static jboolean cap_supports_unix = false;
 static jboolean cap_supports_tipc = false;
@@ -141,7 +144,10 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_init
     }
 #endif
 
-    init_exceptions(env); // should be first
+#if DEBUG
+    init_logging(env);  // should be first
+#endif
+    init_exceptions(env); // should be second
 
     init_reflection(env);
     init_unix();
@@ -158,6 +164,8 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_init
 #endif
     init_poll(env);
     init_socketoptions(env);
+    init_shm(env);
+    init_futex(env);
 
     init_capabilities(env); // should be last
 }
@@ -183,6 +191,12 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_destroy
 #endif
     destroy_poll(env);
     destroy_socketoptions(env);
+    destroy_shm(env);
+    destroy_futex(env);
+
+#if DEBUG
+    destroy_logging(env);
+#endif
 }
 
 /*

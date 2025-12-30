@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,13 +66,19 @@ CK_IGNORE_RESERVED_IDENTIFIER_END
 #include <strings.h>
 #include <limits.h>
 
+#if __TANDEM
+#include <cextdecs.h>
+#endif
+
 CK_IGNORE_UNUSED_MACROS_BEGIN
 #define junixsocket_have_sun_len // might be undef'ed below
 #define junixsocket_have_ancillary // might be undef'ed below
 #define junixsocket_have_pipe2 // might be undef'ed below
 CK_IGNORE_UNUSED_MACROS_END
 
-#if !defined(false)
+#if __TANDEM
+#  include <stdbool.h>
+#elif !defined(false)
 #  define false JNI_FALSE
 #  define true JNI_TRUE
 #  define bool jboolean
@@ -80,6 +86,14 @@ CK_IGNORE_UNUSED_MACROS_END
 
 #if __TOS_MVS__
 // z/OS
+#   if PATH_MAX
+#   else
+#      define PATH_MAX 1024
+#   endif
+int sched_yield(void);
+int shm_unlink(const char *name);
+int shm_open(const char *name, int oflag, mode_t mode);
+
 #  undef junixsocket_have_ancillary
 #  undef junixsocket_have_pipe2
 #  define junixsocket_use_poll_for_read
@@ -108,12 +122,19 @@ CK_IGNORE_UNUSED_MACROS_END
 #  undef junixsocket_have_pipe2
 #endif
 
-#if !defined(uint64_t) && !defined(_INT64_TYPE) && !defined(_UINT64_T) && !defined(_UINT64_T_DEFINED_)
+#if __TANDEM
+#elif !defined(uint64_t) && !defined(_INT64_TYPE) && !defined(_UINT64_T) && !defined(_UINT64_T_DEFINED_)
 #  ifdef _LP64
 typedef unsigned long uint64_t;
 #  else
 typedef unsigned long long uint64_t;
 #  endif
+#endif
+
+#if __TANDEM
+#define off64_t off_t
+#elif !defined(off64_t) // FIXME 32-bit
+#define off64_t off_t
 #endif
 
 #if !defined(SOCKLEN_MAX)
@@ -193,6 +214,10 @@ int clock_gettime(int ignored CK_UNUSED, struct timespec *spec);
 
 #if __TOS_MVS__
 // z/OS XLC doesn't have __has_include
+#elif __TANDEM
+#  undef junixsocket_have_sun_len
+#  undef junixsocket_have_pipe2
+#  undef junixsocket_have_ancillary
 #else
 #  if __has_include(<sys/cdefs.h>)
 #    include <sys/cdefs.h>
@@ -219,9 +244,12 @@ int clock_gettime(int ignored CK_UNUSED, struct timespec *spec);
 extern "C" {
 #endif
 
-#if defined(SOCK_CLOEXEC)
-#define junixsocket_have_accept4
-#define junixsocket_have_socket_cloexec
+#if defined(__minix)
+// Minix may have SOCKET_CLOEXEC, but no accept4
+#  define junixsocket_have_socket_cloexec
+#elif defined(SOCK_CLOEXEC)
+#  define junixsocket_have_accept4
+#  define junixsocket_have_socket_cloexec
 #endif
 
 // Linux
@@ -236,10 +264,17 @@ extern "C" {
 #  include <linux/tipc.h>
 #  include <arpa/inet.h>
 #  define junixsocket_have_tipc 1
+
+// This is not strictly necessary for Linux proper,
+// but enabling this feature unbreaks Linux emulation on FreeBSD
+// (disabled until we can figure out how to avoid the overhead unless we're in Linuxulator)
+// #  define junixsocket_use_poll_for_accept
+
 #endif // __linux__
 
 #if __TOS_MVS__
 // z/OS XLC doesn't have __has_include
+#elif __TANDEM
 #else
 
 #if defined(AF_VSOCK) && __has_include(<linux/vm_sockets.h>)
@@ -312,7 +347,7 @@ typedef unsigned long socklen_t; /* 64-bits */
 #undef junixsocket_have_pipe2
 #endif
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__TANDEM)
 #  include <poll.h>
 #endif
 #include <limits.h>
@@ -322,38 +357,51 @@ typedef unsigned long socklen_t; /* 64-bits */
 #  include <uuid/uuid.h>
 #endif
 
+#if SIZE_MAX
+#else
+#   define SIZE_MAX INT_MAX
+#endif
+#define jux_SIZE_MAX ((jlong)((unsigned)SIZE_MAX))
+
 // Windows requires us fetching errno for socket-related errors
 #if defined(_WIN32)
-#  define socket_errno (errno = WSAGetLastError())
+int jux_mangleErrno(int);
+
+union jlong_dword {
+    jlong jlong;
+    struct {
+        DWORD lower;
+        DWORD higher;
+    } dwords;
+};
+typedef union jlong_dword jux_jlong_dword_t;
+
+#  define socket_errno (errno = jux_mangleErrno(WSAGetLastError()))
+#  define io_errno (errno = jux_mangleErrno(GetLastError()))
 #  define ssize_t int
 #elif defined(_OS400)
 CK_VISIBILITY_INTERNAL
 int jux_mangleErrno(int);
 #   define socket_errno (errno = jux_mangleErrno(errno))
+#   define io_errno (errno = jux_mangleErrno(errno))
+
+#  if !defined(ECLOSED)
+// IBM i PASE doesn't define "ECLOSED" but we may encounter it
+#    define ECLOSED 3417
+#  endif
 #else
 #  define socket_errno errno
+#  define io_errno errno
 #endif
 
 #if __GLIBC__
-#  if __CROSSCLANG_NODEPS__
-// nothing to do
-#  else
 // This allows us to link against older glibc versions
+#  include "stat_wrapper.h"
+#  define stat(...) ck_stat(__VA_ARGS__)
+#  if __CROSSCLANG_NODEPS__
+// 
+#  else
 #    define memcpy memmove
-#    ifndef _STAT_VER
-#        if defined(__aarch64__) || defined(__riscv)
-#            define _STAT_VER 0
-#        elif defined(__x86_64__)
-#            define _STAT_VER 1
-#        else
-#            define _STAT_VER 3
-#        endif
-#    endif
-#    if !defined(__xstat)
-extern int __xstat (int __ver, const char *__filename,
-                    struct stat *__stat_buf) __THROW __nonnull ((2, 3));
-#    endif
-#    define stat(...) __xstat(_STAT_VER, __VA_ARGS__)
 #  endif
 #endif
 

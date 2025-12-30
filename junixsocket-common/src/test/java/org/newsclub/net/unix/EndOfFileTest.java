@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,15 +39,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
-
 /**
- * See http://code.google.com/p/junixsocket/issues/detail?id=9
+ * See <a href="https://code.google.com/archive/p/junixsocket/issues/9">Issue 9</a>.
  *
  * @author Derrick Rice (April, 2010)
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class EndOfFileTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected ServerSocket server;
   protected ExecutorService executor;

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,33 @@
  */
 package org.newsclub.net.unix.vsock;
 
-import java.net.ProtocolFamily;
+import java.io.IOException;
+
+import org.newsclub.net.unix.AFProtocolFamily;
 
 /**
  * Describes the protocol families supported by junixsocket-vsock.
  *
  * @author Christian Kohlschütter
  */
-public enum AFVSOCKProtocolFamily implements ProtocolFamily {
+public enum AFVSOCKProtocolFamily implements AFProtocolFamily {
   /**
    * VSOCK.
    */
   VSOCK;
+
+  @Override
+  public AFVSOCKDatagramChannel openDatagramChannel() throws IOException {
+    return AFVSOCKDatagramChannel.open();
+  }
+
+  @Override
+  public AFVSOCKServerSocketChannel openServerSocketChannel() throws IOException {
+    return AFVSOCKServerSocketChannel.open();
+  }
+
+  @Override
+  public AFVSOCKSocketChannel openSocketChannel() throws IOException {
+    return AFVSOCKSocketChannel.open();
+  }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,11 @@ static char *kFDTypeClassNames[kFDTypeMaxExcl] = {
     kClassnameAFSYSTEMDatagramSocket,
 #endif
 };
+
+#if defined(_WIN32)
+#   define dup _dup
+#   define dup2 _dup2
+#endif
 
 static jclass *kFDTypeClasses;
 
@@ -222,9 +227,9 @@ void _initHandle(JNIEnv * env, jobject fd, jlong handle)
 int _closeFd(JNIEnv * env, jobject fd, int handle)
 {
     int ret = 0;
+
     if(fd == NULL) {
         if(handle >= 0) {
-            shutdown(handle, SHUT_RDWR);
 #if defined(_WIN32)
             ret = closesocket(handle);
 #else
@@ -233,11 +238,29 @@ int _closeFd(JNIEnv * env, jobject fd, int handle)
         }
         return ret;
     }
+
+    // Android doesn't like it when we call MonitorEnter on a pending exception.
+    // Temporarily hold on to that exception, and throw again afterwards.
+    jthrowable throwable = (*env)->ExceptionOccurred(env);
+    if(throwable != NULL) {
+        (*env)->ExceptionClear(env);
+    }
+
     (*env)->MonitorEnter(env, fd);
+    int fdHandle = _getFD(env, fd);
+    _initFD(env, fd, -1);
+#if defined(_WIN32)
+    jlong handleWin = _getHandle(env, fd);
+    _initHandle(env, fd, -1);
+#endif
+    (*env)->MonitorExit(env, fd);
+
+    if(throwable != NULL) {
+        (*env)->Throw(env, throwable);
+    }
 
 #if defined(_WIN32)
     jboolean isSocket;
-    jlong handleWin = _getHandle(env, fd);
     if(handleWin > 0) {
         if(handle >= 0) {
             _close(handle);
@@ -250,39 +273,21 @@ int _closeFd(JNIEnv * env, jobject fd, int handle)
     }
 #else
     if(handle >= 0) {
-        shutdown(handle, SHUT_RDWR);
         ret = close(handle);
     }
-
 #endif
-
-    int fdHandle = _getFD(env, fd);
-    _initFD(env, fd, -1);
-#if defined(_WIN32)
-    _initHandle(env, fd, -1);
-#endif
-    (*env)->MonitorExit(env, fd);
-
-    if(handle >= 0) {
-        if(fdHandle >= 0 && handle != fdHandle) {
-#if DEBUG
-            fprintf(stderr, "NativeUnixSocket_closeFd inconsistency: handle %i vs fdHandle %i\n", handle, fdHandle);
-            fflush(stderr);
-#endif
-        }
-    }
 
     if(fdHandle >= 0) {
 #if defined(_WIN32)
         if(isSocket) {
-            shutdown(fdHandle, SHUT_RDWR);
             ret = closesocket(fdHandle);
         } else {
             ret = _close(fdHandle);
         }
 #else
-        shutdown(fdHandle, SHUT_RDWR);
-        ret = close(fdHandle);
+        if(fdHandle != handle) { // if they're identical, we've handled it above already
+           ret = close(fdHandle);
+        }
 #endif
     }
 
@@ -301,12 +306,8 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_close
         _throwException(env, kExceptionNullPointerException, "fd");
         return;
     }
-    (*env)->MonitorEnter(env, fd);
-    int handle = _getFD(env, fd);
-    _initFD(env, fd, -1);
-    (*env)->MonitorExit(env, fd);
 
-    int ret = _closeFd(env, fd, handle);
+    int ret = _closeFd(env, fd, -1);
     if(ret == -1) {
         _throwErrnumException(env, errno, NULL);
         return;
@@ -332,10 +333,38 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_shutdown
             case EPIPE:
                 // ignore
                 return;
+            default:
+                _throwErrnumException(env, errnum, fd);
+                return;
         }
-        _throwErrnumException(env, errnum, fd);
-        return;
     }
+}
+
+/*
+ * Class:     org_newsclub_net_unix_NativeUnixSocket
+ * Method:    checkBlocking
+ * Signature: (Ljava/io/FileDescriptor;)I
+ */
+JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_checkBlocking
+ (JNIEnv *env, jclass clazz CK_UNUSED, jobject fd) {
+    int handle = _getFD(env, fd);
+#if defined(_WIN32)
+    CK_ARGUMENT_POTENTIALLY_UNUSED(handle);
+    // Windows doesn't provide current API to check for blocking state
+    return 2; // "indeterminate; needs re-configure"
+#else
+    int flags = fcntl(handle, F_GETFL);
+    if(flags == -1) {
+        _throwErrnumException(env, socket_errno, NULL);
+        return -1;
+    }
+
+    if((flags & O_NONBLOCK) != 0) {
+        return 0; // "non-blocking"
+    } else {
+        return 1; // "blocking"
+    }
+#endif
 }
 
 /*
@@ -349,7 +378,7 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_configureBloc
 #if defined(_WIN32)
      u_long mode = blocking ? 0 : 1;
      if(ioctlsocket(handle, FIONBIO, &mode) != NO_ERROR) {
-         if(socket_errno == WSAENOTSOCK) {
+         if(socket_errno == ENOTSOCK) {
              CK_IGNORE_CAST_BEGIN
              HANDLE h = (HANDLE)_get_osfhandle(handle);
              CK_IGNORE_CAST_END
@@ -390,7 +419,7 @@ jboolean checkNonBlocking0(int handle, int errnum, int options) {
 #if defined(_WIN32)
     CK_ARGUMENT_POTENTIALLY_UNUSED(handle);
     return ((options & org_newsclub_net_unix_NativeUnixSocket_OPT_NON_BLOCKING) != 0)
-    && (errnum == 0 || errnum == WSAEWOULDBLOCK || errnum == 232 /* named pipes may return this? */);
+    && (errnum == 0 || errnum == EWOULDBLOCK || errnum == 232 /* named pipes may return this? */);
 #else
     if (errnum == EWOULDBLOCK || errnum == EAGAIN || errnum == EINPROGRESS) {
         CK_ARGUMENT_POTENTIALLY_UNUSED(options);
@@ -583,4 +612,65 @@ jboolean supportsCastAsRedirect(void) {
 #else
     return kRedirectImplConstructor != NULL;
 #endif
+}
+
+/*
+ * Class:     org_newsclub_net_unix_NativeUnixSocket
+ * Method:    duplicate
+ * Signature: (Ljava/io/FileDescriptor;Ljava/io/FileDescriptor;)Ljava/io/FileDescriptor;
+ */
+JNIEXPORT jobject JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_duplicate
+ (JNIEnv *env, jclass  clazz CK_UNUSED, jobject source, jobject target) {
+
+    jint sourceFD = _getFD(env, source);
+
+    if(sourceFD < 0) {
+        // invalid fd, or Windows handle (not yet supported)
+        return NULL;
+    }
+
+    jint targetFD = _getFD(env, target);
+
+#if defined(_WIN32)
+    WSAPROTOCOL_INFO protocolInfo;
+    if(WSADuplicateSocket(sourceFD, GetCurrentProcessId(), &protocolInfo) == 0) {
+        SOCKET targetSocket = WSASocket(protocolInfo.iAddressFamily,
+                                        protocolInfo.iSocketType,
+                                        protocolInfo.iProtocol,&protocolInfo, 0, 0);
+        if(targetFD != -1) {
+            // Cannot dup2 a winsock socket
+            _throwErrnumException(env, ENOTSUP, NULL);
+            return NULL;
+        }
+        if(targetSocket == INVALID_SOCKET) {
+            _throwErrnumException(env, socket_errno, NULL);
+            return NULL;
+        }
+        targetFD = targetSocket;
+        goto dupDone;
+    }
+#endif
+
+    if(targetFD == -1) {
+        targetFD = dup(sourceFD);
+    } else {
+        targetFD = dup2(sourceFD, targetFD);
+    }
+
+    goto dupDone;
+
+dupDone:
+    if(targetFD == -1) {
+        _throwErrnumException(env, errno, NULL);
+        return NULL;
+    }
+
+    if (targetFD >= 0) {
+#  if defined(FD_CLOEXEC)
+        fcntl(targetFD, F_SETFD, FD_CLOEXEC); // best effort
+#  endif
+    }
+
+    _initFD(env, target, targetFD);
+    return target;
 }

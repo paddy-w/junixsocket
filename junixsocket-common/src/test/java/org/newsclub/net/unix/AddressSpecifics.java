@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ public interface AddressSpecifics<A extends SocketAddress> {
   Socket newStrictSocket() throws IOException;
 
   Socket newSocket() throws IOException;
+
+  SocketChannel newSocketChannel() throws IOException;
 
   DatagramSocket newDatagramSocket() throws IOException;
 
@@ -106,10 +108,12 @@ public interface AddressSpecifics<A extends SocketAddress> {
     ServerSocket server = newServerSocketBindOn(address);
     Socket client = connectTo(server.getLocalSocketAddress());
     final Socket socket = server.accept();
-    return new CloseablePair<>((AFSocket<?>) client, (AFSocket<?>) socket, server);
+    return new CloseablePair<>(client, socket, server);
   }
 
   DatagramChannel newDatagramChannel() throws IOException;
+
+  ServerSocketChannel newServerSocketChannel() throws IOException;
 
   String summaryImportantMessage(String message);
 }

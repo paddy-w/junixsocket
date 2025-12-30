@@ -31,7 +31,7 @@
 # set -x
 
 # Make sure to include all paths that may contain custom linkers etc.
-PATH="$PATH":/usr/bin:/opt/crossclang/local/bin:/opt/homebrew/bin:/usr/local/bin
+PATH=/opt/crossclang/local/bin:"$PATH":/usr/bin:/opt/homebrew/bin:/usr/local/bin
 export PATH
 
 currentDir=$(cd "$(dirname $0)"; pwd)
@@ -47,7 +47,7 @@ fi
 clangArgs=()
 gccArgs=()
 libsArgs=()
-target=""
+target="$TARGET"
 sdkroot=
 sdkroot_base=""
 
@@ -100,7 +100,17 @@ while [ $# -gt 0 ]; do
       --serialize-diagnostics ) serializeDiagnosticsOut="$v" ;;
   esac
 
-  case "$v" in 
+  case "$v" in
+       @* )
+            argFile=${v:1}
+            if [[ -f "$argFile" ]]; then
+                OLDIFS=$IFS
+                IFS=$'\n'
+                set -- $(cat -- "$argFile" | xargs -n1) $@
+                IFS=$OLDIFS
+                continue
+            fi
+            ;;
       -E ) needLinker=0 ;;
       -fsyntax-only ) needLinker=0 ;;
       -c ) needLinker=0 ;;
@@ -116,7 +126,7 @@ while [ $# -gt 0 ]; do
       -Xcrossclang-use-gcc=* ) gccMode=1 ; compiler="${v#-Xcrossclang-use-gcc=}" ; skipArg=1 ;;
       -Xcrossclang-use-clang=* ) compiler="${v#-Xcrossclang-use-clang=}" ; skipArg=1 ;;
       -Xcrossclang-output-strip-lib-prefix ) outputStripLibPrefix=1 ; skipArg=1 ;;
-      -Xcrossclang-ld64-sdk-version ) ld64_sdk_version="$1"; shift ; skipArg=1 ;;
+      -Xcrossclang-ld64-sdk-version ) if [[ "$1" != "undefined" ]]; then ld64_sdk_version="$1"; fi; shift ; skipArg=1 ;;
       -Xcrossclang-hide-unknown-warning-warnings ) hideUnknownWarningWarnings=1 ; skipArg=1 ;;
       -Xcrossclang-ignore-export-dynamic) ignoreExportDynamic=1 ; skipArg=1 ;;
       -Xcrossclang-ignore-reproducible) ignoreReproducible=1 ; skipArg=1 ;;
@@ -137,9 +147,12 @@ while [ $# -gt 0 ]; do
       -Wbool-conversion ) skipGccArg=1 ;;
       -Wconstant-conversion ) skipGccArg=1 ;;
       -Wquoted-include-in-framework-header ) skipGccArg=1 ;;
+      -Wno-unsafe-buffer-usage ) skipGccArg=1 ;;
       -fno-c++-static-destructors ) skipGccArg=1 ;;
       -fmacro-backtrace-limit=0 ) skipGccArg=1 ;;
       -fdiagnostics-show-note-include-stack ) skipGccArg=1 ;;
+      -fcolor-diagnostics ) skipGccArg=1 ;;
+      -fno-color-diagnostics ) skipGccArg=1 ;;
       -Xclang ) skipGccArg=2 ;; # has an argument
       --analyze ) analyze=1 ;;
       -install_name ) skipGccArg=2 ;; # has an argument
@@ -157,11 +170,15 @@ while [ $# -gt 0 ]; do
       -target ) v="$1"; target="$v"; shift; skipArg=1 ;;
       c++ ) if [ "$previous" == "-x" ]; then looksLikeCPP=1; fi ;;
       -m64 ) extraVersionArgs+=("$v") ;;
+      -rdynamic ) skipGccArg=1 ; hasExportDynamic=1; ;;
       -Xlinker )
             if [[ "$1" == "-export_dynamic" ]]; then
                 hasExportDynamic=1
             elif [[ "$1" == "-reproducible" ]]; then
                 hasReproducible=1
+            elif [[ "$1" == "-no_adhoc_codesign" ]]; then
+                # ignore
+                skipArg=1
             elif [[ -n "$1" ]]; then
                 clangArgs+=("-Xlinker" "$1")
                 gccArgs+=("-Xlinker" "$1")
@@ -647,6 +664,7 @@ if [ -z "$compilerBinary" ]; then
 fi
 
 # set -x
+(
 if [[ $withAndWithoutLC -eq 1 ]]; then
     nodepsOut="${outputFile%.*}.nodeps.${outputFile##*.}"
 
@@ -668,7 +686,8 @@ if [[ $withAndWithoutLC -eq 1 ]]; then
     "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${wwoArgs[@]} ${clangArgs[@]} ${libsArgs[@]} && \
     "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${wwoArgsNoDeps[@]} ${clangArgsNoDeps[@]} ${libsArgs[@]}
 elif [[ $hideUnknownWarningWarnings -eq 1 ]]; then
-    exec "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${output_args[@]} ${clangArgs[@]} ${libsArgs[@]} 2> >(grep -v -E "unrecognized command-line option .* may have been intended to silence")
+    exec "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${output_args[@]} ${clangArgs[@]} ${libsArgs[@]}
 else
     exec "$compilerBinary" ${isystem_decls[@]} ${clangLinkerArgs[@]} ${output_args[@]} ${clangArgs[@]} ${libsArgs[@]}
 fi
+) 2> >(grep -v -E "unrecognized command-line option .* may have been intended to silence" >&2)

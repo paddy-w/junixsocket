@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,15 @@ import java.io.Serializable;
 import java.net.ServerSocket;
 import java.rmi.server.RMIServerSocketFactory;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * An implementation of {@link RMIServerSocketFactory}.
  *
  * @see AFRMISocketFactory
  */
+@SuppressFBWarnings({
+    "SING_SINGLETON_IMPLEMENTS_SERIALIZABLE", "SING_SINGLETON_HAS_NONPRIVATE_CONSTRUCTOR"})
 public class DefaultRMIServerSocketFactory implements RMIServerSocketFactory, Serializable {
   private static final long serialVersionUID = 1L;
   private static final DefaultRMIServerSocketFactory INSTANCE = new DefaultRMIServerSocketFactory();
@@ -48,6 +52,7 @@ public class DefaultRMIServerSocketFactory implements RMIServerSocketFactory, Se
   }
 
   @Override
+  @SuppressFBWarnings("UNENCRYPTED_SERVER_SOCKET")
   public ServerSocket createServerSocket(int port) throws IOException {
     ServerSocket socket = new ServerSocket(port);
     // socket.setSoTimeout(60 * 60 * 1000);

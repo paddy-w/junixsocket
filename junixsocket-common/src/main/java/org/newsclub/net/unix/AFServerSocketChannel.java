@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,22 @@
  */
 package org.newsclub.net.unix;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.net.ProtocolFamily;
 import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.net.StandardProtocolFamily;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
@@ -38,7 +43,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @author Christian Kohlschütter
  */
 public abstract class AFServerSocketChannel<A extends AFSocketAddress> extends ServerSocketChannel
-    implements FileDescriptorAccess {
+    implements FileDescriptorAccess, AFSomeSocketChannel {
   private final @NonNull AFServerSocket<A> afSocket;
 
   /**
@@ -105,12 +110,28 @@ public abstract class AFServerSocketChannel<A extends AFSocketAddress> extends S
 
   @Override
   public AFSocketChannel<A> accept() throws IOException {
-    AFSocket<A> socket = afSocket.accept1(false);
-    return socket == null ? null : socket.getChannel();
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      AFSocket<A> socket = afSocket.accept1(false);
+      complete = true;
+      return socket == null ? null : socket.getChannel();
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
+    }
   }
 
   @Override
-  public final AFSocketAddress getLocalAddress() throws IOException {
+  public final @Nullable A getLocalAddress() {
+    return getLocalSocketAddress();
+  }
+
+  @Override
+  public final @Nullable A getLocalSocketAddress() {
     return afSocket.getLocalSocketAddress();
   }
 
@@ -168,5 +189,37 @@ public abstract class AFServerSocketChannel<A extends AFSocketAddress> extends S
    */
   public final void setDeleteOnClose(boolean b) {
     socket().setDeleteOnClose(b);
+  }
+
+  @Override
+  public void setShutdownOnClose(boolean enabled) {
+    socket().setShutdownOnClose(enabled);
+  }
+
+  /**
+   * Opens a server-socket channel. The {@code family} parameter specifies the {@link ProtocolFamily
+   * protocol family} of the channel's socket.
+   * <p>
+   * If the {@link ProtocolFamily} is of an {@link AFProtocolFamily}, or {@code UNIX}, the
+   * corresponding junixsocket implementation is used. In all other cases, the call is delegated to
+   * {@link ServerSocketChannel#open()}.
+   *
+   * @param family The protocol family.
+   * @return The new {@link ServerSocketChannel}.
+   * @throws IOException on error.
+   */
+  @SuppressFBWarnings("HSM_HIDING_METHOD")
+  public static ServerSocketChannel open(ProtocolFamily family) throws IOException {
+    requireNonNull(family);
+
+    if (family instanceof AFProtocolFamily) {
+      return ((AFProtocolFamily) family).openServerSocketChannel();
+    } else if ("UNIX".equals(family.name())) {
+      return AFUNIXServerSocketChannel.open();
+    } else if (family instanceof StandardProtocolFamily) {
+      return ServerSocketChannel.open();
+    } else {
+      throw new UnsupportedOperationException("Protocol family not supported");
+    }
   }
 }

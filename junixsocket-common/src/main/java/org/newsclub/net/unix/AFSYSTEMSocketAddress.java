@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
 
 /**
  * An {@link AFSocketAddress} for AF_SYSTEM sockets.
@@ -82,13 +83,13 @@ public final class AFSYSTEMSocketAddress extends AFSocketAddress {
     }
   }
 
-  private AFSYSTEMSocketAddress(int port, final byte[] socketAddress, ByteBuffer nativeAddress)
-      throws SocketException {
+  private AFSYSTEMSocketAddress(int port, final byte[] socketAddress,
+      Lease<ByteBuffer> nativeAddress) throws SocketException {
     super(port, socketAddress, nativeAddress, addressFamily());
   }
 
   private static AFSYSTEMSocketAddress newAFSocketAddress(int port, final byte[] socketAddress,
-      ByteBuffer nativeAddress) throws SocketException {
+      Lease<ByteBuffer> nativeAddress) throws SocketException {
     return newDeserializedAFSocketAddress(port, socketAddress, nativeAddress, addressFamily(),
         AFSYSTEMSocketAddress::new);
   }
@@ -358,7 +359,7 @@ public final class AFSYSTEMSocketAddress extends AFSocketAddress {
     for (String p : host.split("\\.")) {
       int v;
       try {
-        v = Integer.parseUnsignedInt(p);
+        v = parseUnsignedInt(p, 10);
       } catch (NumberFormatException e) {
         throw (SocketException) new SocketException("Unsupported URI: " + uri).initCause(e);
       }
@@ -396,7 +397,7 @@ public final class AFSYSTEMSocketAddress extends AFSocketAddress {
     ByteBuffer bb = ByteBuffer.wrap(getBytes());
     StringBuilder sb = new StringBuilder();
     while (bb.remaining() > 0) {
-      sb.append(Integer.toUnsignedString(bb.getInt()));
+      sb.append(toUnsignedString(bb.getInt()));
       if (bb.remaining() > 0) {
         sb.append('.');
       }

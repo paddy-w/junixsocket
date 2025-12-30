@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,5 +107,10 @@ public final class AFUNIXDatagramSocket extends AFDatagramSocket<AFUNIXSocketAdd
       throw new SocketException("Not connected");
     }
     return ((AFUNIXDatagramSocketImpl) getAFImpl()).getPeerCredentials();
+  }
+
+  @Override
+  protected AFDatagramSocket<AFUNIXSocketAddress> newDatagramSocketInstance() throws IOException {
+    return new AFUNIXDatagramSocket(null);
   }
 }

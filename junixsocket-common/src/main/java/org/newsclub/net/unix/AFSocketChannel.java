@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,14 @@
  */
 package org.newsclub.net.unix;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.net.ProtocolFamily;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.net.StandardProtocolFamily;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
@@ -39,7 +43,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @author Christian Kohlschütter
  */
 public abstract class AFSocketChannel<A extends AFSocketAddress> extends SocketChannel implements
-    AFSomeSocket, AFSocketExtensions {
+    AFSomeSocket, AFSocketExtensions, AFSomeSocketChannel {
   private final @NonNull AFSocket<A> afSocket;
   private final AtomicBoolean connectPending = new AtomicBoolean(false);
 
@@ -195,11 +199,22 @@ public abstract class AFSocketChannel<A extends AFSocketAddress> extends SocketC
 
   @Override
   public final boolean connect(SocketAddress remote) throws IOException {
-    boolean connected = afSocket.connect0(remote, 0);
-    if (!connected) {
-      connectPending.set(true);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      boolean connected = afSocket.connect0(remote, 0);
+      if (!connected) {
+        connectPending.set(true);
+      }
+      complete = true;
+      return connected;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
     }
-    return connected;
   }
 
   @Override
@@ -210,12 +225,23 @@ public abstract class AFSocketChannel<A extends AFSocketAddress> extends SocketC
       return false;
     }
 
-    boolean connected = NativeUnixSocket.finishConnect(afSocket.getFileDescriptor())
-        || isConnected();
-    if (connected) {
-      connectPending.set(false);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      boolean connected = NativeUnixSocket.finishConnect(afSocket.getFileDescriptor())
+          || isConnected();
+      if (connected) {
+        connectPending.set(false);
+      }
+      complete = true;
+      return connected;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
     }
-    return connected;
   }
 
   @Override
@@ -230,7 +256,19 @@ public abstract class AFSocketChannel<A extends AFSocketAddress> extends SocketC
 
   @Override
   public final int read(ByteBuffer dst) throws IOException {
-    return afSocket.getAFImpl().read(dst, null);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      int read = afSocket.getAFImpl().read(dst, null);
+      complete = true;
+      return read;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
+    }
   }
 
   @Override
@@ -253,7 +291,19 @@ public abstract class AFSocketChannel<A extends AFSocketAddress> extends SocketC
 
   @Override
   public final int write(ByteBuffer src) throws IOException {
-    return afSocket.getAFImpl().write(src);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      int written = afSocket.getAFImpl().write(src);
+      complete = true;
+      return written;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
+    }
   }
 
   @Override
@@ -303,5 +353,37 @@ public abstract class AFSocketChannel<A extends AFSocketAddress> extends SocketC
   @Override
   public final String toString() {
     return super.toString() + afSocket.toStringSuffix();
+  }
+
+  @Override
+  public void setShutdownOnClose(boolean enabled) {
+    getAFCore().setShutdownOnClose(enabled);
+  }
+
+  /**
+   * Opens a socket channel. The {@code family} parameter specifies the {@link ProtocolFamily
+   * protocol family} of the channel's socket.
+   * <p>
+   * If the {@link ProtocolFamily} is of an {@link AFProtocolFamily}, or {@code UNIX}, the
+   * corresponding junixsocket implementation is used. In all other cases, the call is delegated to
+   * {@link SocketChannel#open()}.
+   *
+   * @param family The protocol family.
+   * @return The new {@link SocketChannel}.
+   * @throws IOException on error.
+   */
+  @SuppressFBWarnings("HSM_HIDING_METHOD")
+  public static SocketChannel open(ProtocolFamily family) throws IOException {
+    requireNonNull(family);
+
+    if (family instanceof AFProtocolFamily) {
+      return ((AFProtocolFamily) family).openSocketChannel();
+    } else if ("UNIX".equals(family.name())) {
+      return AFUNIXSocketChannel.open();
+    } else if (family instanceof StandardProtocolFamily) {
+      return SocketChannel.open();
+    } else {
+      throw new UnsupportedOperationException("Protocol family not supported");
+    }
   }
 }

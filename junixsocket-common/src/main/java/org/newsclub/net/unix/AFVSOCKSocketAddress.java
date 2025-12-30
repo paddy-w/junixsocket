@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,16 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
+
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * An {@link AFSocketAddress} for VSOCK sockets.
  *
  * @author Christian Kohlschütter
  */
+@SuppressFBWarnings("REDOS")
 public final class AFVSOCKSocketAddress extends AFSocketAddress {
   private static final long serialVersionUID = 1L; // do not change!
 
@@ -71,13 +76,13 @@ public final class AFVSOCKSocketAddress extends AFSocketAddress {
    */
   public static final int VMADDR_PORT_ANY = -1;
 
-  private AFVSOCKSocketAddress(int port, final byte[] socketAddress, ByteBuffer nativeAddress)
-      throws SocketException {
+  private AFVSOCKSocketAddress(int port, final byte[] socketAddress,
+      Lease<ByteBuffer> nativeAddress) throws SocketException {
     super(port, socketAddress, nativeAddress, addressFamily());
   }
 
   private static AFVSOCKSocketAddress newAFSocketAddress(int port, final byte[] socketAddress,
-      ByteBuffer nativeAddress) throws SocketException {
+      Lease<ByteBuffer> nativeAddress) throws SocketException {
     return newDeserializedAFSocketAddress(port, socketAddress, nativeAddress, addressFamily(),
         AFVSOCKSocketAddress::new);
   }
@@ -518,7 +523,7 @@ public final class AFVSOCKSocketAddress extends AFSocketAddress {
         portStr = "any";
         break;
       default:
-        portStr = Integer.toUnsignedString(port);
+        portStr = toUnsignedString(port);
         break;
     }
 
@@ -540,7 +545,7 @@ public final class AFVSOCKSocketAddress extends AFSocketAddress {
         cidStr = "host";
         break;
       default:
-        cidStr = Integer.toUnsignedString(cid);
+        cidStr = toUnsignedString(cid);
         break;
     }
 
@@ -551,11 +556,11 @@ public final class AFVSOCKSocketAddress extends AFSocketAddress {
 
   private static int parseInt(String v) {
     if (v.startsWith("0x")) {
-      return Integer.parseUnsignedInt(v.substring(2), 16);
+      return parseUnsignedInt(v.substring(2), 16);
     } else if (v.startsWith("-")) {
       return Integer.parseInt(v);
     } else {
-      return Integer.parseUnsignedInt(v);
+      return parseUnsignedInt(v, 10);
     }
   }
 

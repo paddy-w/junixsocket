@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.nio.file.Path;
  *
  * @author Christian Kohlschütter
  */
-public class AFUNIXServerSocket extends AFServerSocket<AFUNIXSocketAddress> {
+public final class AFUNIXServerSocket extends AFServerSocket<AFUNIXSocketAddress> {
   /**
    * Constructs a new, unconnected instance.
    *

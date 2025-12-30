@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.apache.mina.core.session.IoSession;
  * <a href="https://mina.apache.org/mina-project/userguide/ch2-basics/ch2.2-sample-tcp-server.html">
  * Apache Mina user guide, chapter 2.2 — Sample TCP Server</a>
  */
+@SuppressWarnings("JavaUtilDate" /* errorprone */)
 class TimeServerHandler extends IoHandlerAdapter {
   @Override
   public void exceptionCaught(IoSession session, Throwable cause) throws Exception {

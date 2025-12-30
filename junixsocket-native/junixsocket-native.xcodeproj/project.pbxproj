@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 53;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -28,6 +28,7 @@
 				432EF1E7261ADDF600F4A583 /* PBXTargetDependency */,
 				432EF1F6261ADEC000F4A583 /* PBXTargetDependency */,
 				432EF1D6261ADD9500F4A583 /* PBXTargetDependency */,
+				430456D32C91B85A00CBAC42 /* PBXTargetDependency */,
 				43B3E0AE266971870024822F /* PBXTargetDependency */,
 				432EF18B261AD52800F4A583 /* PBXTargetDependency */,
 				43D0E25C261AE48B008F2FFE /* PBXTargetDependency */,
@@ -548,6 +549,59 @@
 		430235D72650AC3200823167 /* jniport.h in Headers */ = {isa = PBXBuildFile; fileRef = 430235C12650AC3200823167 /* jniport.h */; };
 		430235D82650AC3200823167 /* jniport.h in Headers */ = {isa = PBXBuildFile; fileRef = 430235C12650AC3200823167 /* jniport.h */; };
 		430235D92650AC3200823167 /* jniport.h in Headers */ = {isa = PBXBuildFile; fileRef = 430235C12650AC3200823167 /* jniport.h */; };
+		430456972C91B81000CBAC42 /* tipc.h in Headers */ = {isa = PBXBuildFile; fileRef = 436E165F27FBB70B00A553EC /* tipc.h */; };
+		430456982C91B81000CBAC42 /* jni.h in Headers */ = {isa = PBXBuildFile; fileRef = 430235C02650AC3200823167 /* jni.h */; };
+		430456992C91B81000CBAC42 /* ancillary.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233C52650AB4E00823167 /* ancillary.h */; };
+		4304569A2C91B81000CBAC42 /* pipe.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B3DF81265EEC930024822F /* pipe.h */; };
+		4304569B2C91B81000CBAC42 /* init.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233BE2650AB4D00823167 /* init.h */; };
+		4304569C2C91B81000CBAC42 /* send.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233AA2650AB4A00823167 /* send.h */; };
+		4304569D2C91B81000CBAC42 /* listen.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233B12650AB4B00823167 /* listen.h */; };
+		4304569E2C91B81000CBAC42 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233A22650AB4900823167 /* config.h */; };
+		4304569F2C91B81000CBAC42 /* socketpair.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B3DFB6266082000024822F /* socketpair.h */; };
+		430456A02C91B81000CBAC42 /* vsock.h in Headers */ = {isa = PBXBuildFile; fileRef = 4355474828F6E6310042E830 /* vsock.h */; };
+		430456A12C91B81000CBAC42 /* connect.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233A72650AB4A00823167 /* connect.h */; };
+		430456A22C91B81000CBAC42 /* jniutil.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233A12650AB4900823167 /* jniutil.h */; };
+		430456A32C91B81000CBAC42 /* socketoptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 4302339D2650AB4900823167 /* socketoptions.h */; };
+		430456A42C91B81000CBAC42 /* filedescriptors.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233AC2650AB4A00823167 /* filedescriptors.h */; };
+		430456A52C91B81000CBAC42 /* exceptions.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233A82650AB4A00823167 /* exceptions.h */; };
+		430456A62C91B81000CBAC42 /* capabilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233A42650AB4900823167 /* capabilities.h */; };
+		430456A72C91B81000CBAC42 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		430456A82C91B81000CBAC42 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233C02650AB4D00823167 /* org_newsclub_net_unix_NativeUnixSocket.h */; };
+		430456A92C91B81000CBAC42 /* socket.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233B42650AB4B00823167 /* socket.h */; };
+		430456AA2C91B81000CBAC42 /* ckmacros.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233BF2650AB4D00823167 /* ckmacros.h */; };
+		430456AB2C91B81000CBAC42 /* address.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233B92650AB4C00823167 /* address.h */; };
+		430456AC2C91B81000CBAC42 /* afsystem.h in Headers */ = {isa = PBXBuildFile; fileRef = 438F4D962A6AF05000546E2C /* afsystem.h */; };
+		430456AD2C91B81000CBAC42 /* polling.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233A92650AB4A00823167 /* polling.h */; };
+		430456AE2C91B81000CBAC42 /* accept.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233BB2650AB4C00823167 /* accept.h */; };
+		430456AF2C91B81000CBAC42 /* reflection.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233AD2650AB4A00823167 /* reflection.h */; };
+		430456B02C91B81000CBAC42 /* jniport.h in Headers */ = {isa = PBXBuildFile; fileRef = 430235C12650AC3200823167 /* jniport.h */; };
+		430456B12C91B81000CBAC42 /* receive.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233A62650AB4A00823167 /* receive.h */; };
+		430456B22C91B81000CBAC42 /* credentials.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233AE2650AB4A00823167 /* credentials.h */; };
+		430456B32C91B81000CBAC42 /* bind.h in Headers */ = {isa = PBXBuildFile; fileRef = 4302339F2650AB4900823167 /* bind.h */; };
+		430456B52C91B81000CBAC42 /* filedescriptors.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233C42650AB4E00823167 /* filedescriptors.c */; };
+		430456B62C91B81000CBAC42 /* bind.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233C32650AB4D00823167 /* bind.c */; };
+		430456B72C91B81000CBAC42 /* address.c in Sources */ = {isa = PBXBuildFile; fileRef = 4302339C2650AB4900823167 /* address.c */; };
+		430456B82C91B81000CBAC42 /* vsock.c in Sources */ = {isa = PBXBuildFile; fileRef = 4355474728F6E6310042E830 /* vsock.c */; };
+		430456B92C91B81000CBAC42 /* send.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233B22650AB4B00823167 /* send.c */; };
+		430456BA2C91B81000CBAC42 /* socket.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233C22650AB4D00823167 /* socket.c */; };
+		430456BB2C91B81000CBAC42 /* pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B3DF82265EEC930024822F /* pipe.c */; };
+		430456BC2C91B81000CBAC42 /* connect.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233BC2650AB4C00823167 /* connect.c */; };
+		430456BD2C91B81000CBAC42 /* capabilities.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233B02650AB4B00823167 /* capabilities.c */; };
+		430456BE2C91B81000CBAC42 /* socketoptions.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233B52650AB4B00823167 /* socketoptions.c */; };
+		430456BF2C91B81000CBAC42 /* polling.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233C12650AB4D00823167 /* polling.c */; };
+		430456C02C91B81000CBAC42 /* receive.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233AB2650AB4A00823167 /* receive.c */; };
+		430456C12C91B81000CBAC42 /* jniutil.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233A32650AB4900823167 /* jniutil.c */; };
+		430456C22C91B81000CBAC42 /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233B32650AB4B00823167 /* init.c */; };
+		430456C32C91B81000CBAC42 /* tipc.c in Sources */ = {isa = PBXBuildFile; fileRef = 436E166027FBB70B00A553EC /* tipc.c */; };
+		430456C42C91B81000CBAC42 /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233A02650AB4900823167 /* config.c */; };
+		430456C52C91B81000CBAC42 /* credentials.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233C62650AB4E00823167 /* credentials.c */; };
+		430456C62C91B81000CBAC42 /* socketpair.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B3DFB5266082000024822F /* socketpair.c */; };
+		430456C72C91B81000CBAC42 /* exceptions.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233BD2650AB4C00823167 /* exceptions.c */; };
+		430456C82C91B81000CBAC42 /* reflection.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233BA2650AB4C00823167 /* reflection.c */; };
+		430456C92C91B81000CBAC42 /* listen.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233AF2650AB4B00823167 /* listen.c */; };
+		430456CA2C91B81000CBAC42 /* ancillary.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233A52650AB4900823167 /* ancillary.c */; };
+		430456CB2C91B81000CBAC42 /* accept.c in Sources */ = {isa = PBXBuildFile; fileRef = 4302339E2650AB4900823167 /* accept.c */; };
+		430456CC2C91B81000CBAC42 /* afsystem.c in Sources */ = {isa = PBXBuildFile; fileRef = 438F4D952A6AF05000546E2C /* afsystem.c */; };
 		4304A5F3266DFCEF003BCEDF /* jni.h in Headers */ = {isa = PBXBuildFile; fileRef = 430235C02650AC3200823167 /* jni.h */; };
 		4304A5F4266DFCEF003BCEDF /* ancillary.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233C52650AB4E00823167 /* ancillary.h */; };
 		4304A5F5266DFCEF003BCEDF /* pipe.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B3DF81265EEC930024822F /* pipe.h */; };
@@ -594,6 +648,80 @@
 		4304A61F266DFCEF003BCEDF /* listen.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233AF2650AB4B00823167 /* listen.c */; };
 		4304A620266DFCEF003BCEDF /* ancillary.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233A52650AB4900823167 /* ancillary.c */; };
 		4304A621266DFCEF003BCEDF /* accept.c in Sources */ = {isa = PBXBuildFile; fileRef = 4302339E2650AB4900823167 /* accept.c */; };
+		43145C4C2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C4D2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C4E2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C4F2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C502B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C512B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C522B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C532B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C542B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C552B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C562B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C572B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C582B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C592B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C5A2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C5B2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C5C2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C5D2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C5E2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C5F2B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C602B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C612B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C622B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		43145C632B0656E30090BD53 /* gettod_zos.h in Headers */ = {isa = PBXBuildFile; fileRef = 43145C4B2B0656E30090BD53 /* gettod_zos.h */; };
+		434234192C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342341A2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342341B2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342341C2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342341D2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342341E2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342341F2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234202C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234212C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234222C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234232C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234242C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234252C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234262C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234272C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234282C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234292C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342342A2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342342B2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342342C2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342342D2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342342E2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		4342342F2C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234302C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234312C91C2890046DBD9 /* stat_wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 434234182C91C2890046DBD9 /* stat_wrapper.c */; };
+		434234342C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234352C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234362C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234372C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234382C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234392C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342343A2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342343B2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342343C2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342343D2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342343E2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342343F2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234402C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234412C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234422C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234432C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234442C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234452C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234462C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234472C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234482C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		434234492C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342344A2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342344B2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
+		4342344C2C91C4F50046DBD9 /* stat_wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 434234332C91C4F50046DBD9 /* stat_wrapper.h */; };
 		4355474928F6E6310042E830 /* vsock.c in Sources */ = {isa = PBXBuildFile; fileRef = 4355474728F6E6310042E830 /* vsock.c */; };
 		4355474A28F6E6310042E830 /* vsock.c in Sources */ = {isa = PBXBuildFile; fileRef = 4355474728F6E6310042E830 /* vsock.c */; };
 		4355474B28F6E6310042E830 /* vsock.c in Sources */ = {isa = PBXBuildFile; fileRef = 4355474728F6E6310042E830 /* vsock.c */; };
@@ -1010,6 +1138,56 @@
 		438F4DC42A6AF05100546E2C /* afsystem.h in Headers */ = {isa = PBXBuildFile; fileRef = 438F4D962A6AF05000546E2C /* afsystem.h */; };
 		438F4DC52A6AF05100546E2C /* afsystem.h in Headers */ = {isa = PBXBuildFile; fileRef = 438F4D962A6AF05000546E2C /* afsystem.h */; };
 		438F4DC62A6AF05100546E2C /* afsystem.h in Headers */ = {isa = PBXBuildFile; fileRef = 438F4D962A6AF05000546E2C /* afsystem.h */; };
+		43ADC6EE2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6EF2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6F02D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6F12D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6F22D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6F32D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6F42D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6F52D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6F62D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6F72D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6F82D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6F92D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6FA2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6FB2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6FC2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC6FD2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6FE2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC6FF2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7002D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7012D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7022D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7032D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7042D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7052D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7062D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7072D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7082D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7092D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC70A2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC70B2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC70C2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC70D2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC70E2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC70F2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7102D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7112D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7122D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7132D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7142D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7152D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7162D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7172D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC7182D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC7192D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC71A2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC71B2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC71C2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC71D2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
+		43ADC71E2D04DE8D0095802A /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 43ADC6ED2D04DE8D0095802A /* logging.c */; };
+		43ADC71F2D04DE8D0095802A /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 43ADC6EC2D04DE8D0095802A /* logging.h */; };
 		43B3DF83265EEC930024822F /* pipe.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B3DF81265EEC930024822F /* pipe.h */; };
 		43B3DF84265EEC930024822F /* pipe.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B3DF81265EEC930024822F /* pipe.h */; };
 		43B3DF85265EEC930024822F /* pipe.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B3DF81265EEC930024822F /* pipe.h */; };
@@ -1242,6 +1420,106 @@
 		43B3E0A5266971630024822F /* listen.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233AF2650AB4B00823167 /* listen.c */; };
 		43B3E0A6266971630024822F /* ancillary.c in Sources */ = {isa = PBXBuildFile; fileRef = 430233A52650AB4900823167 /* ancillary.c */; };
 		43B3E0A7266971630024822F /* accept.c in Sources */ = {isa = PBXBuildFile; fileRef = 4302339E2650AB4900823167 /* accept.c */; };
+		43B5DE6F2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE702CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE712CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE722CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE732CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE742CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE752CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE762CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE772CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE782CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE792CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE7A2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE7B2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE7C2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE7D2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE7E2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE7F2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE802CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE812CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE822CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE832CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE842CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE852CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE862CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE872CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE882CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE892CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE8A2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE8B2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE8C2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE8D2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE8E2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE8F2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE902CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE912CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE922CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE932CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE942CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE952CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE962CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE972CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE982CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE992CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE9A2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE9B2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE9C2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE9D2CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DE9E2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DE9F2CF4FEE7001227CF /* shm.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DE6D2CF4FEE7001227CF /* shm.h */; };
+		43B5DEA02CF4FEE7001227CF /* shm.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DE6E2CF4FEE7001227CF /* shm.c */; };
+		43B5DEA32CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEA42CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEA52CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEA62CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEA72CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEA82CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEA92CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEAA2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEAB2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEAC2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEAD2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEAE2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEAF2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEB02CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEB12CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEB22CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEB32CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEB42CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEB52CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEB62CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEB72CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEB82CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEB92CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEBA2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEBB2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEBC2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEBD2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEBE2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEBF2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEC02CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEC12CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEC22CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEC32CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEC42CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEC52CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEC62CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEC72CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DEC82CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DEC92CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DECA2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DECB2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DECC2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DECD2CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DECE2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DECF2CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DED02CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DED12CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DED22CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
+		43B5DED32CFBD19F001227CF /* futex.c in Sources */ = {isa = PBXBuildFile; fileRef = 43B5DEA22CFBD19F001227CF /* futex.c */; };
+		43B5DED42CFBD19F001227CF /* futex.h in Headers */ = {isa = PBXBuildFile; fileRef = 43B5DEA12CFBD19F001227CF /* futex.h */; };
 		43C57CC72A38F370001DEA62 /* tipc.h in Headers */ = {isa = PBXBuildFile; fileRef = 436E165F27FBB70B00A553EC /* tipc.h */; };
 		43C57CC82A38F370001DEA62 /* jni.h in Headers */ = {isa = PBXBuildFile; fileRef = 430235C02650AC3200823167 /* jni.h */; };
 		43C57CC92A38F370001DEA62 /* ancillary.h in Headers */ = {isa = PBXBuildFile; fileRef = 430233C52650AB4E00823167 /* ancillary.h */; };
@@ -1301,6 +1579,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 43663ED6261AECC400CEED08;
 			remoteInfo = default;
+		};
+		430456D22C91B85A00CBAC42 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 43D436B0261A55D0002D0C12 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 430456952C91B81000CBAC42;
+			remoteInfo = "loongarch64-openEuler-linux";
 		};
 		4304A627266DFD24003BCEDF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1508,7 +1793,9 @@
 		430233C62650AB4E00823167 /* credentials.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = credentials.c; path = src/main/c/credentials.c; sourceTree = "<group>"; };
 		430235C02650AC3200823167 /* jni.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jni.h; sourceTree = "<group>"; };
 		430235C12650AC3200823167 /* jniport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jniport.h; sourceTree = "<group>"; };
+		430456D12C91B81000CBAC42 /* libjunixsocket-loongarch64-openEuler-linux.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-loongarch64-openEuler-linux.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4304A626266DFCEF003BCEDF /* libjunixsocket-x86_64-portbld-dragonfly6.0.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-x86_64-portbld-dragonfly6.0.so"; sourceTree = BUILT_PRODUCTS_DIR; };
+		43145C4B2B0656E30090BD53 /* gettod_zos.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gettod_zos.h; path = src/main/c/gettod_zos.h; sourceTree = "<group>"; };
 		432EF19A261AD60200F4A583 /* libjunixsocket-aarch64-linux-gnu.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-aarch64-linux-gnu.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		432EF1A9261AD6D700F4A583 /* libjunixsocket-x86_64-w64-mingw32.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-x86_64-w64-mingw32.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		432EF1B8261AD9FB00F4A583 /* libjunixsocket-i386-pc-solaris2.11_m64.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-i386-pc-solaris2.11_m64.so"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1518,6 +1805,8 @@
 		432EF1F4261ADE4900F4A583 /* libjunixsocket-riscv64-redhat-linux.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-riscv64-redhat-linux.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		432EF203261ADEDD00F4A583 /* libjunixsocket-armv6--linux-gnueabihf.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-armv6--linux-gnueabihf.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		432EF212261AE29200F4A583 /* libjunixsocket-x86_64-apple-darwin18.2.0.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-x86_64-apple-darwin18.2.0.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
+		434234182C91C2890046DBD9 /* stat_wrapper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = stat_wrapper.c; path = src/main/c/stat_wrapper.c; sourceTree = "<group>"; };
+		434234332C91C4F50046DBD9 /* stat_wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stat_wrapper.h; path = src/main/c/stat_wrapper.h; sourceTree = "<group>"; };
 		4355474728F6E6310042E830 /* vsock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vsock.c; path = src/main/c/vsock.c; sourceTree = "<group>"; };
 		4355474828F6E6310042E830 /* vsock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vsock.h; path = src/main/c/vsock.h; sourceTree = "<group>"; };
 		435B54A12A3F65D2001011B8 /* libjunixsocket-x86_64-linux-android30.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-x86_64-linux-android30.so"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1531,6 +1820,8 @@
 		436E166027FBB70B00A553EC /* tipc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = tipc.c; path = src/main/c/tipc.c; sourceTree = "<group>"; };
 		438F4D952A6AF05000546E2C /* afsystem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = afsystem.c; path = src/main/c/afsystem.c; sourceTree = "<group>"; };
 		438F4D962A6AF05000546E2C /* afsystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = afsystem.h; path = src/main/c/afsystem.h; sourceTree = "<group>"; };
+		43ADC6EC2D04DE8D0095802A /* logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = logging.h; path = src/main/c/logging.h; sourceTree = "<group>"; };
+		43ADC6ED2D04DE8D0095802A /* logging.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = logging.c; path = src/main/c/logging.c; sourceTree = "<group>"; };
 		43B3DF81265EEC930024822F /* pipe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = pipe.h; path = src/main/c/pipe.h; sourceTree = "<group>"; };
 		43B3DF82265EEC930024822F /* pipe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = pipe.c; path = src/main/c/pipe.c; sourceTree = "<group>"; };
 		43B3DFB5266082000024822F /* socketpair.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = socketpair.c; path = src/main/c/socketpair.c; sourceTree = "<group>"; };
@@ -1539,12 +1830,23 @@
 		43B3E03C26672FD30024822F /* libjunixsocket-x86_64-unknown-linux-gnu.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-x86_64-unknown-linux-gnu.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		43B3E074266756540024822F /* libjunixsocket-amd64-unknown-openbsd6.9.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-amd64-unknown-openbsd6.9.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		43B3E0AC266971630024822F /* libjunixsocket-sparc-sun-solaris2.11.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-sparc-sun-solaris2.11.so"; sourceTree = BUILT_PRODUCTS_DIR; };
+		43B5DE6D2CF4FEE7001227CF /* shm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = shm.h; path = src/main/c/shm.h; sourceTree = "<group>"; };
+		43B5DE6E2CF4FEE7001227CF /* shm.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = shm.c; path = src/main/c/shm.c; sourceTree = "<group>"; };
+		43B5DEA12CFBD19F001227CF /* futex.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = futex.h; path = src/main/c/futex.h; sourceTree = "<group>"; };
+		43B5DEA22CFBD19F001227CF /* futex.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = futex.c; path = src/main/c/futex.c; sourceTree = "<group>"; };
 		43C57CFE2A38F370001DEA62 /* libjunixsocket-aarch64-linux-android30.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-aarch64-linux-android30.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 		43C5FB7D261AC3700088E301 /* libjunixsocket-arm64-apple-macos11.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-arm64-apple-macos11.dylib"; sourceTree = BUILT_PRODUCTS_DIR; };
 		43D436BC261A564C002D0C12 /* libjunixsocket-x86_64-alpine-linux-musl.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = "libjunixsocket-x86_64-alpine-linux-musl.so"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		430456CD2C91B81000CBAC42 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4304A622266DFCEF003BCEDF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1725,6 +2027,8 @@
 				430233A32650AB4900823167 /* jniutil.c */,
 				430233A12650AB4900823167 /* jniutil.h */,
 				430235BF2650AC3200823167 /* jni */,
+				434234182C91C2890046DBD9 /* stat_wrapper.c */,
+				434234332C91C4F50046DBD9 /* stat_wrapper.h */,
 			);
 			name = "Build Essentials";
 			sourceTree = "<group>";
@@ -1760,6 +2064,7 @@
 				430233A82650AB4A00823167 /* exceptions.h */,
 				430233C42650AB4E00823167 /* filedescriptors.c */,
 				430233AC2650AB4A00823167 /* filedescriptors.h */,
+				43145C4B2B0656E30090BD53 /* gettod_zos.h */,
 				430233B32650AB4B00823167 /* init.c */,
 				430233BE2650AB4D00823167 /* init.h */,
 				430233AF2650AB4B00823167 /* listen.c */,
@@ -1784,6 +2089,12 @@
 				436E165F27FBB70B00A553EC /* tipc.h */,
 				4355474728F6E6310042E830 /* vsock.c */,
 				4355474828F6E6310042E830 /* vsock.h */,
+				43B5DE6E2CF4FEE7001227CF /* shm.c */,
+				43B5DE6D2CF4FEE7001227CF /* shm.h */,
+				43B5DEA22CFBD19F001227CF /* futex.c */,
+				43B5DEA12CFBD19F001227CF /* futex.h */,
+				43ADC6ED2D04DE8D0095802A /* logging.c */,
+				43ADC6EC2D04DE8D0095802A /* logging.h */,
 			);
 			name = Implementation;
 			sourceTree = "<group>";
@@ -1835,6 +2146,7 @@
 				435B54A12A3F65D2001011B8 /* libjunixsocket-x86_64-linux-android30.so */,
 				435B54DD2A3F65F4001011B8 /* libjunixsocket-i686-linux-android30.so */,
 				435B55192A3F661F001011B8 /* libjunixsocket-arm-linux-androideabi30.so */,
+				430456D12C91B81000CBAC42 /* libjunixsocket-loongarch64-openEuler-linux.so */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1842,17 +2154,60 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		430456962C91B81000CBAC42 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430456972C91B81000CBAC42 /* tipc.h in Headers */,
+				430456982C91B81000CBAC42 /* jni.h in Headers */,
+				4342344C2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
+				430456992C91B81000CBAC42 /* ancillary.h in Headers */,
+				4304569A2C91B81000CBAC42 /* pipe.h in Headers */,
+				4304569B2C91B81000CBAC42 /* init.h in Headers */,
+				4304569C2C91B81000CBAC42 /* send.h in Headers */,
+				43B5DE912CF4FEE7001227CF /* shm.h in Headers */,
+				4304569D2C91B81000CBAC42 /* listen.h in Headers */,
+				43B5DEC92CFBD19F001227CF /* futex.h in Headers */,
+				4304569E2C91B81000CBAC42 /* config.h in Headers */,
+				4304569F2C91B81000CBAC42 /* socketpair.h in Headers */,
+				430456A02C91B81000CBAC42 /* vsock.h in Headers */,
+				430456A12C91B81000CBAC42 /* connect.h in Headers */,
+				430456A22C91B81000CBAC42 /* jniutil.h in Headers */,
+				430456A32C91B81000CBAC42 /* socketoptions.h in Headers */,
+				430456A42C91B81000CBAC42 /* filedescriptors.h in Headers */,
+				430456A52C91B81000CBAC42 /* exceptions.h in Headers */,
+				430456A62C91B81000CBAC42 /* capabilities.h in Headers */,
+				43ADC7122D04DE8D0095802A /* logging.h in Headers */,
+				430456A72C91B81000CBAC42 /* gettod_zos.h in Headers */,
+				430456A82C91B81000CBAC42 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
+				430456A92C91B81000CBAC42 /* socket.h in Headers */,
+				430456AA2C91B81000CBAC42 /* ckmacros.h in Headers */,
+				430456AB2C91B81000CBAC42 /* address.h in Headers */,
+				430456AC2C91B81000CBAC42 /* afsystem.h in Headers */,
+				430456AD2C91B81000CBAC42 /* polling.h in Headers */,
+				430456AE2C91B81000CBAC42 /* accept.h in Headers */,
+				430456AF2C91B81000CBAC42 /* reflection.h in Headers */,
+				430456B02C91B81000CBAC42 /* jniport.h in Headers */,
+				430456B12C91B81000CBAC42 /* receive.h in Headers */,
+				430456B22C91B81000CBAC42 /* credentials.h in Headers */,
+				430456B32C91B81000CBAC42 /* bind.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4304A5F2266DFCEF003BCEDF /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				436E167127FBB70B00A553EC /* tipc.h in Headers */,
 				4304A5F3266DFCEF003BCEDF /* jni.h in Headers */,
+				434234472C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				4304A5F4266DFCEF003BCEDF /* ancillary.h in Headers */,
 				4304A5F5266DFCEF003BCEDF /* pipe.h in Headers */,
 				4304A5F6266DFCEF003BCEDF /* init.h in Headers */,
 				4304A5F7266DFCEF003BCEDF /* send.h in Headers */,
+				43B5DE8E2CF4FEE7001227CF /* shm.h in Headers */,
 				4304A5F8266DFCEF003BCEDF /* listen.h in Headers */,
+				43B5DEA82CFBD19F001227CF /* futex.h in Headers */,
 				4304A5F9266DFCEF003BCEDF /* config.h in Headers */,
 				4304A5FA266DFCEF003BCEDF /* socketpair.h in Headers */,
 				4355477028F6E6310042E830 /* vsock.h in Headers */,
@@ -1862,6 +2217,8 @@
 				4304A5FE266DFCEF003BCEDF /* filedescriptors.h in Headers */,
 				4304A5FF266DFCEF003BCEDF /* exceptions.h in Headers */,
 				4304A600266DFCEF003BCEDF /* capabilities.h in Headers */,
+				43ADC6FD2D04DE8D0095802A /* logging.h in Headers */,
+				43145C5F2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				4304A601266DFCEF003BCEDF /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				4304A602266DFCEF003BCEDF /* socket.h in Headers */,
 				4304A603266DFCEF003BCEDF /* ckmacros.h in Headers */,
@@ -1883,11 +2240,14 @@
 			files = (
 				436E166227FBB70B00A553EC /* tipc.h in Headers */,
 				430235C32650AC3200823167 /* jni.h in Headers */,
+				434234352C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235A82650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF84265EEC930024822F /* pipe.h in Headers */,
 				430235542650AB4F00823167 /* init.h in Headers */,
 				430234702650AB4E00823167 /* send.h in Headers */,
+				43B5DE8B2CF4FEE7001227CF /* shm.h in Headers */,
 				430234C42650AB4E00823167 /* listen.h in Headers */,
+				43B5DEB92CFBD19F001227CF /* futex.h in Headers */,
 				430234102650AB4E00823167 /* config.h in Headers */,
 				43B3DFC4266082000024822F /* socketpair.h in Headers */,
 				4355475E28F6E6310042E830 /* vsock.h in Headers */,
@@ -1897,6 +2257,8 @@
 				430234882650AB4E00823167 /* filedescriptors.h in Headers */,
 				430234582650AB4E00823167 /* exceptions.h in Headers */,
 				430234282650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC7152D04DE8D0095802A /* logging.h in Headers */,
+				43145C4D2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				4302356C2650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234E82650AB4F00823167 /* socket.h in Headers */,
 				430235602650AB4F00823167 /* ckmacros.h in Headers */,
@@ -1918,11 +2280,14 @@
 			files = (
 				436E166D27FBB70B00A553EC /* tipc.h in Headers */,
 				430235CD2650AC3200823167 /* jni.h in Headers */,
+				434234432C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235B22650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF8E265EEC930024822F /* pipe.h in Headers */,
 				4302355E2650AB4F00823167 /* init.h in Headers */,
 				4302347A2650AB4E00823167 /* send.h in Headers */,
+				43B5DE852CF4FEE7001227CF /* shm.h in Headers */,
 				430234CE2650AB4E00823167 /* listen.h in Headers */,
+				43B5DED42CFBD19F001227CF /* futex.h in Headers */,
 				4302341A2650AB4E00823167 /* config.h in Headers */,
 				43B3DFCE266082000024822F /* socketpair.h in Headers */,
 				4355476C28F6E6310042E830 /* vsock.h in Headers */,
@@ -1932,6 +2297,8 @@
 				430234922650AB4E00823167 /* filedescriptors.h in Headers */,
 				430234622650AB4E00823167 /* exceptions.h in Headers */,
 				430234322650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC6F52D04DE8D0095802A /* logging.h in Headers */,
+				43145C5B2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				430235762650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234F22650AB4F00823167 /* socket.h in Headers */,
 				4302356A2650AB4F00823167 /* ckmacros.h in Headers */,
@@ -1953,11 +2320,14 @@
 			files = (
 				436E166627FBB70B00A553EC /* tipc.h in Headers */,
 				430235C62650AC3200823167 /* jni.h in Headers */,
+				434234392C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235AB2650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF87265EEC930024822F /* pipe.h in Headers */,
 				430235572650AB4F00823167 /* init.h in Headers */,
 				430234732650AB4E00823167 /* send.h in Headers */,
+				43B5DE9B2CF4FEE7001227CF /* shm.h in Headers */,
 				430234C72650AB4E00823167 /* listen.h in Headers */,
+				43B5DEBB2CFBD19F001227CF /* futex.h in Headers */,
 				430234132650AB4E00823167 /* config.h in Headers */,
 				43B3DFC7266082000024822F /* socketpair.h in Headers */,
 				4355476228F6E6310042E830 /* vsock.h in Headers */,
@@ -1967,6 +2337,8 @@
 				4302348B2650AB4E00823167 /* filedescriptors.h in Headers */,
 				4302345B2650AB4E00823167 /* exceptions.h in Headers */,
 				4302342B2650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC71A2D04DE8D0095802A /* logging.h in Headers */,
+				43145C512B0656E30090BD53 /* gettod_zos.h in Headers */,
 				4302356F2650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234EB2650AB4F00823167 /* socket.h in Headers */,
 				430235632650AB4F00823167 /* ckmacros.h in Headers */,
@@ -1988,11 +2360,14 @@
 			files = (
 				436E166927FBB70B00A553EC /* tipc.h in Headers */,
 				430235C92650AC3200823167 /* jni.h in Headers */,
+				4342343E2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235AE2650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF8A265EEC930024822F /* pipe.h in Headers */,
 				4302355A2650AB4F00823167 /* init.h in Headers */,
 				430234762650AB4E00823167 /* send.h in Headers */,
+				43B5DE7D2CF4FEE7001227CF /* shm.h in Headers */,
 				430234CA2650AB4E00823167 /* listen.h in Headers */,
+				43B5DECB2CFBD19F001227CF /* futex.h in Headers */,
 				430234162650AB4E00823167 /* config.h in Headers */,
 				43B3DFCA266082000024822F /* socketpair.h in Headers */,
 				4355476728F6E6310042E830 /* vsock.h in Headers */,
@@ -2002,6 +2377,8 @@
 				4302348E2650AB4E00823167 /* filedescriptors.h in Headers */,
 				4302345E2650AB4E00823167 /* exceptions.h in Headers */,
 				4302342E2650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC70B2D04DE8D0095802A /* logging.h in Headers */,
+				43145C562B0656E30090BD53 /* gettod_zos.h in Headers */,
 				430235722650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234EE2650AB4F00823167 /* socket.h in Headers */,
 				430235662650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2023,11 +2400,14 @@
 			files = (
 				436E166C27FBB70B00A553EC /* tipc.h in Headers */,
 				430235CC2650AC3200823167 /* jni.h in Headers */,
+				434234412C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235B12650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF8D265EEC930024822F /* pipe.h in Headers */,
 				4302355D2650AB4F00823167 /* init.h in Headers */,
 				430234792650AB4E00823167 /* send.h in Headers */,
+				43B5DE962CF4FEE7001227CF /* shm.h in Headers */,
 				430234CD2650AB4E00823167 /* listen.h in Headers */,
+				43B5DEB62CFBD19F001227CF /* futex.h in Headers */,
 				430234192650AB4E00823167 /* config.h in Headers */,
 				43B3DFCD266082000024822F /* socketpair.h in Headers */,
 				4355476A28F6E6310042E830 /* vsock.h in Headers */,
@@ -2037,6 +2417,8 @@
 				430234912650AB4E00823167 /* filedescriptors.h in Headers */,
 				430234612650AB4E00823167 /* exceptions.h in Headers */,
 				430234312650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC6F32D04DE8D0095802A /* logging.h in Headers */,
+				43145C592B0656E30090BD53 /* gettod_zos.h in Headers */,
 				430235752650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234F12650AB4F00823167 /* socket.h in Headers */,
 				430235692650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2058,11 +2440,14 @@
 			files = (
 				436E166727FBB70B00A553EC /* tipc.h in Headers */,
 				430235C72650AC3200823167 /* jni.h in Headers */,
+				4342343A2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235AC2650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF88265EEC930024822F /* pipe.h in Headers */,
 				430235582650AB4F00823167 /* init.h in Headers */,
 				430234742650AB4E00823167 /* send.h in Headers */,
+				43B5DE982CF4FEE7001227CF /* shm.h in Headers */,
 				430234C82650AB4E00823167 /* listen.h in Headers */,
+				43B5DEA62CFBD19F001227CF /* futex.h in Headers */,
 				430234142650AB4E00823167 /* config.h in Headers */,
 				43B3DFC8266082000024822F /* socketpair.h in Headers */,
 				4355476328F6E6310042E830 /* vsock.h in Headers */,
@@ -2072,6 +2457,8 @@
 				4302348C2650AB4E00823167 /* filedescriptors.h in Headers */,
 				4302345C2650AB4E00823167 /* exceptions.h in Headers */,
 				4302342C2650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC6EF2D04DE8D0095802A /* logging.h in Headers */,
+				43145C522B0656E30090BD53 /* gettod_zos.h in Headers */,
 				430235702650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234EC2650AB4F00823167 /* socket.h in Headers */,
 				430235642650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2093,11 +2480,14 @@
 			files = (
 				436E166827FBB70B00A553EC /* tipc.h in Headers */,
 				430235C82650AC3200823167 /* jni.h in Headers */,
+				4342343D2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235AD2650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF89265EEC930024822F /* pipe.h in Headers */,
 				430235592650AB4F00823167 /* init.h in Headers */,
 				430234752650AB4E00823167 /* send.h in Headers */,
+				43B5DE8F2CF4FEE7001227CF /* shm.h in Headers */,
 				430234C92650AB4E00823167 /* listen.h in Headers */,
+				43B5DECF2CFBD19F001227CF /* futex.h in Headers */,
 				430234152650AB4E00823167 /* config.h in Headers */,
 				43B3DFC9266082000024822F /* socketpair.h in Headers */,
 				4355476628F6E6310042E830 /* vsock.h in Headers */,
@@ -2107,6 +2497,8 @@
 				4302348D2650AB4E00823167 /* filedescriptors.h in Headers */,
 				4302345D2650AB4E00823167 /* exceptions.h in Headers */,
 				4302342D2650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC71D2D04DE8D0095802A /* logging.h in Headers */,
+				43145C552B0656E30090BD53 /* gettod_zos.h in Headers */,
 				430235712650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234ED2650AB4F00823167 /* socket.h in Headers */,
 				430235652650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2128,11 +2520,14 @@
 			files = (
 				436E166527FBB70B00A553EC /* tipc.h in Headers */,
 				430235C52650AC3200823167 /* jni.h in Headers */,
+				434234382C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235AA2650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF86265EEC930024822F /* pipe.h in Headers */,
 				430235562650AB4F00823167 /* init.h in Headers */,
 				430234722650AB4E00823167 /* send.h in Headers */,
+				43B5DE762CF4FEE7001227CF /* shm.h in Headers */,
 				430234C62650AB4E00823167 /* listen.h in Headers */,
+				43B5DEAC2CFBD19F001227CF /* futex.h in Headers */,
 				430234122650AB4E00823167 /* config.h in Headers */,
 				43B3DFC6266082000024822F /* socketpair.h in Headers */,
 				4355476128F6E6310042E830 /* vsock.h in Headers */,
@@ -2142,6 +2537,8 @@
 				4302348A2650AB4E00823167 /* filedescriptors.h in Headers */,
 				4302345A2650AB4E00823167 /* exceptions.h in Headers */,
 				4302342A2650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC7042D04DE8D0095802A /* logging.h in Headers */,
+				43145C502B0656E30090BD53 /* gettod_zos.h in Headers */,
 				4302356E2650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234EA2650AB4F00823167 /* socket.h in Headers */,
 				430235622650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2163,11 +2560,14 @@
 			files = (
 				436E166B27FBB70B00A553EC /* tipc.h in Headers */,
 				430235CB2650AC3200823167 /* jni.h in Headers */,
+				434234402C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235B02650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF8C265EEC930024822F /* pipe.h in Headers */,
 				4302355C2650AB4F00823167 /* init.h in Headers */,
 				430234782650AB4E00823167 /* send.h in Headers */,
+				43B5DE832CF4FEE7001227CF /* shm.h in Headers */,
 				430234CC2650AB4E00823167 /* listen.h in Headers */,
+				43B5DEB72CFBD19F001227CF /* futex.h in Headers */,
 				430234182650AB4E00823167 /* config.h in Headers */,
 				43B3DFCC266082000024822F /* socketpair.h in Headers */,
 				4355476928F6E6310042E830 /* vsock.h in Headers */,
@@ -2177,6 +2577,8 @@
 				430234902650AB4E00823167 /* filedescriptors.h in Headers */,
 				430234602650AB4E00823167 /* exceptions.h in Headers */,
 				430234302650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC6FA2D04DE8D0095802A /* logging.h in Headers */,
+				43145C582B0656E30090BD53 /* gettod_zos.h in Headers */,
 				430235742650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234F02650AB4F00823167 /* socket.h in Headers */,
 				430235682650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2198,11 +2600,14 @@
 			files = (
 				435B546A2A3F65D2001011B8 /* tipc.h in Headers */,
 				435B546B2A3F65D2001011B8 /* jni.h in Headers */,
+				434234492C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				435B546C2A3F65D2001011B8 /* ancillary.h in Headers */,
 				435B546D2A3F65D2001011B8 /* pipe.h in Headers */,
 				435B546E2A3F65D2001011B8 /* init.h in Headers */,
 				435B546F2A3F65D2001011B8 /* send.h in Headers */,
+				43B5DE7C2CF4FEE7001227CF /* shm.h in Headers */,
 				435B54702A3F65D2001011B8 /* listen.h in Headers */,
+				43B5DEB22CFBD19F001227CF /* futex.h in Headers */,
 				435B54712A3F65D2001011B8 /* config.h in Headers */,
 				435B54722A3F65D2001011B8 /* socketpair.h in Headers */,
 				435B54732A3F65D2001011B8 /* vsock.h in Headers */,
@@ -2212,6 +2617,8 @@
 				435B54772A3F65D2001011B8 /* filedescriptors.h in Headers */,
 				435B54782A3F65D2001011B8 /* exceptions.h in Headers */,
 				435B54792A3F65D2001011B8 /* capabilities.h in Headers */,
+				43ADC70E2D04DE8D0095802A /* logging.h in Headers */,
+				43145C612B0656E30090BD53 /* gettod_zos.h in Headers */,
 				435B547A2A3F65D2001011B8 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				435B547B2A3F65D2001011B8 /* socket.h in Headers */,
 				435B547C2A3F65D2001011B8 /* ckmacros.h in Headers */,
@@ -2233,11 +2640,14 @@
 			files = (
 				435B54A62A3F65F4001011B8 /* tipc.h in Headers */,
 				435B54A72A3F65F4001011B8 /* jni.h in Headers */,
+				4342344A2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				435B54A82A3F65F4001011B8 /* ancillary.h in Headers */,
 				435B54A92A3F65F4001011B8 /* pipe.h in Headers */,
 				435B54AA2A3F65F4001011B8 /* init.h in Headers */,
 				435B54AB2A3F65F4001011B8 /* send.h in Headers */,
+				43B5DE7A2CF4FEE7001227CF /* shm.h in Headers */,
 				435B54AC2A3F65F4001011B8 /* listen.h in Headers */,
+				43B5DEA42CFBD19F001227CF /* futex.h in Headers */,
 				435B54AD2A3F65F4001011B8 /* config.h in Headers */,
 				435B54AE2A3F65F4001011B8 /* socketpair.h in Headers */,
 				435B54AF2A3F65F4001011B8 /* vsock.h in Headers */,
@@ -2247,6 +2657,8 @@
 				435B54B32A3F65F4001011B8 /* filedescriptors.h in Headers */,
 				435B54B42A3F65F4001011B8 /* exceptions.h in Headers */,
 				435B54B52A3F65F4001011B8 /* capabilities.h in Headers */,
+				43ADC70D2D04DE8D0095802A /* logging.h in Headers */,
+				43145C622B0656E30090BD53 /* gettod_zos.h in Headers */,
 				435B54B62A3F65F4001011B8 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				435B54B72A3F65F4001011B8 /* socket.h in Headers */,
 				435B54B82A3F65F4001011B8 /* ckmacros.h in Headers */,
@@ -2268,11 +2680,14 @@
 			files = (
 				435B54E22A3F661F001011B8 /* tipc.h in Headers */,
 				435B54E32A3F661F001011B8 /* jni.h in Headers */,
+				4342344B2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				435B54E42A3F661F001011B8 /* ancillary.h in Headers */,
 				435B54E52A3F661F001011B8 /* pipe.h in Headers */,
 				435B54E62A3F661F001011B8 /* init.h in Headers */,
 				435B54E72A3F661F001011B8 /* send.h in Headers */,
+				43B5DE8A2CF4FEE7001227CF /* shm.h in Headers */,
 				435B54E82A3F661F001011B8 /* listen.h in Headers */,
+				43B5DEC02CFBD19F001227CF /* futex.h in Headers */,
 				435B54E92A3F661F001011B8 /* config.h in Headers */,
 				435B54EA2A3F661F001011B8 /* socketpair.h in Headers */,
 				435B54EB2A3F661F001011B8 /* vsock.h in Headers */,
@@ -2282,6 +2697,8 @@
 				435B54EF2A3F661F001011B8 /* filedescriptors.h in Headers */,
 				435B54F02A3F661F001011B8 /* exceptions.h in Headers */,
 				435B54F12A3F661F001011B8 /* capabilities.h in Headers */,
+				43ADC6FE2D04DE8D0095802A /* logging.h in Headers */,
+				43145C632B0656E30090BD53 /* gettod_zos.h in Headers */,
 				435B54F22A3F661F001011B8 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				435B54F32A3F661F001011B8 /* socket.h in Headers */,
 				435B54F42A3F661F001011B8 /* ckmacros.h in Headers */,
@@ -2303,11 +2720,14 @@
 			files = (
 				436E166127FBB70B00A553EC /* tipc.h in Headers */,
 				430235C22650AC3200823167 /* jni.h in Headers */,
+				434234342C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235A72650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF83265EEC930024822F /* pipe.h in Headers */,
 				430235532650AB4F00823167 /* init.h in Headers */,
 				4302346F2650AB4E00823167 /* send.h in Headers */,
+				43B5DE9E2CF4FEE7001227CF /* shm.h in Headers */,
 				430234C32650AB4E00823167 /* listen.h in Headers */,
+				43B5DEB02CFBD19F001227CF /* futex.h in Headers */,
 				4302340F2650AB4E00823167 /* config.h in Headers */,
 				43B3DFC3266082000024822F /* socketpair.h in Headers */,
 				4355475D28F6E6310042E830 /* vsock.h in Headers */,
@@ -2317,6 +2737,8 @@
 				430234872650AB4E00823167 /* filedescriptors.h in Headers */,
 				430234572650AB4E00823167 /* exceptions.h in Headers */,
 				430234272650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC7192D04DE8D0095802A /* logging.h in Headers */,
+				43145C4C2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				4302356B2650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234E72650AB4F00823167 /* socket.h in Headers */,
 				4302355F2650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2338,11 +2760,14 @@
 			files = (
 				43684D82282EE24B005F2989 /* tipc.h in Headers */,
 				43684D83282EE24B005F2989 /* jni.h in Headers */,
+				434234422C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				43684D84282EE24B005F2989 /* ancillary.h in Headers */,
 				43684D85282EE24B005F2989 /* pipe.h in Headers */,
 				43684D86282EE24B005F2989 /* init.h in Headers */,
 				43684D87282EE24B005F2989 /* send.h in Headers */,
+				43B5DE802CF4FEE7001227CF /* shm.h in Headers */,
 				43684D88282EE24B005F2989 /* listen.h in Headers */,
+				43B5DEAA2CFBD19F001227CF /* futex.h in Headers */,
 				43684D89282EE24B005F2989 /* config.h in Headers */,
 				43684D8A282EE24B005F2989 /* socketpair.h in Headers */,
 				4355476B28F6E6310042E830 /* vsock.h in Headers */,
@@ -2352,6 +2777,8 @@
 				43684D8E282EE24B005F2989 /* filedescriptors.h in Headers */,
 				43684D8F282EE24B005F2989 /* exceptions.h in Headers */,
 				43684D90282EE24B005F2989 /* capabilities.h in Headers */,
+				43ADC6F62D04DE8D0095802A /* logging.h in Headers */,
+				43145C5A2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				43684D91282EE24B005F2989 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				43684D92282EE24B005F2989 /* socket.h in Headers */,
 				43684D93282EE24B005F2989 /* ckmacros.h in Headers */,
@@ -2373,11 +2800,14 @@
 			files = (
 				436B5A8228244CB500574CD4 /* tipc.h in Headers */,
 				436B5A8328244CB500574CD4 /* jni.h in Headers */,
+				4342343B2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				436B5A8428244CB500574CD4 /* ancillary.h in Headers */,
 				436B5A8528244CB500574CD4 /* pipe.h in Headers */,
 				436B5A8628244CB500574CD4 /* init.h in Headers */,
 				436B5A8728244CB500574CD4 /* send.h in Headers */,
+				43B5DE742CF4FEE7001227CF /* shm.h in Headers */,
 				436B5A8828244CB500574CD4 /* listen.h in Headers */,
+				43B5DED22CFBD19F001227CF /* futex.h in Headers */,
 				436B5A8928244CB500574CD4 /* config.h in Headers */,
 				436B5A8A28244CB500574CD4 /* socketpair.h in Headers */,
 				4355476428F6E6310042E830 /* vsock.h in Headers */,
@@ -2387,6 +2817,8 @@
 				436B5A8E28244CB500574CD4 /* filedescriptors.h in Headers */,
 				436B5A8F28244CB500574CD4 /* exceptions.h in Headers */,
 				436B5A9028244CB500574CD4 /* capabilities.h in Headers */,
+				43ADC71F2D04DE8D0095802A /* logging.h in Headers */,
+				43145C532B0656E30090BD53 /* gettod_zos.h in Headers */,
 				436B5A9128244CB500574CD4 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				436B5A9228244CB500574CD4 /* socket.h in Headers */,
 				436B5A9328244CB500574CD4 /* ckmacros.h in Headers */,
@@ -2408,11 +2840,14 @@
 			files = (
 				436B5ABC2826F49A00574CD4 /* tipc.h in Headers */,
 				436B5ABD2826F49A00574CD4 /* jni.h in Headers */,
+				4342343C2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				436B5ABE2826F49A00574CD4 /* ancillary.h in Headers */,
 				436B5ABF2826F49A00574CD4 /* pipe.h in Headers */,
 				436B5AC02826F49A00574CD4 /* init.h in Headers */,
 				436B5AC12826F49A00574CD4 /* send.h in Headers */,
+				43B5DE772CF4FEE7001227CF /* shm.h in Headers */,
 				436B5AC22826F49A00574CD4 /* listen.h in Headers */,
+				43B5DECE2CFBD19F001227CF /* futex.h in Headers */,
 				436B5AC32826F49A00574CD4 /* config.h in Headers */,
 				436B5AC42826F49A00574CD4 /* socketpair.h in Headers */,
 				4355476528F6E6310042E830 /* vsock.h in Headers */,
@@ -2422,6 +2857,8 @@
 				436B5AC82826F49A00574CD4 /* filedescriptors.h in Headers */,
 				436B5AC92826F49A00574CD4 /* exceptions.h in Headers */,
 				436B5ACA2826F49A00574CD4 /* capabilities.h in Headers */,
+				43ADC7012D04DE8D0095802A /* logging.h in Headers */,
+				43145C542B0656E30090BD53 /* gettod_zos.h in Headers */,
 				436B5ACB2826F49A00574CD4 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				436B5ACC2826F49A00574CD4 /* socket.h in Headers */,
 				436B5ACD2826F49A00574CD4 /* ckmacros.h in Headers */,
@@ -2443,11 +2880,14 @@
 			files = (
 				436E166E27FBB70B00A553EC /* tipc.h in Headers */,
 				43B3DFD126660A2D0024822F /* jni.h in Headers */,
+				434234442C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				43B3DFD226660A2D0024822F /* ancillary.h in Headers */,
 				43B3DFD326660A2D0024822F /* pipe.h in Headers */,
 				43B3DFD426660A2D0024822F /* init.h in Headers */,
 				43B3DFD526660A2D0024822F /* send.h in Headers */,
+				43B5DE722CF4FEE7001227CF /* shm.h in Headers */,
 				43B3DFD626660A2D0024822F /* listen.h in Headers */,
+				43B5DEAE2CFBD19F001227CF /* futex.h in Headers */,
 				43B3DFD726660A2D0024822F /* config.h in Headers */,
 				43B3DFD826660A2D0024822F /* socketpair.h in Headers */,
 				4355476D28F6E6310042E830 /* vsock.h in Headers */,
@@ -2457,6 +2897,8 @@
 				43B3DFDC26660A2D0024822F /* filedescriptors.h in Headers */,
 				43B3DFDD26660A2D0024822F /* exceptions.h in Headers */,
 				43B3DFDE26660A2D0024822F /* capabilities.h in Headers */,
+				43ADC7062D04DE8D0095802A /* logging.h in Headers */,
+				43145C5C2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				43B3DFDF26660A2D0024822F /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				43B3DFE026660A2D0024822F /* socket.h in Headers */,
 				43B3DFE126660A2D0024822F /* ckmacros.h in Headers */,
@@ -2478,11 +2920,14 @@
 			files = (
 				436E166F27FBB70B00A553EC /* tipc.h in Headers */,
 				43B3E00926672FD30024822F /* jni.h in Headers */,
+				434234452C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				43B3E00A26672FD30024822F /* ancillary.h in Headers */,
 				43B3E00B26672FD30024822F /* pipe.h in Headers */,
 				43B3E00C26672FD30024822F /* init.h in Headers */,
 				43B3E00D26672FD30024822F /* send.h in Headers */,
+				43B5DE942CF4FEE7001227CF /* shm.h in Headers */,
 				43B3E00E26672FD30024822F /* listen.h in Headers */,
+				43B5DEC82CFBD19F001227CF /* futex.h in Headers */,
 				43B3E00F26672FD30024822F /* config.h in Headers */,
 				43B3E01026672FD30024822F /* socketpair.h in Headers */,
 				4355476E28F6E6310042E830 /* vsock.h in Headers */,
@@ -2492,6 +2937,8 @@
 				43B3E01426672FD30024822F /* filedescriptors.h in Headers */,
 				43B3E01526672FD30024822F /* exceptions.h in Headers */,
 				43B3E01626672FD30024822F /* capabilities.h in Headers */,
+				43ADC6F92D04DE8D0095802A /* logging.h in Headers */,
+				43145C5D2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				43B3E01726672FD30024822F /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				43B3E01826672FD30024822F /* socket.h in Headers */,
 				43B3E01926672FD30024822F /* ckmacros.h in Headers */,
@@ -2513,11 +2960,14 @@
 			files = (
 				436E166327FBB70B00A553EC /* tipc.h in Headers */,
 				43B3E041266756540024822F /* jni.h in Headers */,
+				434234362C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				43B3E042266756540024822F /* ancillary.h in Headers */,
 				43B3E043266756540024822F /* pipe.h in Headers */,
 				43B3E044266756540024822F /* init.h in Headers */,
 				43B3E045266756540024822F /* send.h in Headers */,
+				43B5DE872CF4FEE7001227CF /* shm.h in Headers */,
 				43B3E046266756540024822F /* listen.h in Headers */,
+				43B5DEB32CFBD19F001227CF /* futex.h in Headers */,
 				43B3E047266756540024822F /* config.h in Headers */,
 				43B3E048266756540024822F /* socketpair.h in Headers */,
 				4355475F28F6E6310042E830 /* vsock.h in Headers */,
@@ -2527,6 +2977,8 @@
 				43B3E04C266756540024822F /* filedescriptors.h in Headers */,
 				43B3E04D266756540024822F /* exceptions.h in Headers */,
 				43B3E04E266756540024822F /* capabilities.h in Headers */,
+				43ADC7022D04DE8D0095802A /* logging.h in Headers */,
+				43145C4E2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				43B3E04F266756540024822F /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				43B3E050266756540024822F /* socket.h in Headers */,
 				43B3E051266756540024822F /* ckmacros.h in Headers */,
@@ -2548,11 +3000,14 @@
 			files = (
 				436E167027FBB70B00A553EC /* tipc.h in Headers */,
 				43B3E079266971630024822F /* jni.h in Headers */,
+				434234462C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				43B3E07A266971630024822F /* ancillary.h in Headers */,
 				43B3E07B266971630024822F /* pipe.h in Headers */,
 				43B3E07C266971630024822F /* init.h in Headers */,
 				43B3E07D266971630024822F /* send.h in Headers */,
+				43B5DE9F2CF4FEE7001227CF /* shm.h in Headers */,
 				43B3E07E266971630024822F /* listen.h in Headers */,
+				43B5DEC12CFBD19F001227CF /* futex.h in Headers */,
 				43B3E07F266971630024822F /* config.h in Headers */,
 				43B3E080266971630024822F /* socketpair.h in Headers */,
 				4355476F28F6E6310042E830 /* vsock.h in Headers */,
@@ -2562,6 +3017,8 @@
 				43B3E084266971630024822F /* filedescriptors.h in Headers */,
 				43B3E085266971630024822F /* exceptions.h in Headers */,
 				43B3E086266971630024822F /* capabilities.h in Headers */,
+				43ADC7172D04DE8D0095802A /* logging.h in Headers */,
+				43145C5E2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				43B3E087266971630024822F /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				43B3E088266971630024822F /* socket.h in Headers */,
 				43B3E089266971630024822F /* ckmacros.h in Headers */,
@@ -2583,11 +3040,14 @@
 			files = (
 				43C57CC72A38F370001DEA62 /* tipc.h in Headers */,
 				43C57CC82A38F370001DEA62 /* jni.h in Headers */,
+				434234482C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				43C57CC92A38F370001DEA62 /* ancillary.h in Headers */,
 				43C57CCA2A38F370001DEA62 /* pipe.h in Headers */,
 				43C57CCB2A38F370001DEA62 /* init.h in Headers */,
 				43C57CCC2A38F370001DEA62 /* send.h in Headers */,
+				43B5DE992CF4FEE7001227CF /* shm.h in Headers */,
 				43C57CCD2A38F370001DEA62 /* listen.h in Headers */,
+				43B5DEBD2CFBD19F001227CF /* futex.h in Headers */,
 				43C57CCE2A38F370001DEA62 /* config.h in Headers */,
 				43C57CCF2A38F370001DEA62 /* socketpair.h in Headers */,
 				43C57CD02A38F370001DEA62 /* vsock.h in Headers */,
@@ -2597,6 +3057,8 @@
 				43C57CD42A38F370001DEA62 /* filedescriptors.h in Headers */,
 				43C57CD52A38F370001DEA62 /* exceptions.h in Headers */,
 				43C57CD62A38F370001DEA62 /* capabilities.h in Headers */,
+				43ADC7092D04DE8D0095802A /* logging.h in Headers */,
+				43145C602B0656E30090BD53 /* gettod_zos.h in Headers */,
 				43C57CD72A38F370001DEA62 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				43C57CD82A38F370001DEA62 /* socket.h in Headers */,
 				43C57CD92A38F370001DEA62 /* ckmacros.h in Headers */,
@@ -2618,11 +3080,14 @@
 			files = (
 				436E166427FBB70B00A553EC /* tipc.h in Headers */,
 				430235C42650AC3200823167 /* jni.h in Headers */,
+				434234372C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235A92650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF85265EEC930024822F /* pipe.h in Headers */,
 				430235552650AB4F00823167 /* init.h in Headers */,
 				430234712650AB4E00823167 /* send.h in Headers */,
+				43B5DE702CF4FEE7001227CF /* shm.h in Headers */,
 				430234C52650AB4E00823167 /* listen.h in Headers */,
+				43B5DEC42CFBD19F001227CF /* futex.h in Headers */,
 				430234112650AB4E00823167 /* config.h in Headers */,
 				43B3DFC5266082000024822F /* socketpair.h in Headers */,
 				4355476028F6E6310042E830 /* vsock.h in Headers */,
@@ -2632,6 +3097,8 @@
 				430234892650AB4E00823167 /* filedescriptors.h in Headers */,
 				430234592650AB4E00823167 /* exceptions.h in Headers */,
 				430234292650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC7112D04DE8D0095802A /* logging.h in Headers */,
+				43145C4F2B0656E30090BD53 /* gettod_zos.h in Headers */,
 				4302356D2650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234E92650AB4F00823167 /* socket.h in Headers */,
 				430235612650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2653,11 +3120,14 @@
 			files = (
 				436E166A27FBB70B00A553EC /* tipc.h in Headers */,
 				430235CA2650AC3200823167 /* jni.h in Headers */,
+				4342343F2C91C4F50046DBD9 /* stat_wrapper.h in Headers */,
 				430235AF2650AB4F00823167 /* ancillary.h in Headers */,
 				43B3DF8B265EEC930024822F /* pipe.h in Headers */,
 				4302355B2650AB4F00823167 /* init.h in Headers */,
 				430234772650AB4E00823167 /* send.h in Headers */,
+				43B5DE812CF4FEE7001227CF /* shm.h in Headers */,
 				430234CB2650AB4E00823167 /* listen.h in Headers */,
+				43B5DEC52CFBD19F001227CF /* futex.h in Headers */,
 				430234172650AB4E00823167 /* config.h in Headers */,
 				43B3DFCB266082000024822F /* socketpair.h in Headers */,
 				4355476828F6E6310042E830 /* vsock.h in Headers */,
@@ -2667,6 +3137,8 @@
 				4302348F2650AB4E00823167 /* filedescriptors.h in Headers */,
 				4302345F2650AB4E00823167 /* exceptions.h in Headers */,
 				4302342F2650AB4E00823167 /* capabilities.h in Headers */,
+				43ADC6F12D04DE8D0095802A /* logging.h in Headers */,
+				43145C572B0656E30090BD53 /* gettod_zos.h in Headers */,
 				430235732650AB4F00823167 /* org_newsclub_net_unix_NativeUnixSocket.h in Headers */,
 				430234EF2650AB4F00823167 /* socket.h in Headers */,
 				430235672650AB4F00823167 /* ckmacros.h in Headers */,
@@ -2685,6 +3157,23 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		430456952C91B81000CBAC42 /* loongarch64-openEuler-linux */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 430456CE2C91B81000CBAC42 /* Build configuration list for PBXNativeTarget "loongarch64-openEuler-linux" */;
+			buildPhases = (
+				430456962C91B81000CBAC42 /* Headers */,
+				430456B42C91B81000CBAC42 /* Sources */,
+				430456CD2C91B81000CBAC42 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "loongarch64-openEuler-linux";
+			productName = "junixsocket-native";
+			productReference = 430456D12C91B81000CBAC42 /* libjunixsocket-loongarch64-openEuler-linux.so */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
 		4304A5F1266DFCEF003BCEDF /* x86_64-portbld-dragonfly6.0 */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4304A623266DFCEF003BCEDF /* Build configuration list for PBXNativeTarget "x86_64-portbld-dragonfly6.0" */;
@@ -3100,7 +3589,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1610;
 				TargetAttributes = {
 					432EF186261AD52100F4A583 = {
 						CreatedOnToolsVersion = 11.3.1;
@@ -3148,11 +3637,47 @@
 				435B54682A3F65D2001011B8 /* x86_64-linux-android30 */,
 				435B54A42A3F65F4001011B8 /* i686-linux-android30 */,
 				435B54E02A3F661F001011B8 /* arm-linux-androideabi30 */,
+				430456952C91B81000CBAC42 /* loongarch64-openEuler-linux */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		430456B42C91B81000CBAC42 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				430456B52C91B81000CBAC42 /* filedescriptors.c in Sources */,
+				430456B62C91B81000CBAC42 /* bind.c in Sources */,
+				430456B72C91B81000CBAC42 /* address.c in Sources */,
+				430456B82C91B81000CBAC42 /* vsock.c in Sources */,
+				430456B92C91B81000CBAC42 /* send.c in Sources */,
+				430456BA2C91B81000CBAC42 /* socket.c in Sources */,
+				43B5DE922CF4FEE7001227CF /* shm.c in Sources */,
+				430456BB2C91B81000CBAC42 /* pipe.c in Sources */,
+				430456BC2C91B81000CBAC42 /* connect.c in Sources */,
+				430456BD2C91B81000CBAC42 /* capabilities.c in Sources */,
+				430456BE2C91B81000CBAC42 /* socketoptions.c in Sources */,
+				430456BF2C91B81000CBAC42 /* polling.c in Sources */,
+				430456C02C91B81000CBAC42 /* receive.c in Sources */,
+				430456C12C91B81000CBAC42 /* jniutil.c in Sources */,
+				430456C22C91B81000CBAC42 /* init.c in Sources */,
+				430456C32C91B81000CBAC42 /* tipc.c in Sources */,
+				430456C42C91B81000CBAC42 /* config.c in Sources */,
+				430456C52C91B81000CBAC42 /* credentials.c in Sources */,
+				434234312C91C2890046DBD9 /* stat_wrapper.c in Sources */,
+				430456C62C91B81000CBAC42 /* socketpair.c in Sources */,
+				430456C72C91B81000CBAC42 /* exceptions.c in Sources */,
+				430456C82C91B81000CBAC42 /* reflection.c in Sources */,
+				430456C92C91B81000CBAC42 /* listen.c in Sources */,
+				430456CA2C91B81000CBAC42 /* ancillary.c in Sources */,
+				43B5DECA2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7132D04DE8D0095802A /* logging.c in Sources */,
+				430456CB2C91B81000CBAC42 /* accept.c in Sources */,
+				430456CC2C91B81000CBAC42 /* afsystem.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4304A60C266DFCEF003BCEDF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -3163,6 +3688,7 @@
 				4355475C28F6E6310042E830 /* vsock.c in Sources */,
 				4304A610266DFCEF003BCEDF /* send.c in Sources */,
 				4304A611266DFCEF003BCEDF /* socket.c in Sources */,
+				43B5DE8D2CF4FEE7001227CF /* shm.c in Sources */,
 				4304A612266DFCEF003BCEDF /* pipe.c in Sources */,
 				4304A613266DFCEF003BCEDF /* connect.c in Sources */,
 				4304A614266DFCEF003BCEDF /* capabilities.c in Sources */,
@@ -3174,11 +3700,14 @@
 				436E168227FBB70B00A553EC /* tipc.c in Sources */,
 				4304A61A266DFCEF003BCEDF /* config.c in Sources */,
 				4304A61B266DFCEF003BCEDF /* credentials.c in Sources */,
+				4342342C2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				4304A61C266DFCEF003BCEDF /* socketpair.c in Sources */,
 				4304A61D266DFCEF003BCEDF /* exceptions.c in Sources */,
 				4304A61E266DFCEF003BCEDF /* reflection.c in Sources */,
 				4304A61F266DFCEF003BCEDF /* listen.c in Sources */,
 				4304A620266DFCEF003BCEDF /* ancillary.c in Sources */,
+				43B5DEA72CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6FC2D04DE8D0095802A /* logging.c in Sources */,
 				4304A621266DFCEF003BCEDF /* accept.c in Sources */,
 				438F4DAA2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3194,6 +3723,7 @@
 				4355474A28F6E6310042E830 /* vsock.c in Sources */,
 				430234D02650AB4F00823167 /* send.c in Sources */,
 				430235842650AB4F00823167 /* socket.c in Sources */,
+				43B5DE8C2CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF90265EEC930024822F /* pipe.c in Sources */,
 				4302353C2650AB4F00823167 /* connect.c in Sources */,
 				430234B82650AB4E00823167 /* capabilities.c in Sources */,
@@ -3205,11 +3735,14 @@
 				436E167327FBB70B00A553EC /* tipc.c in Sources */,
 				430233F82650AB4E00823167 /* config.c in Sources */,
 				430235B42650AB4F00823167 /* credentials.c in Sources */,
+				4342341A2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFB8266082000024822F /* socketpair.c in Sources */,
 				430235482650AB4F00823167 /* exceptions.c in Sources */,
 				430235242650AB4F00823167 /* reflection.c in Sources */,
 				430234AC2650AB4E00823167 /* listen.c in Sources */,
 				430234342650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEBA2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7142D04DE8D0095802A /* logging.c in Sources */,
 				430233E02650AB4E00823167 /* accept.c in Sources */,
 				438F4D982A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3225,6 +3758,7 @@
 				4355475828F6E6310042E830 /* vsock.c in Sources */,
 				430234DA2650AB4F00823167 /* send.c in Sources */,
 				4302358E2650AB4F00823167 /* socket.c in Sources */,
+				43B5DE862CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF9A265EEC930024822F /* pipe.c in Sources */,
 				430235462650AB4F00823167 /* connect.c in Sources */,
 				430234C22650AB4E00823167 /* capabilities.c in Sources */,
@@ -3236,11 +3770,14 @@
 				436E167E27FBB70B00A553EC /* tipc.c in Sources */,
 				430234022650AB4E00823167 /* config.c in Sources */,
 				430235BE2650AB4F00823167 /* credentials.c in Sources */,
+				434234282C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFC2266082000024822F /* socketpair.c in Sources */,
 				430235522650AB4F00823167 /* exceptions.c in Sources */,
 				4302352E2650AB4F00823167 /* reflection.c in Sources */,
 				430234B62650AB4E00823167 /* listen.c in Sources */,
 				4302343E2650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DED32CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6F42D04DE8D0095802A /* logging.c in Sources */,
 				430233EA2650AB4E00823167 /* accept.c in Sources */,
 				438F4DA62A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3256,6 +3793,7 @@
 				4355474E28F6E6310042E830 /* vsock.c in Sources */,
 				430234D32650AB4F00823167 /* send.c in Sources */,
 				430235872650AB4F00823167 /* socket.c in Sources */,
+				43B5DE9C2CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF93265EEC930024822F /* pipe.c in Sources */,
 				4302353F2650AB4F00823167 /* connect.c in Sources */,
 				430234BB2650AB4E00823167 /* capabilities.c in Sources */,
@@ -3267,11 +3805,14 @@
 				436E167727FBB70B00A553EC /* tipc.c in Sources */,
 				430233FB2650AB4E00823167 /* config.c in Sources */,
 				430235B72650AB4F00823167 /* credentials.c in Sources */,
+				4342341E2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFBB266082000024822F /* socketpair.c in Sources */,
 				4302354B2650AB4F00823167 /* exceptions.c in Sources */,
 				430235272650AB4F00823167 /* reflection.c in Sources */,
 				430234AF2650AB4E00823167 /* listen.c in Sources */,
 				430234372650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEBC2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC71B2D04DE8D0095802A /* logging.c in Sources */,
 				430233E32650AB4E00823167 /* accept.c in Sources */,
 				438F4D9C2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3287,6 +3828,7 @@
 				4355475328F6E6310042E830 /* vsock.c in Sources */,
 				430234D62650AB4F00823167 /* send.c in Sources */,
 				4302358A2650AB4F00823167 /* socket.c in Sources */,
+				43B5DE7E2CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF96265EEC930024822F /* pipe.c in Sources */,
 				430235422650AB4F00823167 /* connect.c in Sources */,
 				430234BE2650AB4E00823167 /* capabilities.c in Sources */,
@@ -3298,11 +3840,14 @@
 				436E167A27FBB70B00A553EC /* tipc.c in Sources */,
 				430233FE2650AB4E00823167 /* config.c in Sources */,
 				430235BA2650AB4F00823167 /* credentials.c in Sources */,
+				434234232C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFBE266082000024822F /* socketpair.c in Sources */,
 				4302354E2650AB4F00823167 /* exceptions.c in Sources */,
 				4302352A2650AB4F00823167 /* reflection.c in Sources */,
 				430234B22650AB4E00823167 /* listen.c in Sources */,
 				4302343A2650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DECC2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC70A2D04DE8D0095802A /* logging.c in Sources */,
 				430233E62650AB4E00823167 /* accept.c in Sources */,
 				438F4DA12A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3318,6 +3863,7 @@
 				4355475628F6E6310042E830 /* vsock.c in Sources */,
 				430234D92650AB4F00823167 /* send.c in Sources */,
 				4302358D2650AB4F00823167 /* socket.c in Sources */,
+				43B5DE952CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF99265EEC930024822F /* pipe.c in Sources */,
 				430235452650AB4F00823167 /* connect.c in Sources */,
 				430234C12650AB4E00823167 /* capabilities.c in Sources */,
@@ -3329,11 +3875,14 @@
 				436E167D27FBB70B00A553EC /* tipc.c in Sources */,
 				430234012650AB4E00823167 /* config.c in Sources */,
 				430235BD2650AB4F00823167 /* credentials.c in Sources */,
+				434234262C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFC1266082000024822F /* socketpair.c in Sources */,
 				430235512650AB4F00823167 /* exceptions.c in Sources */,
 				4302352D2650AB4F00823167 /* reflection.c in Sources */,
 				430234B52650AB4E00823167 /* listen.c in Sources */,
 				4302343D2650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEB52CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6F22D04DE8D0095802A /* logging.c in Sources */,
 				430233E92650AB4E00823167 /* accept.c in Sources */,
 				438F4DA42A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3349,6 +3898,7 @@
 				4355474F28F6E6310042E830 /* vsock.c in Sources */,
 				430234D42650AB4F00823167 /* send.c in Sources */,
 				430235882650AB4F00823167 /* socket.c in Sources */,
+				43B5DE972CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF94265EEC930024822F /* pipe.c in Sources */,
 				430235402650AB4F00823167 /* connect.c in Sources */,
 				430234BC2650AB4E00823167 /* capabilities.c in Sources */,
@@ -3360,11 +3910,14 @@
 				436E167827FBB70B00A553EC /* tipc.c in Sources */,
 				430233FC2650AB4E00823167 /* config.c in Sources */,
 				430235B82650AB4F00823167 /* credentials.c in Sources */,
+				4342341F2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFBC266082000024822F /* socketpair.c in Sources */,
 				4302354C2650AB4F00823167 /* exceptions.c in Sources */,
 				430235282650AB4F00823167 /* reflection.c in Sources */,
 				430234B02650AB4E00823167 /* listen.c in Sources */,
 				430234382650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEA52CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6EE2D04DE8D0095802A /* logging.c in Sources */,
 				430233E42650AB4E00823167 /* accept.c in Sources */,
 				438F4D9D2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3380,6 +3933,7 @@
 				4355475228F6E6310042E830 /* vsock.c in Sources */,
 				430234D52650AB4F00823167 /* send.c in Sources */,
 				430235892650AB4F00823167 /* socket.c in Sources */,
+				43B5DE902CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF95265EEC930024822F /* pipe.c in Sources */,
 				430235412650AB4F00823167 /* connect.c in Sources */,
 				430234BD2650AB4E00823167 /* capabilities.c in Sources */,
@@ -3391,11 +3945,14 @@
 				436E167927FBB70B00A553EC /* tipc.c in Sources */,
 				430233FD2650AB4E00823167 /* config.c in Sources */,
 				430235B92650AB4F00823167 /* credentials.c in Sources */,
+				434234222C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFBD266082000024822F /* socketpair.c in Sources */,
 				4302354D2650AB4F00823167 /* exceptions.c in Sources */,
 				430235292650AB4F00823167 /* reflection.c in Sources */,
 				430234B12650AB4E00823167 /* listen.c in Sources */,
 				430234392650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DED02CFBD19F001227CF /* futex.c in Sources */,
+				43ADC71C2D04DE8D0095802A /* logging.c in Sources */,
 				430233E52650AB4E00823167 /* accept.c in Sources */,
 				438F4DA02A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3411,6 +3968,7 @@
 				4355474D28F6E6310042E830 /* vsock.c in Sources */,
 				430234D22650AB4F00823167 /* send.c in Sources */,
 				430235862650AB4F00823167 /* socket.c in Sources */,
+				43B5DE752CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF92265EEC930024822F /* pipe.c in Sources */,
 				4302353E2650AB4F00823167 /* connect.c in Sources */,
 				430234BA2650AB4E00823167 /* capabilities.c in Sources */,
@@ -3422,11 +3980,14 @@
 				436E167627FBB70B00A553EC /* tipc.c in Sources */,
 				430233FA2650AB4E00823167 /* config.c in Sources */,
 				430235B62650AB4F00823167 /* credentials.c in Sources */,
+				4342341D2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFBA266082000024822F /* socketpair.c in Sources */,
 				4302354A2650AB4F00823167 /* exceptions.c in Sources */,
 				430235262650AB4F00823167 /* reflection.c in Sources */,
 				430234AE2650AB4E00823167 /* listen.c in Sources */,
 				430234362650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEAB2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7052D04DE8D0095802A /* logging.c in Sources */,
 				430233E22650AB4E00823167 /* accept.c in Sources */,
 				438F4D9B2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3442,6 +4003,7 @@
 				4355475528F6E6310042E830 /* vsock.c in Sources */,
 				430234D82650AB4F00823167 /* send.c in Sources */,
 				4302358C2650AB4F00823167 /* socket.c in Sources */,
+				43B5DE842CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF98265EEC930024822F /* pipe.c in Sources */,
 				430235442650AB4F00823167 /* connect.c in Sources */,
 				430234C02650AB4E00823167 /* capabilities.c in Sources */,
@@ -3453,11 +4015,14 @@
 				436E167C27FBB70B00A553EC /* tipc.c in Sources */,
 				430234002650AB4E00823167 /* config.c in Sources */,
 				430235BC2650AB4F00823167 /* credentials.c in Sources */,
+				434234252C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFC0266082000024822F /* socketpair.c in Sources */,
 				430235502650AB4F00823167 /* exceptions.c in Sources */,
 				4302352C2650AB4F00823167 /* reflection.c in Sources */,
 				430234B42650AB4E00823167 /* listen.c in Sources */,
 				4302343C2650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEB82CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6FB2D04DE8D0095802A /* logging.c in Sources */,
 				430233E82650AB4E00823167 /* accept.c in Sources */,
 				438F4DA32A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3473,6 +4038,7 @@
 				435B54892A3F65D2001011B8 /* vsock.c in Sources */,
 				435B548A2A3F65D2001011B8 /* send.c in Sources */,
 				435B548B2A3F65D2001011B8 /* socket.c in Sources */,
+				43B5DE7B2CF4FEE7001227CF /* shm.c in Sources */,
 				435B548C2A3F65D2001011B8 /* pipe.c in Sources */,
 				435B548D2A3F65D2001011B8 /* connect.c in Sources */,
 				435B548E2A3F65D2001011B8 /* capabilities.c in Sources */,
@@ -3484,11 +4050,14 @@
 				435B54942A3F65D2001011B8 /* tipc.c in Sources */,
 				435B54952A3F65D2001011B8 /* config.c in Sources */,
 				435B54962A3F65D2001011B8 /* credentials.c in Sources */,
+				4342342E2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				435B54972A3F65D2001011B8 /* socketpair.c in Sources */,
 				435B54982A3F65D2001011B8 /* exceptions.c in Sources */,
 				435B54992A3F65D2001011B8 /* reflection.c in Sources */,
 				435B549A2A3F65D2001011B8 /* listen.c in Sources */,
 				435B549B2A3F65D2001011B8 /* ancillary.c in Sources */,
+				43B5DEB12CFBD19F001227CF /* futex.c in Sources */,
+				43ADC70F2D04DE8D0095802A /* logging.c in Sources */,
 				435B549C2A3F65D2001011B8 /* accept.c in Sources */,
 				438F4DAC2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3504,6 +4073,7 @@
 				435B54C52A3F65F4001011B8 /* vsock.c in Sources */,
 				435B54C62A3F65F4001011B8 /* send.c in Sources */,
 				435B54C72A3F65F4001011B8 /* socket.c in Sources */,
+				43B5DE792CF4FEE7001227CF /* shm.c in Sources */,
 				435B54C82A3F65F4001011B8 /* pipe.c in Sources */,
 				435B54C92A3F65F4001011B8 /* connect.c in Sources */,
 				435B54CA2A3F65F4001011B8 /* capabilities.c in Sources */,
@@ -3515,11 +4085,14 @@
 				435B54D02A3F65F4001011B8 /* tipc.c in Sources */,
 				435B54D12A3F65F4001011B8 /* config.c in Sources */,
 				435B54D22A3F65F4001011B8 /* credentials.c in Sources */,
+				4342342F2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				435B54D32A3F65F4001011B8 /* socketpair.c in Sources */,
 				435B54D42A3F65F4001011B8 /* exceptions.c in Sources */,
 				435B54D52A3F65F4001011B8 /* reflection.c in Sources */,
 				435B54D62A3F65F4001011B8 /* listen.c in Sources */,
 				435B54D72A3F65F4001011B8 /* ancillary.c in Sources */,
+				43B5DEA32CFBD19F001227CF /* futex.c in Sources */,
+				43ADC70C2D04DE8D0095802A /* logging.c in Sources */,
 				435B54D82A3F65F4001011B8 /* accept.c in Sources */,
 				438F4DAD2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3535,6 +4108,7 @@
 				435B55012A3F661F001011B8 /* vsock.c in Sources */,
 				435B55022A3F661F001011B8 /* send.c in Sources */,
 				435B55032A3F661F001011B8 /* socket.c in Sources */,
+				43B5DE892CF4FEE7001227CF /* shm.c in Sources */,
 				435B55042A3F661F001011B8 /* pipe.c in Sources */,
 				435B55052A3F661F001011B8 /* connect.c in Sources */,
 				435B55062A3F661F001011B8 /* capabilities.c in Sources */,
@@ -3546,11 +4120,14 @@
 				435B550C2A3F661F001011B8 /* tipc.c in Sources */,
 				435B550D2A3F661F001011B8 /* config.c in Sources */,
 				435B550E2A3F661F001011B8 /* credentials.c in Sources */,
+				434234302C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				435B550F2A3F661F001011B8 /* socketpair.c in Sources */,
 				435B55102A3F661F001011B8 /* exceptions.c in Sources */,
 				435B55112A3F661F001011B8 /* reflection.c in Sources */,
 				435B55122A3F661F001011B8 /* listen.c in Sources */,
 				435B55132A3F661F001011B8 /* ancillary.c in Sources */,
+				43B5DEBF2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6FF2D04DE8D0095802A /* logging.c in Sources */,
 				435B55142A3F661F001011B8 /* accept.c in Sources */,
 				438F4DAE2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3566,6 +4143,7 @@
 				4355474928F6E6310042E830 /* vsock.c in Sources */,
 				430234CF2650AB4F00823167 /* send.c in Sources */,
 				430235832650AB4F00823167 /* socket.c in Sources */,
+				43B5DE9D2CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF8F265EEC930024822F /* pipe.c in Sources */,
 				4302353B2650AB4F00823167 /* connect.c in Sources */,
 				430234B72650AB4E00823167 /* capabilities.c in Sources */,
@@ -3577,11 +4155,14 @@
 				436E167227FBB70B00A553EC /* tipc.c in Sources */,
 				430233F72650AB4E00823167 /* config.c in Sources */,
 				430235B32650AB4F00823167 /* credentials.c in Sources */,
+				434234192C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFB7266082000024822F /* socketpair.c in Sources */,
 				430235472650AB4F00823167 /* exceptions.c in Sources */,
 				430235232650AB4F00823167 /* reflection.c in Sources */,
 				430234AB2650AB4E00823167 /* listen.c in Sources */,
 				430234332650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEAF2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7182D04DE8D0095802A /* logging.c in Sources */,
 				430233DF2650AB4E00823167 /* accept.c in Sources */,
 				438F4D972A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3597,6 +4178,7 @@
 				4355475728F6E6310042E830 /* vsock.c in Sources */,
 				43684DA0282EE24B005F2989 /* send.c in Sources */,
 				43684DA1282EE24B005F2989 /* socket.c in Sources */,
+				43B5DE7F2CF4FEE7001227CF /* shm.c in Sources */,
 				43684DA2282EE24B005F2989 /* pipe.c in Sources */,
 				43684DA3282EE24B005F2989 /* connect.c in Sources */,
 				43684DA4282EE24B005F2989 /* capabilities.c in Sources */,
@@ -3608,11 +4190,14 @@
 				43684DAA282EE24B005F2989 /* tipc.c in Sources */,
 				43684DAB282EE24B005F2989 /* config.c in Sources */,
 				43684DAC282EE24B005F2989 /* credentials.c in Sources */,
+				434234272C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43684DAD282EE24B005F2989 /* socketpair.c in Sources */,
 				43684DAE282EE24B005F2989 /* exceptions.c in Sources */,
 				43684DAF282EE24B005F2989 /* reflection.c in Sources */,
 				43684DB0282EE24B005F2989 /* listen.c in Sources */,
 				43684DB1282EE24B005F2989 /* ancillary.c in Sources */,
+				43B5DEA92CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6F72D04DE8D0095802A /* logging.c in Sources */,
 				43684DB2282EE24B005F2989 /* accept.c in Sources */,
 				438F4DA52A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3628,6 +4213,7 @@
 				4355475028F6E6310042E830 /* vsock.c in Sources */,
 				436B5AA028244CB500574CD4 /* send.c in Sources */,
 				436B5AA128244CB500574CD4 /* socket.c in Sources */,
+				43B5DE732CF4FEE7001227CF /* shm.c in Sources */,
 				436B5AA228244CB500574CD4 /* pipe.c in Sources */,
 				436B5AA328244CB500574CD4 /* connect.c in Sources */,
 				436B5AA428244CB500574CD4 /* capabilities.c in Sources */,
@@ -3639,11 +4225,14 @@
 				436B5AAA28244CB500574CD4 /* tipc.c in Sources */,
 				436B5AAB28244CB500574CD4 /* config.c in Sources */,
 				436B5AAC28244CB500574CD4 /* credentials.c in Sources */,
+				434234202C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				436B5AAD28244CB500574CD4 /* socketpair.c in Sources */,
 				436B5AAE28244CB500574CD4 /* exceptions.c in Sources */,
 				436B5AAF28244CB500574CD4 /* reflection.c in Sources */,
 				436B5AB028244CB500574CD4 /* listen.c in Sources */,
 				436B5AB128244CB500574CD4 /* ancillary.c in Sources */,
+				43B5DED12CFBD19F001227CF /* futex.c in Sources */,
+				43ADC71E2D04DE8D0095802A /* logging.c in Sources */,
 				436B5AB228244CB500574CD4 /* accept.c in Sources */,
 				438F4D9E2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3659,6 +4248,7 @@
 				4355475128F6E6310042E830 /* vsock.c in Sources */,
 				436B5ADA2826F49A00574CD4 /* send.c in Sources */,
 				436B5ADB2826F49A00574CD4 /* socket.c in Sources */,
+				43B5DE782CF4FEE7001227CF /* shm.c in Sources */,
 				436B5ADC2826F49A00574CD4 /* pipe.c in Sources */,
 				436B5ADD2826F49A00574CD4 /* connect.c in Sources */,
 				436B5ADE2826F49A00574CD4 /* capabilities.c in Sources */,
@@ -3670,11 +4260,14 @@
 				436B5AE42826F49A00574CD4 /* tipc.c in Sources */,
 				436B5AE52826F49A00574CD4 /* config.c in Sources */,
 				436B5AE62826F49A00574CD4 /* credentials.c in Sources */,
+				434234212C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				436B5AE72826F49A00574CD4 /* socketpair.c in Sources */,
 				436B5AE82826F49A00574CD4 /* exceptions.c in Sources */,
 				436B5AE92826F49A00574CD4 /* reflection.c in Sources */,
 				436B5AEA2826F49A00574CD4 /* listen.c in Sources */,
 				436B5AEB2826F49A00574CD4 /* ancillary.c in Sources */,
+				43B5DECD2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7002D04DE8D0095802A /* logging.c in Sources */,
 				436B5AEC2826F49A00574CD4 /* accept.c in Sources */,
 				438F4D9F2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3690,6 +4283,7 @@
 				4355475928F6E6310042E830 /* vsock.c in Sources */,
 				43B3DFEE26660A2D0024822F /* send.c in Sources */,
 				43B3DFEF26660A2D0024822F /* socket.c in Sources */,
+				43B5DE712CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DFF026660A2D0024822F /* pipe.c in Sources */,
 				43B3DFF126660A2D0024822F /* connect.c in Sources */,
 				43B3DFF226660A2D0024822F /* capabilities.c in Sources */,
@@ -3701,11 +4295,14 @@
 				436E167F27FBB70B00A553EC /* tipc.c in Sources */,
 				43B3DFF826660A2D0024822F /* config.c in Sources */,
 				43B3DFF926660A2D0024822F /* credentials.c in Sources */,
+				434234292C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFFA26660A2D0024822F /* socketpair.c in Sources */,
 				43B3DFFB26660A2D0024822F /* exceptions.c in Sources */,
 				43B3DFFC26660A2D0024822F /* reflection.c in Sources */,
 				43B3DFFD26660A2D0024822F /* listen.c in Sources */,
 				43B3DFFE26660A2D0024822F /* ancillary.c in Sources */,
+				43B5DEAD2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7072D04DE8D0095802A /* logging.c in Sources */,
 				43B3DFFF26660A2D0024822F /* accept.c in Sources */,
 				438F4DA72A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3721,6 +4318,7 @@
 				4355475A28F6E6310042E830 /* vsock.c in Sources */,
 				43B3E02626672FD30024822F /* send.c in Sources */,
 				43B3E02726672FD30024822F /* socket.c in Sources */,
+				43B5DE932CF4FEE7001227CF /* shm.c in Sources */,
 				43B3E02826672FD30024822F /* pipe.c in Sources */,
 				43B3E02926672FD30024822F /* connect.c in Sources */,
 				43B3E02A26672FD30024822F /* capabilities.c in Sources */,
@@ -3732,11 +4330,14 @@
 				436E168027FBB70B00A553EC /* tipc.c in Sources */,
 				43B3E03026672FD30024822F /* config.c in Sources */,
 				43B3E03126672FD30024822F /* credentials.c in Sources */,
+				4342342A2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3E03226672FD30024822F /* socketpair.c in Sources */,
 				43B3E03326672FD30024822F /* exceptions.c in Sources */,
 				43B3E03426672FD30024822F /* reflection.c in Sources */,
 				43B3E03526672FD30024822F /* listen.c in Sources */,
 				43B3E03626672FD30024822F /* ancillary.c in Sources */,
+				43B5DEC72CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6F82D04DE8D0095802A /* logging.c in Sources */,
 				43B3E03726672FD30024822F /* accept.c in Sources */,
 				438F4DA82A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3752,6 +4353,7 @@
 				4355474B28F6E6310042E830 /* vsock.c in Sources */,
 				43B3E05E266756540024822F /* send.c in Sources */,
 				43B3E05F266756540024822F /* socket.c in Sources */,
+				43B5DE882CF4FEE7001227CF /* shm.c in Sources */,
 				43B3E060266756540024822F /* pipe.c in Sources */,
 				43B3E061266756540024822F /* connect.c in Sources */,
 				43B3E062266756540024822F /* capabilities.c in Sources */,
@@ -3763,11 +4365,14 @@
 				436E167427FBB70B00A553EC /* tipc.c in Sources */,
 				43B3E068266756540024822F /* config.c in Sources */,
 				43B3E069266756540024822F /* credentials.c in Sources */,
+				4342341B2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3E06A266756540024822F /* socketpair.c in Sources */,
 				43B3E06B266756540024822F /* exceptions.c in Sources */,
 				43B3E06C266756540024822F /* reflection.c in Sources */,
 				43B3E06D266756540024822F /* listen.c in Sources */,
 				43B3E06E266756540024822F /* ancillary.c in Sources */,
+				43B5DEB42CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7032D04DE8D0095802A /* logging.c in Sources */,
 				43B3E06F266756540024822F /* accept.c in Sources */,
 				438F4D992A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3783,6 +4388,7 @@
 				4355475B28F6E6310042E830 /* vsock.c in Sources */,
 				43B3E096266971630024822F /* send.c in Sources */,
 				43B3E097266971630024822F /* socket.c in Sources */,
+				43B5DEA02CF4FEE7001227CF /* shm.c in Sources */,
 				43B3E098266971630024822F /* pipe.c in Sources */,
 				43B3E099266971630024822F /* connect.c in Sources */,
 				43B3E09A266971630024822F /* capabilities.c in Sources */,
@@ -3794,11 +4400,14 @@
 				436E168127FBB70B00A553EC /* tipc.c in Sources */,
 				43B3E0A0266971630024822F /* config.c in Sources */,
 				43B3E0A1266971630024822F /* credentials.c in Sources */,
+				4342342B2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3E0A2266971630024822F /* socketpair.c in Sources */,
 				43B3E0A3266971630024822F /* exceptions.c in Sources */,
 				43B3E0A4266971630024822F /* reflection.c in Sources */,
 				43B3E0A5266971630024822F /* listen.c in Sources */,
 				43B3E0A6266971630024822F /* ancillary.c in Sources */,
+				43B5DEC22CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7162D04DE8D0095802A /* logging.c in Sources */,
 				43B3E0A7266971630024822F /* accept.c in Sources */,
 				438F4DA92A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3814,6 +4423,7 @@
 				43C57CE62A38F370001DEA62 /* vsock.c in Sources */,
 				43C57CE72A38F370001DEA62 /* send.c in Sources */,
 				43C57CE82A38F370001DEA62 /* socket.c in Sources */,
+				43B5DE9A2CF4FEE7001227CF /* shm.c in Sources */,
 				43C57CE92A38F370001DEA62 /* pipe.c in Sources */,
 				43C57CEA2A38F370001DEA62 /* connect.c in Sources */,
 				43C57CEB2A38F370001DEA62 /* capabilities.c in Sources */,
@@ -3825,11 +4435,14 @@
 				43C57CF12A38F370001DEA62 /* tipc.c in Sources */,
 				43C57CF22A38F370001DEA62 /* config.c in Sources */,
 				43C57CF32A38F370001DEA62 /* credentials.c in Sources */,
+				4342342D2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43C57CF42A38F370001DEA62 /* socketpair.c in Sources */,
 				43C57CF52A38F370001DEA62 /* exceptions.c in Sources */,
 				43C57CF62A38F370001DEA62 /* reflection.c in Sources */,
 				43C57CF72A38F370001DEA62 /* listen.c in Sources */,
 				43C57CF82A38F370001DEA62 /* ancillary.c in Sources */,
+				43B5DEBE2CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7082D04DE8D0095802A /* logging.c in Sources */,
 				43C57CF92A38F370001DEA62 /* accept.c in Sources */,
 				438F4DAB2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3845,6 +4458,7 @@
 				4355474C28F6E6310042E830 /* vsock.c in Sources */,
 				430234D12650AB4F00823167 /* send.c in Sources */,
 				430235852650AB4F00823167 /* socket.c in Sources */,
+				43B5DE6F2CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF91265EEC930024822F /* pipe.c in Sources */,
 				4302353D2650AB4F00823167 /* connect.c in Sources */,
 				430234B92650AB4E00823167 /* capabilities.c in Sources */,
@@ -3856,11 +4470,14 @@
 				436E167527FBB70B00A553EC /* tipc.c in Sources */,
 				430233F92650AB4E00823167 /* config.c in Sources */,
 				430235B52650AB4F00823167 /* credentials.c in Sources */,
+				4342341C2C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFB9266082000024822F /* socketpair.c in Sources */,
 				430235492650AB4F00823167 /* exceptions.c in Sources */,
 				430235252650AB4F00823167 /* reflection.c in Sources */,
 				430234AD2650AB4E00823167 /* listen.c in Sources */,
 				430234352650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEC32CFBD19F001227CF /* futex.c in Sources */,
+				43ADC7102D04DE8D0095802A /* logging.c in Sources */,
 				430233E12650AB4E00823167 /* accept.c in Sources */,
 				438F4D9A2A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3876,6 +4493,7 @@
 				4355475428F6E6310042E830 /* vsock.c in Sources */,
 				430234D72650AB4F00823167 /* send.c in Sources */,
 				4302358B2650AB4F00823167 /* socket.c in Sources */,
+				43B5DE822CF4FEE7001227CF /* shm.c in Sources */,
 				43B3DF97265EEC930024822F /* pipe.c in Sources */,
 				430235432650AB4F00823167 /* connect.c in Sources */,
 				430234BF2650AB4E00823167 /* capabilities.c in Sources */,
@@ -3887,11 +4505,14 @@
 				436E167B27FBB70B00A553EC /* tipc.c in Sources */,
 				430233FF2650AB4E00823167 /* config.c in Sources */,
 				430235BB2650AB4F00823167 /* credentials.c in Sources */,
+				434234242C91C2890046DBD9 /* stat_wrapper.c in Sources */,
 				43B3DFBF266082000024822F /* socketpair.c in Sources */,
 				4302354F2650AB4F00823167 /* exceptions.c in Sources */,
 				4302352B2650AB4F00823167 /* reflection.c in Sources */,
 				430234B32650AB4E00823167 /* listen.c in Sources */,
 				4302343B2650AB4E00823167 /* ancillary.c in Sources */,
+				43B5DEC62CFBD19F001227CF /* futex.c in Sources */,
+				43ADC6F02D04DE8D0095802A /* logging.c in Sources */,
 				430233E72650AB4E00823167 /* accept.c in Sources */,
 				438F4DA22A6AF05000546E2C /* afsystem.c in Sources */,
 			);
@@ -3904,6 +4525,11 @@
 			isa = PBXTargetDependency;
 			target = 43663ED6261AECC400CEED08 /* current */;
 			targetProxy = 430235DA2650CCCD00823167 /* PBXContainerItemProxy */;
+		};
+		430456D32C91B85A00CBAC42 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 430456952C91B81000CBAC42 /* loongarch64-openEuler-linux */;
+			targetProxy = 430456D22C91B85A00CBAC42 /* PBXContainerItemProxy */;
 		};
 		4304A628266DFD24003BCEDF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4023,6 +4649,58 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		430456CF2C91B81000CBAC42 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CROSSCLANG_TARGET = "loongarch64-openEuler-linux";
+				EXECUTABLE_EXTENSION = so;
+				LD_DEPENDENCY_INFO_FILE = "";
+				LD_LTO_OBJECT_FILE = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-target",
+					"$(CROSSCLANG_TARGET)",
+					"-fPIC",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-target",
+					"$(CROSSCLANG_TARGET)",
+					"-fno-lto",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+			};
+			name = Debug;
+		};
+		430456D02C91B81000CBAC42 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CROSSCLANG_TARGET = "loongarch64-openEuler-linux";
+				EXECUTABLE_EXTENSION = so;
+				LD_DEPENDENCY_INFO_FILE = "";
+				LD_LTO_OBJECT_FILE = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-target",
+					"$(CROSSCLANG_TARGET)",
+					"-fPIC",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-target",
+					"$(CROSSCLANG_TARGET)",
+					"-fno-lto",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+			};
+			name = Release;
+		};
 		4304A624266DFCEF003BCEDF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4031,7 +4709,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4048,7 +4726,7 @@
 					"-nostdlib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4060,7 +4738,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4077,7 +4755,7 @@
 					"-nostdlib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4086,7 +4764,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_LDFLAGS = "-Xcrossclang-ignore-reproducible";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -4097,7 +4775,7 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_LDFLAGS = "-Xcrossclang-ignore-reproducible";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -4111,7 +4789,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4124,7 +4802,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4136,7 +4814,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4149,7 +4827,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4161,7 +4839,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4169,7 +4847,7 @@
 					"-Xcrossclang-use-gcc=x86_64-w64-mingw32-gcc",
 				);
 				OTHER_LDFLAGS = (
-					"$(inheritedx)",
+					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
 					"-lws2_32",
@@ -4177,9 +4855,11 @@
 					"-lmswsock",
 					"-Xcrossclang-use-gcc=x86_64-w64-mingw32-gcc",
 					"-Xcrossclang-output-strip-lib-prefix",
+					"-Xcrossclang-ignore-export-dynamic",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -4191,7 +4871,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4199,7 +4879,7 @@
 					"-Xcrossclang-use-gcc=x86_64-w64-mingw32-gcc",
 				);
 				OTHER_LDFLAGS = (
-					"$(inheritedx)",
+					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
 					"-lWs2_32",
@@ -4207,9 +4887,11 @@
 					"-lMswsock",
 					"-Xcrossclang-use-gcc=x86_64-w64-mingw32-gcc",
 					"-Xcrossclang-output-strip-lib-prefix",
+					"-Xcrossclang-ignore-export-dynamic",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -4221,7 +4903,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4236,7 +4918,7 @@
 					"-nostdlib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4248,7 +4930,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4263,7 +4945,7 @@
 					"-nostdlib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4275,7 +4957,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4289,7 +4971,7 @@
 					"-fno-lto",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4301,7 +4983,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4315,7 +4997,7 @@
 					"-fno-lto",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4327,7 +5009,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4340,7 +5022,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4352,7 +5034,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4365,7 +5047,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4377,7 +5059,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4390,7 +5072,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4402,7 +5084,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4415,7 +5097,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4427,7 +5109,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4444,7 +5126,7 @@
 					llvm,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4456,7 +5138,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4473,7 +5155,7 @@
 					llvm,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4485,7 +5167,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4498,7 +5180,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4510,7 +5192,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4523,7 +5205,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4537,7 +5219,7 @@
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4548,7 +5230,9 @@
 					"-target",
 					"$(CROSSCLANG_TARGET)",
 					"-Xcrossclang-ld64-sdk-version",
-					"\"\"",
+					"\"undefined\"",
+					"-undefined",
+					dynamic_lookup,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -4565,7 +5249,7 @@
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4576,7 +5260,9 @@
 					"-target",
 					"$(CROSSCLANG_TARGET)",
 					"-Xcrossclang-ld64-sdk-version",
-					"\"\"",
+					"\"undefined\"",
+					"-undefined",
+					dynamic_lookup,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -4591,7 +5277,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4606,7 +5292,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4618,7 +5304,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4633,7 +5319,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4645,7 +5331,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4660,7 +5346,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4672,7 +5358,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4687,7 +5373,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4699,7 +5385,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4714,7 +5400,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -4726,7 +5412,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4741,7 +5427,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -4754,7 +5440,7 @@
 				EXECUTABLE_EXTENSION = dylib;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4764,6 +5450,8 @@
 					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
+					"-undefined",
+					dynamic_lookup,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -4779,7 +5467,7 @@
 				EXECUTABLE_EXTENSION = dylib;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4789,6 +5477,8 @@
 					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
+					"-undefined",
+					dynamic_lookup,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -4803,7 +5493,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4811,7 +5501,7 @@
 					"-Xcrossclang-use-gcc=aarch64-w64-mingw32-gcc",
 				);
 				OTHER_LDFLAGS = (
-					"$(inheritedx)",
+					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
 					"-lws2_32",
@@ -4822,7 +5512,8 @@
 					"-Xcrossclang-ignore-export-dynamic",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -4834,7 +5525,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4842,7 +5533,7 @@
 					"-Xcrossclang-use-gcc=aarch64-w64-mingw32-gcc",
 				);
 				OTHER_LDFLAGS = (
-					"$(inheritedx)",
+					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
 					"-lWs2_32",
@@ -4853,7 +5544,8 @@
 					"-Xcrossclang-ignore-export-dynamic",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -4870,7 +5562,7 @@
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4890,7 +5582,8 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = NO;
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -4906,7 +5599,7 @@
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4926,7 +5619,8 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = NO;
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -4944,7 +5638,7 @@
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -4964,7 +5658,8 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = NO;
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -4981,7 +5676,7 @@
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5001,7 +5696,8 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = NO;
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -5013,7 +5709,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5027,7 +5723,7 @@
 					"-Wl,--no-rosegment,--disable-new-dtags,-znognustack,-znoseparate-code,-znorelro",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -5039,7 +5735,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5053,7 +5749,7 @@
 					"-Wl,--no-rosegment,--disable-new-dtags,-znognustack,-znoseparate-code,-znorelro",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -5065,7 +5761,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5078,7 +5774,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -5090,7 +5786,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5103,7 +5799,7 @@
 					"$(CROSSCLANG_TARGET)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -5115,7 +5811,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5129,7 +5825,7 @@
 					"-Wl,--no-rosegment,--disable-new-dtags",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -5141,7 +5837,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5155,7 +5851,7 @@
 					"-Wl,--no-rosegment,--disable-new-dtags",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -5168,7 +5864,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-fno-lto",
@@ -5188,7 +5884,7 @@
 					"-lrt",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -5201,7 +5897,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-fno-lto",
@@ -5221,7 +5917,7 @@
 					"-lrt",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -5233,7 +5929,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5248,7 +5944,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Debug;
 		};
@@ -5260,7 +5956,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5275,7 +5971,7 @@
 					"-Qunused-arguments",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 			};
 			name = Release;
 		};
@@ -5288,7 +5984,7 @@
 				EXECUTABLE_EXTENSION = dylib;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5298,6 +5994,8 @@
 					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
+					"-undefined",
+					dynamic_lookup,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -5313,7 +6011,7 @@
 				EXECUTABLE_EXTENSION = dylib;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5323,6 +6021,8 @@
 					"$(inherited)",
 					"-target",
 					"$(CROSSCLANG_TARGET)",
+					"-undefined",
+					dynamic_lookup,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -5357,9 +6057,11 @@
 				CODE_SIGN_STYLE = Manual;
 				COMPILER_INDEX_STORE_ENABLE = NO;
 				COPY_PHASE_STRIP = NO;
+				CROSSCLANG_SDKROOT = "crossclang/Xcode-Support/crossclang.sdk";
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				EXECUTABLE_PREFIX = "libjunixsocket-";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -5375,7 +6077,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INTERMEDIATE_TEXT_BASED_STUBS = NO;
 				HEADER_SEARCH_PATHS = src/main/c/jni;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-fno-strict-overflow",
@@ -5387,7 +6089,10 @@
 					"-fno-common",
 					"-fvisibility=hidden",
 				);
-				OTHER_LDFLAGS = "-Xcrossclang-ignore-reproducible";
+				OTHER_LDFLAGS = (
+					"-Xcrossclang-ignore-reproducible",
+					"-Wno-unused-command-line-argument",
+				);
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SKIP_INSTALL = YES;
 				WARNING_CFLAGS = (
@@ -5410,6 +6115,7 @@
 					"-Werror-implicit-function-declaration",
 					"-Wno-declaration-after-statement",
 					"-Wno-unsafe-buffer-usage",
+					"-Wno-missing-include-dirs",
 				);
 			};
 			name = Debug;
@@ -5442,8 +6148,10 @@
 				CODE_SIGN_STYLE = Manual;
 				COMPILER_INDEX_STORE_ENABLE = NO;
 				COPY_PHASE_STRIP = NO;
+				CROSSCLANG_SDKROOT = "crossclang/Xcode-Support/crossclang.sdk";
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				EXECUTABLE_PREFIX = "libjunixsocket-";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -5458,7 +6166,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INTERMEDIATE_TEXT_BASED_STUBS = NO;
 				HEADER_SEARCH_PATHS = src/main/c/jni;
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-fno-strict-overflow",
@@ -5470,7 +6178,10 @@
 					"-fno-common",
 					"-fvisibility=hidden",
 				);
-				OTHER_LDFLAGS = "-Xcrossclang-ignore-reproducible";
+				OTHER_LDFLAGS = (
+					"-Xcrossclang-ignore-reproducible",
+					"-Wno-unused-command-line-argument",
+				);
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SKIP_INSTALL = YES;
 				WARNING_CFLAGS = (
@@ -5493,6 +6204,7 @@
 					"-Werror-implicit-function-declaration",
 					"-Wno-declaration-after-statement",
 					"-Wno-unsafe-buffer-usage",
+					"-Wno-missing-include-dirs",
 				);
 			};
 			name = Release;
@@ -5505,7 +6217,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5520,7 +6232,7 @@
 					"-nostdlib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SDKROOT)$(CROSSCLANGROOT)/usr/include",
@@ -5537,7 +6249,7 @@
 				EXECUTABLE_EXTENSION = so;
 				LD_DEPENDENCY_INFO_FILE = "";
 				LD_LTO_OBJECT_FILE = "";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-target",
@@ -5552,7 +6264,7 @@
 					"-nostdlib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = crossclang.macosx1.0;
+				SDKROOT = "$(CROSSCLANG_SDKROOT)";
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SDKROOT)$(CROSSCLANGROOT)/usr/include",
@@ -5564,6 +6276,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		430456CE2C91B81000CBAC42 /* Build configuration list for PBXNativeTarget "loongarch64-openEuler-linux" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				430456CF2C91B81000CBAC42 /* Debug */,
+				430456D02C91B81000CBAC42 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		4304A623266DFCEF003BCEDF /* Build configuration list for PBXNativeTarget "x86_64-portbld-dragonfly6.0" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

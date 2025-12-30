@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,9 @@ public class MinaTimeServer {
     acceptor.getSessionConfig().setIdleTime(IdleStatus.BOTH_IDLE, 10);
 
     // acceptor.bind( new InetSocketAddress(PORT) ); // from original example code
-    acceptor.bind(AFUNIXSocketAddress.of(new File("/tmp/minatime")));
+    AFUNIXSocketAddress addr = AFUNIXSocketAddress.of(new File("/tmp/minatime"));
+    acceptor.bind(addr);
     // acceptor.bind(AFTIPCSocketAddress.ofService(Scope.SCOPE_CLUSTER, 128, 1));
+    System.out.println("Bound to " + addr);
   }
 }

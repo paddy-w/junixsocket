@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import org.newsclub.net.unix.AFUNIXSocketAddress;
 import org.newsclub.net.unix.demo.DemoHelper;
 import org.newsclub.net.unix.demo.okhttp.OkHttpClientDemo;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 import fi.iki.elonen.NanoHTTPD;
 
 /**
@@ -38,7 +40,8 @@ import fi.iki.elonen.NanoHTTPD;
  * @author Christian Kohlschütter
  * @see OkHttpClientDemo
  */
-public class NanoHttpdServerDemo extends NanoHTTPD {
+@SuppressFBWarnings("UNENCRYPTED_SERVER_SOCKET")
+public final class NanoHttpdServerDemo extends NanoHTTPD {
 
   public NanoHttpdServerDemo(SocketAddress socketAddress) throws IOException {
     super(0);

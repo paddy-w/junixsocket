@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ package org.newsclub.net.unix;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -37,6 +39,7 @@ import java.util.Set;
 public class SelftestProvider {
   private static final String COMMON = "junixsocket-common";
   private static final String COMMON_JAVA_INET = "junixsocket-common.JavaInet";
+  private static final String COMMON_JEP380 = "junixsocket-common.JEP380";
 
   final Map<String, LinkedHashSet<Class<?>>> testMap = new LinkedHashMap<>(); // NOPMD.LooseCoupling
 
@@ -76,6 +79,15 @@ public class SelftestProvider {
 
     registerTest(InetAddressTest.class);
 
+    registerTest(org.newsclub.net.unix.domain.InterruptTest.class);
+    registerTest(org.newsclub.net.unix.domain.InterruptIssue158Test.class);
+    registerTestJavaInet(org.newsclub.net.unix.java.InterruptIssue158Test.class);
+    registerTestJEP380(org.newsclub.net.unix.jep380.InterruptIssue158Test.class);
+
+    registerTestJavaInet(org.newsclub.net.unix.java.InterruptTest.class);
+
+    registerTest(org.newsclub.net.unix.domain.MassiveParallelTest.class);
+
     // peer credential passing is AF_UNIX specific
     registerTest(org.newsclub.net.unix.domain.PeerCredentialsTest.class);
 
@@ -92,6 +104,8 @@ public class SelftestProvider {
     registerTest(org.newsclub.net.unix.domain.SocketAddressTest.class);
 
     registerTest(org.newsclub.net.unix.domain.SocketChannelTest.class);
+    registerTestJavaInet(org.newsclub.net.unix.java.SocketChannelTest.class);
+    registerTestJEP380(org.newsclub.net.unix.jep380.SocketChannelTest.class);
 
     registerTest(org.newsclub.net.unix.domain.SocketFactoryTest.class);
 
@@ -114,7 +128,7 @@ public class SelftestProvider {
   }
 
   public Set<String> modulesDisabledByDefault() {
-    return Collections.singleton(COMMON_JAVA_INET);
+    return new HashSet<>(Arrays.asList(COMMON_JAVA_INET, COMMON_JEP380));
   }
 
   private void registerTest( //
@@ -125,6 +139,11 @@ public class SelftestProvider {
   private void registerTestJavaInet( //
       Class<? extends SocketTestBase<InetSocketAddress>> testJava) {
     registerTest(COMMON_JAVA_INET, testJava);
+  }
+
+  private void registerTestJEP380( //
+      Class<? extends SocketTestBase<SocketAddress>> testJava) {
+    registerTest(COMMON_JEP380, testJava);
   }
 
   private void registerTest(String group, Class<?> test) {
@@ -144,6 +163,16 @@ public class SelftestProvider {
 
   public void printAdditionalProperties(PrintWriter out) {
     out.println("Native architecture: " + NativeLibraryLoader.getArchitectureAndOS());
+    out.println("Virtual threads support enabled: " + ThreadUtil.isVirtualThreadSupported());
+    if (System.getProperty("org.newsclub.net.unix.virtual-threads") == null) {
+      if (ThreadUtil.isVirtualThreadSupported()) {
+        out.println("   ... disable with -Dorg.newsclub.net.unix.virtual-threads=false");
+      }
+    } else {
+      if (!ThreadUtil.isVirtualThreadSupported()) {
+        out.println("   ... remove -Dorg.newsclub.net.unix.virtual-threads=false to re-enable");
+      }
+    }
   }
 
   public static void main(String[] args) {

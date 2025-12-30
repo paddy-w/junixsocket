@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import org.newsclub.net.unix.AFSocketAddress;
 import org.newsclub.net.unix.AFUNIXSelectorProvider;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -40,6 +42,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
  * Based on example code from <a href="https://netty.io/wiki/user-guide-for-4.x.html">Netty user
  * guide for 4.x</a>
  */
+@SuppressWarnings("FutureReturnValueIgnored" /* errorprone */)
 public class EchoServer {
   private final AFSocketAddress addr;
 
@@ -80,13 +83,17 @@ public class EchoServer {
     }
   }
 
+  @SuppressFBWarnings("PATH_TRAVERSAL_IN")
   public static void main(String[] args) throws Exception {
     File path = new File("/tmp/nettyecho");
     if (args.length > 0) {
       path = new File(args[0]);
     }
 
-    new EchoServer(AFUNIXSocketAddress.of(path)).run();
+    AFUNIXSocketAddress addr = AFUNIXSocketAddress.of(path);
+    System.out.println("Binding to " + addr);
+
+    new EchoServer(addr).run();
     // new EchoServer(AFTIPCSocketAddress.ofService(Scope.SCOPE_CLUSTER, 128, 3)).run();
   }
 }

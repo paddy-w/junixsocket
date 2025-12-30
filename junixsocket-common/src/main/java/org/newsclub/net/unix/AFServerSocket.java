@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,9 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @author Christian Kohlschütter
  */
 @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.CouplingBetweenObjects"})
+@SuppressFBWarnings("UNENCRYPTED_SERVER_SOCKET")
 public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSocket implements
-    FileDescriptorAccess {
+    AFSomeSocketThing {
   private final AFSocketImpl<A> implementation;
   private @Nullable A boundEndpoint;
   private final Closeables closeables = new Closeables();
@@ -53,14 +54,17 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
   private final AtomicBoolean deleteOnClose = new AtomicBoolean(true);
 
   @SuppressWarnings("this-escape")
-  private final AFServerSocketChannel<?> channel = newChannel();
+  private final AFServerSocketChannel<A> channel = newChannel();
   private @Nullable SocketAddressFilter bindFilter;
+
+  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
    * The constructor of the concrete subclass.
    *
    * @param <A> The concrete {@link AFSocketAddress} that is supported by this type.
    */
+  @FunctionalInterface
   public interface Constructor<A extends AFSocketAddress> {
     /**
      * Creates a new {@link AFServerSocket} instance.
@@ -78,6 +82,7 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
    *
    * @throws IOException if the operation fails.
    */
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   protected AFServerSocket() throws IOException {
     this(null);
   }
@@ -89,6 +94,7 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
    * @throws IOException if the operation fails.
    */
   @SuppressWarnings({"this-escape", "PMD.ConstructorCallsOverridableMethod"})
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   protected AFServerSocket(FileDescriptor fdObj) throws IOException {
     super();
 
@@ -103,7 +109,7 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
    *
    * @return The new instance.
    */
-  protected abstract AFServerSocketChannel<?> newChannel();
+  protected abstract AFServerSocketChannel<A> newChannel();
 
   /**
    * Creates a new AFSocketImpl.
@@ -236,6 +242,11 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
     });
   }
 
+  @Override
+  public final void bind(SocketAddress endpoint) throws IOException {
+    bind(endpoint, 50);
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public final void bind(SocketAddress endpoint, int backlog) throws IOException {
@@ -251,10 +262,7 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
       bindErrorOk = false;
     }
 
-    if (!(endpoint instanceof AFSocketAddress)) {
-      throw new IllegalArgumentException("Can only bind to endpoints of type "
-          + AFSocketAddress.class.getName() + ": " + endpoint);
-    }
+    endpoint = AFSocketAddress.mapOrFail(endpoint);
 
     A endpointCast;
     try {
@@ -307,7 +315,7 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
     boolean success = implementation.accept0(as.getAFImpl(false));
     if (isClosed()) {
       // We may have connected to the socket to unblock it
-      throw new SocketClosedException("Socket is closed");
+      throw new BrokenPipeSocketException("Socket is closed");
     }
 
     if (!success) {
@@ -345,7 +353,10 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
   }
 
   @Override
-  public synchronized void close() throws IOException {
+  public void close() throws IOException {
+    if (!closed.compareAndSet(false, true)) {
+      return;
+    }
     if (isClosed()) {
       return;
     }
@@ -417,7 +428,6 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
   }
 
   @Override
-  @SuppressFBWarnings("EI_EXPOSE_REP")
   public final @Nullable A getLocalSocketAddress() {
     @Nullable
     A ep = boundEndpoint0();
@@ -514,7 +524,7 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
 
   @SuppressFBWarnings("EI_EXPOSE_REP")
   @Override
-  public AFServerSocketChannel<?> getChannel() {
+  public AFServerSocketChannel<A> getChannel() {
     return channel;
   }
 
@@ -544,11 +554,6 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
   public final AFServerSocket<A> bindHook(SocketAddressFilter hook) {
     this.bindFilter = hook;
     return this;
-  }
-
-  @Override
-  public void bind(SocketAddress endpoint) throws IOException {
-    bind(endpoint, 50);
   }
 
   @Override
@@ -653,6 +658,11 @@ public abstract class AFServerSocket<A extends AFSocketAddress> extends ServerSo
   @SuppressWarnings("all")
   public Set<SocketOption<?>> supportedOptions() {
     return getAFImpl().supportedOptions();
+  }
+
+  @Override
+  public void setShutdownOnClose(boolean enabled) {
+    getAFImpl().getCore().setShutdownOnClose(enabled);
   }
 
   // NOTE: We shall re-implement all methods defined in ServerSocket that internally call getImpl()

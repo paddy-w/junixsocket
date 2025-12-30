@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import java.util.concurrent.Semaphore;
 
 import org.junit.jupiter.api.Test;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.CommandAvailabilityRequirement;
 import com.kohlschutter.testutil.ForkedVM;
 import com.kohlschutter.testutil.ForkedVMRequirement;
@@ -51,8 +50,6 @@ import com.kohlschutter.util.ExceptionUtil;
  * @author Christian Kohlschütter
  */
 @CommandAvailabilityRequirement(commands = {"lsof"})
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class FinalizeTest<A extends SocketAddress> extends SocketTestBase<A> {
   private Process process = null;
 

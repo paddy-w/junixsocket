@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,8 @@
 package org.newsclub.net.unix.jetty;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.Map;
 
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.SelectorManager;
@@ -42,6 +39,7 @@ import org.newsclub.net.unix.AFSocketAddress;
 public final class AFSocketClientConnector extends ClientConnector {
   private final AFAddressFamily<?> addressFamily;
 
+  @SuppressWarnings("removal")
   private AFSocketClientConnector(AFSocketAddress addr) {
     super(configuratorFor(addr));
     this.addressFamily = addr.getAddressFamily();
@@ -69,14 +67,12 @@ public final class AFSocketClientConnector extends ClientConnector {
     };
   }
 
+  @SuppressWarnings({"removal", "deprecation"})
   private static Configurator configuratorFor(AFSocketAddress addr) {
-    return new Configurator() {
-      @Override
-      public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector,
-          SocketAddress address, Map<String, Object> context) throws IOException {
-        SocketChannel socketChannel = addr.getAddressFamily().newSocketChannel();
-        return new ChannelWithAddress(socketChannel, addr);
-      }
-    };
+    if (JettyCompat.hasTransportClass()) {
+      return new AFSocketConfiguratorWithTransport(addr);
+    } else {
+      return new AFSocketConfigurator(addr);
+    }
   }
 }

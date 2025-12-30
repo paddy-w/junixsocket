@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ import java.net.DatagramSocket;
 import java.net.DatagramSocketImpl;
 import java.net.SocketOption;
 
+import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
+
+@IgnoreJRERequirement // see src/main/java8
 abstract class DatagramSocketShim extends DatagramSocket {
 
   protected DatagramSocketShim(DatagramSocketImpl impl) {

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,17 @@ import java.nio.channels.FileChannel;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * Hack to get a readable AND writable {@link FileChannel} for a {@link FileDescriptor}.
  *
  * @author Christian Kohlschütter
  */
+@SuppressFBWarnings("PATH_TRAVERSAL_IN")
 final class RAFChannelProvider extends RandomAccessFile implements FileDescriptorAccess {
+  private static final File DEV_NULL = new File("/dev/null");
+
   private final File tempPath;
   private final FileDescriptor fdObj;
   private final FileDescriptor rafFdOrig = new FileDescriptor();
@@ -41,21 +46,28 @@ final class RAFChannelProvider extends RandomAccessFile implements FileDescripto
   }
 
   private RAFChannelProvider(FileDescriptor fdObj, File tempPath) throws IOException {
-    super(tempPath, "rw");
-    this.tempPath = tempPath;
-    if (!tempPath.delete() && tempPath.exists()) {
-      if (!tempPath.delete()) {
-        // we tried our best (looking at you, Windows)
-      }
-      tempPath = new File(tempPath.getParentFile(), "jux-" + UUID.randomUUID().toString()
-          + ".sock");
-      if (tempPath.exists()) {
-        throw new IOException("Could not create a temporary path: " + tempPath);
-      }
-    }
-    tempPath.deleteOnExit();
+    this(fdObj, tempPath, true);
+  }
 
+  private RAFChannelProvider(FileDescriptor fdObj, File tempPath, boolean delete)
+      throws IOException {
+    super(tempPath, "rw");
     NativeUnixSocket.ensureSupported();
+
+    this.tempPath = tempPath;
+    if (delete) {
+      if (!tempPath.delete() && tempPath.exists()) {
+        if (!tempPath.delete()) {
+          // we tried our best (looking at you, Windows)
+        }
+        tempPath = new File(tempPath.getParentFile(), "jux-" + UUID.randomUUID().toString()
+            + ".sock");
+        if (tempPath.exists()) {
+          throw new IOException("Could not create a temporary path: " + tempPath);
+        }
+      }
+      tempPath.deleteOnExit();
+    }
 
     this.fdObj = fdObj;
 
@@ -85,6 +97,13 @@ final class RAFChannelProvider extends RandomAccessFile implements FileDescripto
 
   @SuppressWarnings("resource")
   private static FileChannel getFileChannel0(FileDescriptor fd) throws IOException {
+    if (DEV_NULL.canRead() && DEV_NULL.canWrite()) {
+      try {
+        return new RAFChannelProvider(fd, DEV_NULL, false).getChannel();
+      } catch (IOException e) {
+        // ignore
+      }
+    }
     return new RAFChannelProvider(fd).getChannel();
   }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,13 +36,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
-
 /**
  * Ensures that we don't have any dangling "accept" calls after closing our ServerSocket.
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class ServerSocketCloseTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected ServerSocketCloseTest(AddressSpecifics<A> asp) {
     super(asp);
@@ -59,6 +55,7 @@ public abstract class ServerSocketCloseTest<A extends SocketAddress> extends Soc
     testUnblockAccepts(0);
   }
 
+  @SuppressWarnings("PMD.CognitiveComplexity")
   private void testUnblockAccepts(int timeout) throws Exception {
     assertTimeoutPreemptively(Duration.ofSeconds(30), () -> {
       try (ServerSocket serverSocket = newServerSocketBindOn(getServerBindAddress())) {
@@ -110,6 +107,17 @@ public abstract class ServerSocketCloseTest<A extends SocketAddress> extends Soc
         if (active == numThreads) {
           checkFailedTestActuallySupported();
         }
+
+        int attemptsLeft = 50;
+        while (active > 0 && attemptsLeft-- > 0) {
+          Thread.sleep(100);
+          active = threadPool.getActiveCount();
+        }
+
+        if (active > 0) {
+          checkFailedTestActuallySupported();
+        }
+
         assertEquals(0, active, "There should be no pending accepts");
       }
     });

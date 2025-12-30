@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,14 @@ public class SelftestProvider {
       new org.newsclub.net.unix.vsock.SelftestProvider();
   private final org.newsclub.net.unix.rmi.SelftestProvider rmiSelftests =
       new org.newsclub.net.unix.rmi.SelftestProvider();
+  private final org.newsclub.net.unix.ssl.SelftestProvider sslSelftests =
+      new org.newsclub.net.unix.ssl.SelftestProvider();
   private final org.newsclub.net.unix.darwin.SelftestProvider darwinSelftests =
       new org.newsclub.net.unix.darwin.SelftestProvider();
+  private final org.newsclub.net.mysql.SelftestProvider mysqlSelftests =
+      new org.newsclub.net.mysql.SelftestProvider();
+  private final org.newsclub.net.unix.memory.SelftestProvider memorySelftests =
+      new org.newsclub.net.unix.memory.SelftestProvider();
 
   public Map<String, Class<?>[]> tests() throws Exception {
     Map<String, Class<?>[]> tests = new LinkedHashMap<>();
@@ -46,7 +52,10 @@ public class SelftestProvider {
     tests.putAll(tipcSelftests.tests());
     tests.putAll(vsockSelftests.tests());
     tests.putAll(rmiSelftests.tests());
+    tests.putAll(sslSelftests.tests());
     tests.putAll(darwinSelftests.tests());
+    tests.putAll(mysqlSelftests.tests());
+    tests.putAll(memorySelftests.tests());
 
     return tests;
   }
@@ -57,7 +66,10 @@ public class SelftestProvider {
     set.addAll(tipcSelftests.modulesDisabledByDefault());
     set.addAll(vsockSelftests.modulesDisabledByDefault());
     set.addAll(rmiSelftests.modulesDisabledByDefault());
+    set.addAll(sslSelftests.modulesDisabledByDefault());
     set.addAll(darwinSelftests.modulesDisabledByDefault());
+    set.addAll(mysqlSelftests.modulesDisabledByDefault());
+    set.addAll(memorySelftests.modulesDisabledByDefault());
     return set;
   }
 
@@ -66,6 +78,9 @@ public class SelftestProvider {
     tipcSelftests.printAdditionalProperties(out);
     vsockSelftests.printAdditionalProperties(out);
     rmiSelftests.printAdditionalProperties(out);
+    sslSelftests.printAdditionalProperties(out);
     darwinSelftests.printAdditionalProperties(out);
+    mysqlSelftests.printAdditionalProperties(out);
+    memorySelftests.printAdditionalProperties(out);
   }
 }

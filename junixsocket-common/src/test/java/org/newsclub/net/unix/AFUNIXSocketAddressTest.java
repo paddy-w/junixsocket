@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.newsclub.net.unix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,14 +29,16 @@ import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.AssertUtil;
 
-@SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")
+@SuppressFBWarnings({"DMI_HARDCODED_ABSOLUTE_FILENAME", "OBJECT_DESERIALIZATION"})
 public class AFUNIXSocketAddressTest {
 
   @Test
@@ -153,6 +156,20 @@ public class AFUNIXSocketAddressTest {
         assertEquals(addr, addr2);
         assertEquals(addr.getAddressFamily(), addr2.getAddressFamily());
       }
+    }
+  }
+
+  @Test
+  public void testCraftDeserialization() throws Exception {
+    AFUNIXSocketAddress sa1 = AFUNIXSocketAddress.ofNewTempFile();
+    byte[] socketAddress = sa1.getBytes();
+    try (Lease<ByteBuffer> nativeAddressLease = sa1.getNativeAddressDirectBuffer()) {
+      int port = sa1.getPort();
+
+      AFUNIXSocketAddress sa2 = AFUNIXSocketAddress.newAFSocketAddress(port, socketAddress,
+          nativeAddressLease);
+      assertEquals(sa1, sa2);
+      assertNotEquals(AFUNIXSocketAddress.ofNewTempFile(), sa2);
     }
   }
 }

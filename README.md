@@ -2,7 +2,7 @@
 
 [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/kohlschutter/junixsocket/codeql-analysis.yml?cacheSeconds=60)](https://github.com/kohlschutter/junixsocket/actions/workflows/codeql-analysis.yml) [![Last commit on main](https://img.shields.io/github/last-commit/kohlschutter/junixsocket/main)](https://github.com/kohlschutter/junixsocket/commits/main) [![Maven Central version](https://img.shields.io/maven-central/v/com.kohlschutter.junixsocket/junixsocket)](https://search.maven.org/artifact/com.kohlschutter.junixsocket/junixsocket) [![Apache 2.0 Licensed](https://img.shields.io/github/license/kohlschutter/junixsocket)](https://github.com/kohlschutter/junixsocket/blob/main/NOTICE)
 
-**Users of junixsocket are strongly advised to upgrade to version 2.7.2 or newer ([changelog](https://kohlschutter.github.io/junixsocket/changelog.html))**
+**Users of junixsocket are strongly advised to upgrade to version 2.10.1 or newer ([changelog](https://kohlschutter.github.io/junixsocket/changelog.html))**
 
 # junixsocket
 
@@ -19,7 +19,7 @@ from Java.
 * Comes with pre-built native libraries for most operating systems and platforms, including
   macOS, Linux, Android, Windows, Solaris, FreeBSD, NetBSD, OpenBSD, DragonFlyBSD, AIX, IBM i.
 * Additionally, you can build and run junixsocket natively on IBM z/OS (experimental).
-* Supports all Java versions since Java 8*
+* Supports all Java versions since Java 8* (with common AF_UNIX support available for Java 7 and newer)
 * Supports both the Java Socket API and NIO (`java.net.Socket`, `java.net.SocketChannel`, etc.)
 * Supports streams and datagrams.
 * Supports Remote Method Invocation (RMI) over AF_UNIX.
@@ -33,10 +33,11 @@ from Java.
 * Supports [HTTP over UNIX sockets](https://kohlschutter.github.io/junixsocket/http.html) (using [NanoHTTPD](https://github.com/NanoHttpd/nanohttpd), [OkHttp](https://github.com/square/okhttp), and [jetty](https://github.com/eclipse/jetty.project/)).
 * Supports JPMS/Jigsaw modules. The project is modularized so you can install only what you need.
 * Supports GraalVM native-image AOT/ahead-of-time compilation (since 2.6.0)
-* Provides a selftest package with 100+ tests to ensure compatibility with any target platform.
+* Provides a selftest package with 300+ tests to ensure compatibility with any target platform.
+* No outside dependencies are necessary at runtime.
 * Apache 2.0 licensed.
 
-`*` (Tested up to Java 22; support for Java 7 was dropped in version 2.5.0).
+`*` (Tested up to Java 24; basic support for Java 7 was dropped in version 2.5.0 and reintroduced in version 2.8.0).
 
 ## Quick links
 
@@ -46,9 +47,13 @@ from Java.
  * [Demo code](https://kohlschutter.github.io/junixsocket/demo.html) ([Java source](https://kohlschutter.github.io/junixsocket/junixsocket-demo/xref/index.html))
     - Sockets (`org.newsclub.net.unix.demo`)
     - RMI over Unix Sockets (`org.newsclub.net.unix.demo.rmi` and `org.newsclub.net.unix.demo.rmi.services`)
-    - MySQL over Unix Sockets  (`org.newsclub.net.mysql.demo`)
+    - MySQL over Unix Sockets (`org.newsclub.net.mysql.demo`)
+    - Postgres over Unix Sockets (`org.newsclub.net.unix.demo.jdbc`)
     - Apache Mina (`org.newsclub.net.unix.demo.mina`)
+    - NanoHttpd (`org.newsclub.net.unix.demo.nanohttpd`)
     - Netty (`org.newsclub.net.unix.demo.netty`)
+    - OkHttp (`org.newsclub.net.unix.demo.okhttp`)
+    - SSL (`org.newsclub.net.unix.demo.ssl`)
   * [API Javadocs](https://kohlschutter.github.io/junixsocket/apidocs/)
   * [Unix Domain Socket Reference](https://kohlschutter.github.io/junixsocket/unixsockets.html)
   * [TIPC documentation](https://kohlschutter.github.io/junixsocket/junixsocket-tipc/index.html)
@@ -84,7 +89,7 @@ To include the core junixsocket functionality in your project, add the following
 <dependency>
   <groupId>com.kohlschutter.junixsocket</groupId>
   <artifactId>junixsocket-core</artifactId>
-  <version>2.7.2</version>
+  <version>2.10.1</version>
   <type>pom</type>
 </dependency>
 ```
@@ -92,7 +97,7 @@ To include the core junixsocket functionality in your project, add the following
 While you should definitely pin your dependency to a specific version, you are very much encouraged
 to keep updating to the most recent version. Check back frequently.
 
-For more, optional packages (RMI, MySQL, Jetty, TIPC, VSOCK, server, Darwin, GraalVM, etc.) and
+For more, optional packages (RMI, MySQL, Jetty, TIPC, VSOCK, server, Darwin, SSL, GraalVM, etc.) and
 Gradle instructions see [here](https://kohlschutter.github.io/junixsocket/dependency.html)
 
 ## Snapshot builds for testing

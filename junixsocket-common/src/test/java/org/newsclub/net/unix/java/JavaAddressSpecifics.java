@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 
@@ -34,6 +35,9 @@ import org.newsclub.net.unix.AddressSpecifics;
 import org.newsclub.net.unix.CloseablePair;
 import org.opentest4j.TestAbortedException;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
+@SuppressFBWarnings({"UNENCRYPTED_SERVER_SOCKET", "UNENCRYPTED_SOCKET"})
 public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAddress> {
   public static final AddressSpecifics<InetSocketAddress> INSTANCE = new JavaAddressSpecifics();
 
@@ -52,7 +56,13 @@ public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAd
 
   @Override
   public SocketAddress newTempAddress() throws IOException {
-    return wildcardBindAddress();
+    SocketAddress bindAddr = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
+    try (ServerSocket sock = new ServerSocket()) {
+      sock.bind(bindAddr);
+      return sock.getLocalSocketAddress();
+    } catch (BindException e) {
+      throw new TestAbortedException("Cannot bind to " + bindAddr, e);
+    }
   }
 
   @Override
@@ -68,6 +78,11 @@ public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAd
   @Override
   public DatagramSocket newDatagramSocket() throws IOException {
     return new DatagramSocket();
+  }
+
+  @Override
+  public SocketChannel newSocketChannel() throws IOException {
+    return selectorProvider().openSocketChannel();
   }
 
   @Override
@@ -116,7 +131,8 @@ public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAd
   @Override
   public ServerSocket newServerSocketBindOn(SocketAddress addr) throws IOException {
     InetSocketAddress inetAddr = (InetSocketAddress) addr;
-    if (!inetAddr.getAddress().isAnyLocalAddress()) {
+    InetAddress address = inetAddr.getAddress();
+    if (!address.isAnyLocalAddress() && !address.isLoopbackAddress()) {
       throw new IllegalArgumentException("Not a local address: " + inetAddr);
     }
     return new ServerSocket(inetAddr.getPort());
@@ -132,7 +148,8 @@ public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAd
   public ServerSocket newServerSocketBindOn(SocketAddress addr, boolean deleteOnClose)
       throws IOException {
     InetSocketAddress inetAddr = (InetSocketAddress) addr;
-    if (!inetAddr.getAddress().isAnyLocalAddress()) {
+    InetAddress address = inetAddr.getAddress();
+    if (!address.isAnyLocalAddress() && !address.isLoopbackAddress()) {
       throw new IllegalArgumentException("Not a local address: " + inetAddr);
     }
     return new ServerSocket(inetAddr.getPort());
@@ -146,5 +163,10 @@ public final class JavaAddressSpecifics implements AddressSpecifics<InetSocketAd
   @Override
   public String summaryImportantMessage(String message) {
     return message;
+  }
+
+  @Override
+  public ServerSocketChannel newServerSocketChannel() throws IOException {
+    return SelectorProvider.provider().openServerSocketChannel();
   }
 }

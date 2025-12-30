@@ -11,6 +11,10 @@
   "name":"org.newsclub.lib.junixsocket.custom.NarMetadata"
 },
 {
+  "name":"org.newsclub.net.unix.AFGenericSocketAddress",
+  "methods":[{"name":"addressFamily","parameterTypes":[] }]
+},
+{
   "name":"org.newsclub.net.unix.AFTIPCSocketAddress",
   "methods":[{"name":"addressFamily","parameterTypes":[] }]
 },
@@ -61,7 +65,20 @@
   "name":"java.net.InetSocketAddress"
 },
 {
-  "name":"java.net.UnixDomainSocketAddress"
+  "name":"java.net.UnixDomainSocketAddress",
+  "methods":[{"name":"of","parameterTypes":["java.nio.file.Path"] }]
+},
+{
+  "name":"java.nio.channels.DatagramChannel",
+  "methods":[{"name":"open","parameterTypes":["java.net.ProtocolFamily"] }]
+},
+{
+  "name":"java.nio.channels.ServerSocketChannel",
+  "methods":[{"name":"open","parameterTypes":["java.net.ProtocolFamily"] }]
+},
+{
+  "name":"java.nio.channels.SocketChannel",
+  "methods":[{"name":"open","parameterTypes":["java.net.ProtocolFamily"] }]
 },
 {
   "name":"org.newsclub.net.unix.AFSYSTEMSocketAddress",
@@ -69,5 +86,81 @@
 },
 {
   "name":"org.newsclub.net.unix.OperationNotSupportedSocketException"
+},
+{
+  "name":"org.newsclub.net.unix.InvalidArgumentSocketException"
+},
+{
+  "name":"org.newsclub.net.unix.NoSuchDeviceSocketException"
+},
+{
+  "name":"org.newsclub.net.unix.AddressUnavailableSocketException"
+},
+{
+  "name":"org.newsclub.net.unix.BrokenPipeSocketException"
+},
+{
+  "name":"org.newsclub.net.unix.ConnectionResetSocketException"
+},
+{
+  "name":"java.util.function.Consumer",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"[J"
+},
+{
+  "name":"org.newsclub.net.unix.SocketClosedException"
+},
+{
+  "name":"[Ljava.lang.StackTraceElement;"
+},
+{
+  "name":"java.io.IOException"
+},
+{
+  "name":"java.lang.Exception"
+},
+{
+  "name":"java.lang.Number"
+},
+{
+  "name":"java.lang.Throwable"
+},
+{
+  "name":"java.lang.reflect.Proxy"
+},
+{
+  "name":"java.util.Collections$EmptyList"
+},
+{
+  "name":"java.util.UUID"
+},
+{
+  "name":"org.newsclub.net.unix.generic.AFGenericSelectorProvider"
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicInteger"
+},
+{
+  "name":"org.newsclub.net.unix.AFUNIXSocketCredentials"
+},
+{
+  "name":"org.newsclub.net.unix.AFUNIXSocketFactory"
+},
+{
+  "name":"org.newsclub.net.unix.AFUNIXSocketFactory$FactoryArg",
+  "allPublicConstructors":true,
+  "allPublicMethods":true
+},
+{
+  "name":"org.newsclub.net.unix.AFUNIXSocketFactory$SystemProperty",
+  "allPublicConstructors":true,
+  "allPublicMethods":true
+},
+{
+  "name":"org.newsclub.net.unix.AFUNIXSocketFactory$URIScheme",
+  "allPublicConstructors":true,
+  "allPublicMethods":true
 }
 ]

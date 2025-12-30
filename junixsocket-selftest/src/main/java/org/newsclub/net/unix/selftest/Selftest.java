@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,7 @@ import com.kohlschutter.util.SystemPropertyUtil;
  */
 @SuppressWarnings({
     "PMD.CyclomaticComplexity", "PMD.CognitiveComplexity", "PMD.CouplingBetweenObjects"})
+@SuppressFBWarnings({"PATH_TRAVERSAL_IN", "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE"})
 public class Selftest {
   private final Class<?> diagnosticsHelperClass = resolveOptionalClass(
       "org.newsclub.net.unix.SelftestDiagnosticsHelper");
@@ -152,8 +153,20 @@ public class Selftest {
   }
 
   public Selftest(PrintStream out, SelftestProvider sp) {
+    System.setProperty("com.kohlschutter.selftest", getClass().getName());
+
     this.out = ConsolePrintStream.wrapPrintStream(out);
     this.sp = sp;
+
+    checkSystemProperties();
+  }
+
+  private void checkSystemProperties() {
+    String tmpDir = System.getProperty("java.io.tmpdir", "");
+    if (System.getProperty("java.home", "").isEmpty()) {
+      System.setProperty("java.home", tmpDir);
+      out.println("Setting java.home to temporary directory: " + tmpDir);
+    }
   }
 
   public void checkVM() {
@@ -162,16 +175,19 @@ public class Selftest {
     if (isSubstrateVM) {
       important.add("Substrate VM detected: Support for native-images is work in progress");
 
-      if (!getSkipModeForModule("junixsocket-rmi").isDeclared()) {
-        important.add("Auto-skipping junixsocket-rmi tests due to Substrate VM");
-        System.setProperty("selftest.skip.junixsocket-rmi", "force_auto");
-        withIssues = true;
-      }
+      String vendorVersion = System.getProperty("java.vendor.version", "");
+      if (vendorVersion.contains("GraalVM 20") || vendorVersion.contains("GraalVM 19")) {
+        if (!getSkipModeForModule("junixsocket-rmi").isDeclared()) {
+          important.add("Auto-skipping junixsocket-rmi tests due to old Substrate VM");
+          System.setProperty("selftest.skip.junixsocket-rmi", "force_auto");
+          withIssues = true;
+        }
 
-      if (!getSkipModeForClass("org.newsclub.net.unix.FileDescriptorCastTest").isDeclared()) {
-        important.add("Auto-skipping FileDescriptorCastTest tests due to Substrate VM");
-        System.setProperty("selftest.skip.FileDescriptorCastTest", "force_auto");
-        withIssues = true;
+        if (!getSkipModeForClass("org.newsclub.net.unix.FileDescriptorCastTest").isDeclared()) {
+          important.add("Auto-skipping FileDescriptorCastTest tests due to Substrate VM");
+          System.setProperty("selftest.skip.FileDescriptorCastTest", "force_auto");
+          withIssues = true;
+        }
       }
     } else {
       if (!getSkipModeForModule("junixsocket-rmi").isDeclared()) {
@@ -201,8 +217,6 @@ public class Selftest {
    * @param args Ignored.
    * @throws Exception on error.
    */
-  @SuppressFBWarnings({
-      "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
   public static void main(String[] args) throws Exception {
     int delay = SystemPropertyUtil.getIntSystemProperty("selftest.delay.at-start", 0);
     if (delay > 0) {
@@ -231,8 +245,6 @@ public class Selftest {
    *
    * @throws Exception on error.
    */
-  @SuppressFBWarnings({
-      "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
   public static int runSelftest() throws Exception {
     return runSelftest(System.out);
   }
@@ -243,9 +255,9 @@ public class Selftest {
 
   public static int runSelftest(Writer out) throws Exception {
     PipedInputStream pis = new PipedInputStream();
-    @SuppressWarnings("resource")
+    @SuppressWarnings("all")
     PipedOutputStream pos = new PipedOutputStream(pis);
-    @SuppressWarnings("resource")
+    @SuppressWarnings("all")
     PrintStream ps = new PrintStream(pos, false, Charset.defaultCharset().name());
 
     InputStreamReader isr = new InputStreamReader(pis, Charset.defaultCharset());
@@ -277,8 +289,6 @@ public class Selftest {
     });
   }
 
-  @SuppressFBWarnings({
-      "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
   public static int runSelftest(PrintStream out) throws Exception {
     return runSelftest0(out, null);
   }
@@ -319,11 +329,13 @@ public class Selftest {
       if (disabledModules.contains(module)) {
         if (SystemPropertyUtil.getBooleanSystemProperty("selftest.enable-module." + module,
             false)) {
-          // System.out.println("Enabled optional module: " + module);
+          out.println("Enabling optional module: " + module
+              + " (consult documentation for errors)");
           st.modified = true;
         } else {
           messagesAtEnd.add("Skipping optional module: " + module
-              + "; enable by launching with -Dselftest.enable-module." + module + "=true");
+              + "; enable by launching with -Dselftest.enable-module." + module
+              + "=true (consult documentation first)");
           continue;
         }
       } else if (SystemPropertyUtil.getBooleanSystemProperty("selftest.disable-module." + module,
@@ -331,7 +343,14 @@ public class Selftest {
         messagesAtEnd.add("Skipping required module: " + module + "; this taints the test");
         st.withIssues = true;
       }
-      st.runTests(module, en.getValue());
+      try {
+        st.runTests(module, en.getValue());
+      } catch (Error | RuntimeException t) { // NOPMD
+        messagesAtEnd.add("INTERNAL INCONSISTENCY: Unexpected error while running tests for  "
+            + module + ": " + t);
+        t.printStackTrace();
+        st.fail = true;
+      }
     }
 
     if (!messagesAtEnd.isEmpty()) {
@@ -874,8 +893,7 @@ public class Selftest {
   }
 
   private Map<String, String> retrieveBuildProperties() {
-    return callStaticMethod(diagnosticsHelperClass, "buildProperties", () -> Collections
-        .emptyMap());
+    return callStaticMethod(diagnosticsHelperClass, "buildProperties", Collections::emptyMap);
   }
 
   private static Class<?> resolveOptionalClass(String name) {

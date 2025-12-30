@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  * Based on example code from <a href="https://netty.io/wiki/user-guide-for-4.x.html">Netty user
  * guide for 4.x</a>
  */
+@SuppressWarnings("FutureReturnValueIgnored" /* errorprone */ )
 class EchoServerHandler extends ChannelInboundHandlerAdapter { // (1)
 
   @Override

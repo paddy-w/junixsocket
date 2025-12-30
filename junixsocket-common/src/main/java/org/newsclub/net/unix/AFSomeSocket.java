@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
  */
 package org.newsclub.net.unix;
 
-import java.io.Closeable;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -37,16 +36,7 @@ import org.eclipse.jdt.annotation.Nullable;
  * @see AFDatagramSocket
  * @see AFDatagramChannel
  */
-public interface AFSomeSocket extends Closeable, FileDescriptorAccess {
-  /**
-   * Returns the socket's local socket address, or {@code null} if unavailable or if there was a
-   * problem retrieving it.
-   *
-   * @return The local socket address, or {@code null}.
-   */
-  @Nullable
-  SocketAddress getLocalSocketAddress();
-
+public interface AFSomeSocket extends AFSomeSocketThing {
   /**
    * Returns the socket's remote socket address, or {@code null} if unavailable/not connected, or if
    * there was a problem retrieving it.

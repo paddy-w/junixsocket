@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,36 @@ package org.newsclub.net.unix;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-abstract class CleanableState implements Closeable {
+public abstract class CleanableState implements Closeable {
+  public static final AFConsumer<Throwable> DEFAULT_EXCEPTION_HANDLER = (t) -> Thread
+      .getDefaultUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), t);
+
   private final AtomicBoolean clean = new AtomicBoolean(false);
+  private final AFConsumer<Throwable> exceptionHandler;
+  private AFConsumer<Throwable> exceptionHandlerCurrent;
+  private IOException exceptionUponClose = null;
 
   @SuppressWarnings("PMD.UnusedFormalParameter")
   protected CleanableState(Object observed) {
+    this(observed, DEFAULT_EXCEPTION_HANDLER);
+  }
+
+  @SuppressWarnings("PMD.UnusedFormalParameter")
+  protected CleanableState(Object observed, AFConsumer<Throwable> exceptionHandler) {
+    this.exceptionHandler = Objects.requireNonNull(exceptionHandler);
+    this.exceptionHandlerCurrent = exceptionHandler;
   }
 
   public final void runCleaner() {
     if (clean.compareAndSet(false, true)) {
-      doClean();
+      doClean1();
     }
   }
 
-  @SuppressWarnings({"all", "Finalize" /* errorprone */})
-  @Override
+  @SuppressWarnings("all")
   @Deprecated
   protected final void finalize() {
     try {
@@ -45,10 +58,38 @@ abstract class CleanableState implements Closeable {
     }
   }
 
-  protected abstract void doClean();
+  private void doClean1() {
+    try {
+      doClean();
+    } catch (Throwable t) { // NOPMD
+      exceptionHandlerCurrent.accept(t);
+    }
+  }
+
+  protected abstract void doClean() throws IOException;
+
+  protected boolean inClose() {
+    return exceptionHandlerCurrent != exceptionHandler;
+  }
 
   @Override
   public final void close() throws IOException {
+    this.exceptionHandlerCurrent = (t) -> {
+      IOException exc = exceptionUponClose;
+      if (exc != null) {
+        exc.addSuppressed(t);
+      } else if (t instanceof IOException) {
+        exceptionUponClose = (IOException) t;
+      } else {
+        exceptionUponClose = new IOException();
+        exceptionUponClose.addSuppressed(t);
+      }
+    };
     runCleaner();
+    this.exceptionHandlerCurrent = exceptionHandler;
+
+    if (exceptionUponClose != null) {
+      throw exceptionUponClose;
+    }
   }
 }

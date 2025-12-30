@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,11 @@ public class AFTIPCTopologyWatcher implements Closeable {
     this.selector = channel.provider().openSelector();
     channel.connect(AFTIPCSocketAddress.ofTopologyService());
     channel.configureBlocking(false);
+  }
+
+  @SuppressWarnings("all")
+  @Deprecated
+  protected final void finalize() {
   }
 
   /**

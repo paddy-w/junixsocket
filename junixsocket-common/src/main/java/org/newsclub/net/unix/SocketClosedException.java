@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.net.SocketException;
  *
  * @author Christian Kohlschütter
  */
-public final class SocketClosedException extends SocketException {
+public class SocketClosedException extends SocketException {
   private static final long serialVersionUID = 1L;
 
   /**

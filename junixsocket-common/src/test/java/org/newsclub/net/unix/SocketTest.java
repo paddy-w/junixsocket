@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,20 +31,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
-
 /**
  * Tests some otherwise uncovered methods of {@link AFSocket}.
  *
  * @author Christian Kohlschütter
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class SocketTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected SocketTest(AddressSpecifics<A> asp) {
     super(asp);
   }
 
+  @SuppressWarnings("AddressSelection" /* errorprone */)
   @Test
   public void testConnectBadArguments() throws Exception {
     try (Socket socket = newSocket()) {
@@ -86,6 +83,7 @@ public abstract class SocketTest<A extends SocketAddress> extends SocketTestBase
     }
   }
 
+  @SuppressWarnings("AddressSelection" /* errorprone */)
   @Test
   public void testBindBadArguments() throws Exception {
     try (Socket sock = newSocket()) {

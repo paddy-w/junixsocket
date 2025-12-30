@@ -2,3 +2,6 @@
 /*.xcodeproj/project.xcworkspace/xcuserdata
 /target-eclipse/
 src/**/*.jar
+/build
+/*.log
+/Makefile

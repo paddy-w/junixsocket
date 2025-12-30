@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,9 @@ import org.junit.jupiter.api.Test;
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 /**
- * See https://code.google.com/p/junixsocket/issues/detail?id=20
+ * See <a href="https://code.google.com/archive/p/junixsocket/issues/20">Issue 20</a>.
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
-    "RANGE_ARRAY_LENGTH"})
+@SuppressFBWarnings({"RANGE_ARRAY_LENGTH"})
 // CPD-OFF - Skip code-duplication checks
 public abstract class BufferOverflowTest<A extends SocketAddress> extends SocketTestBase<A> {
   private ServerSocket server;

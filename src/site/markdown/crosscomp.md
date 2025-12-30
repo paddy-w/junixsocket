@@ -8,9 +8,9 @@ JNI code for both macOS and Linux, on _either_ platform.
 In order to cross-compile, our development machine (the one where we do the compilation), needs
 to have clang and llvm.
 
-On Mac, the Xcode version of clang is not sufficient. You have to install llvm from Homebrew:
+On Mac, the Xcode version of clang is not sufficient. You have to install llvm and lld from Homebrew:
 
-    brew install llvm
+    brew install llvm lld
 
 ## Setting up the target SDKs
 
@@ -63,7 +63,7 @@ All you need to do is to specify a flag when building the _junixsocket_ parent p
     cd junixsocket
     mvn clean install -Dcross=true
 
-Cross-compilation is also enabled when building with the "release profile" (`-Prelease`), unlesss
+Cross-compilation is also enabled when building with the "release profile" (`-Drelease`), unless
 it's explicitly disabled with `-Dcross=false`.
 
 If you want to extend support beyond these platforms, check the `pom.xml` files in _junixsocket_,
@@ -137,3 +137,7 @@ the JNI code as follows:
 
 Right now, crossclang only supports C and C++. However, adding support other languages should
 be relatively straightforward.
+
+## See also
+
+[Developing with Xcode](xcode.html).

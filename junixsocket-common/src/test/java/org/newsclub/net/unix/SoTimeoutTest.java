@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.AssertUtil;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
@@ -41,10 +40,8 @@ import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.Messag
 /**
  * Tests {@link Socket#setSoTimeout(int)} behavior.
  *
- * @see <a href="http://code.google.com/p/junixsocket/issues/detail?id=14">Issue 14</a>
+ * @see <a href="https://code.google.com/archive/p/junixsocket/issues/14">Issue 14</a>
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class SoTimeoutTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected SoTimeoutTest(AddressSpecifics<A> asp) {
     super(asp);

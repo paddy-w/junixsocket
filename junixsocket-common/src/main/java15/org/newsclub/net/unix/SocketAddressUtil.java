@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.newsclub.net.unix;
 
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.util.function.Supplier;
 
 /**
  * {@link SocketAddress}-related helper methods.
@@ -37,7 +36,17 @@ final class SocketAddressUtil {
    * @param address The address.
    * @return A supplier for the given address, or {@code null}.
    */
-  static Supplier<AFUNIXSocketAddress> supplyAFUNIXSocketAddress(SocketAddress address) {
+  static AFSupplier<? extends AFSocketAddress> supplyAFSocketAddress(SocketAddress address) {
+    return supplyAFUNIXSocketAddress(address);
+  }
+
+  /**
+   * Try to convert a {@link SocketAddress} that is not a {@link AFSocketAddress} to one that is.
+   *
+   * @param address The address.
+   * @return A supplier for the given address, or {@code null}.
+   */
+  static AFSupplier<AFUNIXSocketAddress> supplyAFUNIXSocketAddress(SocketAddress address) {
     return null;
   }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public class AFUNIXDatabaseSocketFactory implements SocketFactory {
   }
 
   @Override
-  @SuppressFBWarnings("EI_EXPOSE_REP")
+  @SuppressFBWarnings({"EI_EXPOSE_REP", "PATH_TRAVERSAL_IN"})
   public Socket connect(String host, int portNumber, Properties props) throws SocketException,
       IOException {
     // Adjust the path to your MySQL socket by setting the

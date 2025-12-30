@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,10 @@
  */
 package org.newsclub.net.unix;
 
+import static org.newsclub.net.unix.NativeUnixSocket.SHUT_RD;
+import static org.newsclub.net.unix.NativeUnixSocket.SHUT_RD_WR;
+import static org.newsclub.net.unix.NativeUnixSocket.SHUT_WR;
+
 import java.io.EOFException;
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -31,12 +35,16 @@ import java.net.SocketOption;
 import java.net.SocketOptions;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.newsclub.net.unix.pool.MutableHolder;
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
 
 /**
  * junixsocket-based {@link SocketImpl}.
@@ -48,9 +56,6 @@ import org.eclipse.jdt.annotation.Nullable;
     "PMD.CyclomaticComplexity", "PMD.CouplingBetweenObjects",
     "UnsafeFinalization" /* errorprone */})
 public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImplShim {
-  private static final int SHUT_RD = 0;
-  private static final int SHUT_WR = 1;
-  private static final int SHUT_RD_WR = 2;
   private static final int SHUTDOWN_RD_WR = (1 << SHUT_RD) | (1 << SHUT_WR);
 
   private final AFSocketStreamCore core;
@@ -66,7 +71,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   private final AFInputStream in;
   private final AFOutputStream out;
 
-  private boolean reuseAddr = true;
+  private final AtomicBoolean reuseAddr = new AtomicBoolean(true);
 
   private final AtomicInteger socketTimeout = new AtomicInteger(0);
   private final AFAddressFamily<A> addressFamily;
@@ -75,6 +80,8 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
 
   private AFSocketImplExtensions<A> implExtensions = null;
 
+  private final AtomicBoolean closed = new AtomicBoolean(false);
+
   /**
    * When the {@link AFSocketImpl} becomes unreachable (but not yet closed), we must ensure that the
    * underlying socket and all related file descriptors are closed.
@@ -82,21 +89,9 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
    * @author Christian Kohlschütter
    */
   static final class AFSocketStreamCore extends AFSocketCore {
-    private final AtomicInteger pendingAccepts = new AtomicInteger(0);
-
     AFSocketStreamCore(AFSocketImpl<?> observed, FileDescriptor fd,
         AncillaryDataSupport ancillaryDataSupport, AFAddressFamily<?> af) {
       super(observed, fd, ancillaryDataSupport, af, false);
-    }
-
-    private void incPendingAccepts() throws SocketException {
-      if (pendingAccepts.incrementAndGet() >= Integer.MAX_VALUE) {
-        throw new SocketException("Too many pending accepts");
-      }
-    }
-
-    private void decPendingAccepts() throws SocketException {
-      pendingAccepts.decrementAndGet();
     }
 
     void createSocket(FileDescriptor fdTarget, AFSocketType type) throws IOException {
@@ -112,24 +107,36 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
       if (socketAddress == null || socketAddress.getBytes() == null || inode.get() < 0) {
         return;
       }
+      if (!hasPendingAccepts()) {
+        return;
+      }
+      try {
+        ThreadUtil.runOnSystemThread(this::unblockAccepts0);
+      } catch (InterruptedException e) {
+        // ignore
+      }
+    }
 
-      while (pendingAccepts.get() > 0) {
+    private void unblockAccepts0() {
+      while (hasPendingAccepts()) {
         try {
           FileDescriptor tmpFd = new FileDescriptor();
 
-          try {
+          try (Lease<ByteBuffer> abLease = socketAddress.getNativeAddressDirectBuffer()) {
             createSocket(tmpFd, AFSocketType.SOCK_STREAM);
-            ByteBuffer ab = socketAddress.getNativeAddressDirectBuffer();
+            ByteBuffer ab = abLease.get();
             NativeUnixSocket.connect(ab, ab.limit(), tmpFd, inode.get());
           } catch (IOException e) {
             // there's nothing more we can do to unlock these accepts
             // (e.g., SocketException: No such file or directory)
             return;
           }
-          try {
-            NativeUnixSocket.shutdown(tmpFd, SHUT_RD_WR);
-          } catch (Exception e) {
-            // ignore
+          if (isShutdownOnClose()) {
+            try {
+              NativeUnixSocket.shutdown(tmpFd, SHUT_RD_WR);
+            } catch (Exception e) {
+              // ignore
+            }
           }
           try {
             NativeUnixSocket.close(tmpFd);
@@ -222,7 +229,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   }
 
   boolean isClosed() {
-    return core.isClosed();
+    return closed.get() || core.isClosed();
   }
   // CPD-ON
 
@@ -231,13 +238,15 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     accept0(socket);
   }
 
-  @SuppressWarnings("Finally" /* errorprone */)
+  @SuppressWarnings({
+      "Finally" /* errorprone */, //
+      "PMD.CognitiveComplexity", "PMD.NPathComplexity", "PMD.NcssCount"})
   final boolean accept0(SocketImpl socket) throws IOException {
     FileDescriptor fdesc = core.validFdOrException();
     if (isClosed()) {
-      throw new SocketException("Socket is closed");
+      throw new SocketClosedException();
     } else if (!isBound()) {
-      throw new SocketException("Socket is not bound");
+      throw new NotBoundSocketException();
     }
 
     AFSocketAddress socketAddress = core.socketAddress;
@@ -248,47 +257,105 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     }
 
     if (socketAddress == null) {
-      throw new SocketException("Socket is not bound");
+      throw new NotBoundSocketException();
     }
 
     @SuppressWarnings("unchecked")
     final AFSocketImpl<A> si = (AFSocketImpl<A>) socket;
     core.incPendingAccepts();
-    try {
-      ByteBuffer ab = socketAddress.getNativeAddressDirectBuffer();
 
-      SocketException caught = null;
-      try {
-        if (!NativeUnixSocket.accept(ab, ab.limit(), fdesc, si.fd, core.inode.get(), socketTimeout
-            .get())) {
-          return false;
-        }
-      } catch (SocketException e) { // NOPMD.ExceptionAsFlowControl
-        caught = e;
-      } finally { // NOPMD.DoNotThrowExceptionInFinally
-        if (!isBound() || isClosed()) {
-          try {
-            NativeUnixSocket.shutdown(si.fd, SHUT_RD_WR);
-          } catch (Exception e) {
-            // ignore
-          }
-          try {
-            NativeUnixSocket.close(si.fd);
-          } catch (Exception e) {
-            // ignore
-          }
-          if (caught != null) {
-            throw caught;
-          } else {
-            throw new SocketClosedException("Socket is closed");
-          }
-        } else if (caught != null) {
-          throw caught;
+    final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+        .isVirtualBlocking();
+
+    long now = virtualBlocking ? System.currentTimeMillis() : 0;
+    boolean park = false;
+    virtualThreadLoop : do {
+      if (virtualBlocking) {
+        if (park) {
+          VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_ACCEPT, now,
+              socketTimeout::get, this::close);
         }
       }
-    } finally {
-      core.decPendingAccepts();
+
+      try (Lease<ByteBuffer> abLease = socketAddress.getNativeAddressDirectBuffer()) {
+        ByteBuffer ab = abLease.get();
+
+        SocketException caught = null;
+        try {
+          boolean success;
+          if (virtualBlocking) {
+            core.configureVirtualBlocking(true);
+          }
+          try {
+            success = NativeUnixSocket.accept(ab, ab.limit(), fdesc, si.fd, core.inode.get(),
+                socketTimeout.get());
+          } catch (SocketTimeoutException e) {
+            if (virtualBlocking) {
+              // try again
+              park = true;
+              continue virtualThreadLoop;
+            } else {
+              throw e;
+            }
+          } finally {
+            if (virtualBlocking) {
+              core.configureVirtualBlocking(false);
+            }
+          }
+
+          if (virtualBlocking) {
+            if (success) {
+              // mark the accepted socket as blocking if necessary
+              NativeUnixSocket.configureBlocking(si.fd, core.isBlocking());
+            } else {
+              // try again
+              park = true;
+              continue virtualThreadLoop;
+            }
+          }
+        } catch (NotConnectedSocketException | SocketClosedException // NOPMD.ExceptionAsFlowControl
+            | BrokenPipeSocketException e) {
+          try {
+            close();
+          } catch (Exception e2) {
+            e.addSuppressed(e2);
+          }
+          throw e;
+        } catch (SocketException e) { // NOPMD.ExceptionAsFlowControl
+          caught = e;
+        } finally { // NOPMD.DoNotThrowExceptionInFinally
+          if (!isBound() || isClosed()) {
+            if (getCore().isShutdownOnClose()) {
+              try {
+                NativeUnixSocket.shutdown(si.fd, SHUT_RD_WR);
+              } catch (Exception e) {
+                // ignore
+              }
+            }
+            try {
+              NativeUnixSocket.close(si.fd);
+            } catch (Exception e) {
+              // ignore
+            }
+            if (caught != null) {
+              throw caught;
+            } else {
+              throw new BrokenPipeSocketException("Socket is closed");
+            }
+          } else if (caught != null) {
+            throw caught;
+          }
+        }
+      } finally {
+        core.decPendingAccepts();
+      }
+      break; // NOPMD.AvoidBranchingStatementAsLastInLoop virtualThreadLoop
+    } while (true); // NOPMD.WhileLoopWithLiteralBoolean
+
+    if (!si.fd.valid()) {
+      return false;
     }
+
     si.setSocketAddress(socketAddress);
     si.connected.set(true);
 
@@ -312,29 +379,36 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   @Override
   protected final int available() throws IOException {
     FileDescriptor fdesc = core.validFdOrException();
-    return NativeUnixSocket.available(fdesc, core.getThreadLocalDirectByteBuffer(0));
+    try (Lease<MutableHolder<ByteBuffer>> lease = core.getPrivateDirectByteBuffer(0)) {
+      return NativeUnixSocket.available(fdesc, lease.get().get());
+    }
   }
 
   final void bind(SocketAddress addr, int options) throws IOException {
     if (addr == null) {
-      throw new IllegalArgumentException("Cannot bind to null address");
+      addr = addressFamily.nullBindAddress();
+      if (addr == null) {
+        throw new UnsupportedOperationException("Cannot bind to null address");
+      }
     }
-    if (!(addr instanceof AFSocketAddress)) {
-      throw new SocketException("Cannot bind to this type of address: " + addr.getClass());
-    }
-
-    bound.set(true);
 
     if (addr == AFSocketAddress.INTERNAL_DUMMY_BIND) { // NOPMD
+      bound.set(true);
       core.inode.set(0);
       return;
     }
 
-    AFSocketAddress socketAddress = (AFSocketAddress) addr;
+    addr = AFSocketAddress.mapOrFail(addr, addressFamily.getSocketAddressClass());
+    bound.set(true);
+
+    AFSocketAddress socketAddress = Objects.requireNonNull((AFSocketAddress) addr);
 
     this.setSocketAddress(socketAddress);
-    ByteBuffer ab = socketAddress.getNativeAddressDirectBuffer();
-    core.inode.set(NativeUnixSocket.bind(ab, ab.limit(), fd, options));
+    try (Lease<ByteBuffer> abLease = socketAddress.getNativeAddressDirectBuffer()) {
+      ByteBuffer ab = abLease.get();
+      long inode = NativeUnixSocket.bind(ab, ab.limit(), fd, options);
+      core.inode.set(inode);
+    }
     core.validFdOrException();
   }
 
@@ -352,7 +426,13 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
 
   @Override
   protected final void close() throws IOException {
-    shutdown();
+    this.closed.set(true);
+    try {
+      shutdown();
+    } catch (NotConnectedSocketException | SocketClosedException e) {
+      // ignore
+    }
+
     core.runCleaner();
   }
 
@@ -373,6 +453,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     connect0(addr, connectTimeout);
   }
 
+  @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.NPathComplexity", "PMD.NcssCount"})
   final boolean connect0(SocketAddress addr, int connectTimeout) throws IOException {
     if (addr == AFSocketAddress.INTERNAL_DUMMY_CONNECT) { // NOPMD
       this.connected.set(true);
@@ -381,42 +462,102 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
       return false;
     }
 
-    if (!(addr instanceof AFSocketAddress)) {
-      throw new SocketException("Cannot connect to this type of address: " + addr.getClass());
-    }
+    addr = AFSocketAddress.mapOrFail(addr, addressFamily.getSocketAddressClass());
+    AFSocketAddress socketAddress = Objects.requireNonNull((AFSocketAddress) addr);
 
-    AFSocketAddress socketAddress = (AFSocketAddress) addr;
-    ByteBuffer ab = socketAddress.getNativeAddressDirectBuffer();
-    boolean success = false;
-    boolean ignoreSpuriousTimeout = true;
-    do {
-      try {
-        success = NativeUnixSocket.connect(ab, ab.limit(), fd, -1);
-        break;
-      } catch (SocketTimeoutException e) {
-        // Ignore spurious timeout once when SO_TIMEOUT==0
-        // seen on older Linux kernels with AF_VSOCK running in qemu
-        if (ignoreSpuriousTimeout) {
-          Object o = getOption(SocketOptions.SO_TIMEOUT);
-          if (o instanceof Integer) {
-            if (((Integer) o) == 0) {
-              ignoreSpuriousTimeout = false;
-              continue;
-            }
-          } else if (o == null) {
-            ignoreSpuriousTimeout = false;
-            continue;
-          }
-        }
-        throw e;
-      }
-    } while (!Thread.interrupted());
-    if (success) {
-      setSocketAddress(socketAddress);
-      this.connected.set(true);
+    final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+        .isVirtualBlocking();
+    long now = virtualBlocking ? System.currentTimeMillis() : 0;
+
+    /**
+     * If set, a two-phase connect is in flight, and the value holds the connect timeout.
+     */
+    AFSupplier<Integer> virtualConnectTimeout = null;
+
+    if (virtualBlocking) {
+      core.configureVirtualBlocking(true);
     }
-    core.validFdOrException();
-    return success;
+    boolean park = false;
+    try {
+      virtualThreadLoop : do {
+        try (Lease<ByteBuffer> abLease = socketAddress.getNativeAddressDirectBuffer()) {
+          ByteBuffer ab = abLease.get();
+          boolean success = false;
+          boolean ignoreSpuriousTimeout = true;
+          do {
+            if (virtualBlocking) {
+              if (virtualConnectTimeout != null) {
+                if (park) {
+                  VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fd, SelectionKey.OP_CONNECT,
+                      now, virtualConnectTimeout, this::close);
+                }
+              } else {
+                Thread.yield();
+              }
+            }
+
+            if (virtualBlocking) {
+              core.configureVirtualBlocking(true);
+            }
+            try {
+              success = NativeUnixSocket.connect(ab, ab.limit(), fd, -2);
+              if (!success && virtualBlocking) {
+                // try again (non-blocking timeout)
+                if (virtualConnectTimeout == null) {
+                  virtualConnectTimeout = () -> connectTimeout;
+                }
+                park = true;
+                continue virtualThreadLoop;
+              }
+              break;
+            } catch (SocketTimeoutException e) {
+              // Ignore spurious timeout once when SO_TIMEOUT==0
+              // seen on older Linux kernels with AF_VSOCK running in qemu
+              if (ignoreSpuriousTimeout) {
+                Object o = getOption(SocketOptions.SO_TIMEOUT);
+                if (o instanceof Integer) {
+                  if (((Integer) o) == 0) {
+                    ignoreSpuriousTimeout = false;
+                    continue;
+                  }
+                } else if (o == null) {
+                  ignoreSpuriousTimeout = false;
+                  continue;
+                }
+              }
+              throw e;
+            } catch (NotConnectedSocketException | SocketClosedException
+                | BrokenPipeSocketException e) {
+              try {
+                close();
+              } catch (Exception e2) {
+                e.addSuppressed(e2);
+              }
+              throw e;
+            } catch (SocketException e) {
+              if (virtualBlocking) {
+                Thread.yield();
+              }
+              throw e;
+            } finally {
+              if (virtualBlocking) {
+                core.configureVirtualBlocking(false);
+              }
+            }
+          } while (ThreadUtil.checkNotInterruptedOrThrow());
+          if (success) {
+            setSocketAddress(socketAddress);
+            this.connected.set(true);
+          }
+          core.validFdOrException();
+          return success;
+        }
+      } while (true); // NOPMD.WhileLoopWithLiteralBoolean
+    } finally {
+      if (virtualBlocking) {
+        core.configureVirtualBlocking(true);
+      }
+    }
   }
 
   @Override
@@ -441,6 +582,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   @Override
   protected final AFInputStream getInputStream() throws IOException {
     if (!isConnected() && !isBound()) {
+      close();
       throw new SocketClosedException("Not connected/not bound");
     }
     core.validFdOrException();
@@ -450,6 +592,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   @Override
   protected final AFOutputStream getOutputStream() throws IOException {
     if (!isClosed() && !isBound()) {
+      close();
       throw new SocketClosedException("Not connected/not bound");
     }
     core.validFdOrException();
@@ -479,8 +622,9 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     private volatile boolean streamClosed = false;
     private final AtomicBoolean eofReached = new AtomicBoolean(false);
 
-    private final int opt = (core.isBlocking() ? 0 : NativeUnixSocket.OPT_NON_BLOCKING);
+    private final int defaultOpt = (core.isBlocking() ? 0 : NativeUnixSocket.OPT_NON_BLOCKING);
 
+    @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
     public int read(byte[] buf, int off, int len) throws IOException {
       if (streamClosed) {
@@ -497,15 +641,65 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
         throw new IndexOutOfBoundsException();
       }
 
-      try {
-        return NativeUnixSocket.read(fdesc, buf, off, len, opt, ancillaryDataSupport, socketTimeout
-            .get());
-      } catch (EOFException e) {
-        eofReached.set(true);
-        throw e;
+      final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+          .isVirtualBlocking();
+      final long now;
+      final int opt;
+      if (virtualBlocking) {
+        now = System.currentTimeMillis();
+        opt = defaultOpt | NativeUnixSocket.OPT_NON_BLOCKING;
+      } else {
+        now = 0;
+        opt = defaultOpt;
       }
+
+      int read;
+
+      boolean park = false;
+      virtualThreadLoop : do {
+        if (virtualBlocking) {
+          if (park) {
+            VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_READ, now,
+                socketTimeout::get, this::forceCloseSocket);
+          }
+          core.configureVirtualBlocking(true);
+        }
+
+        try {
+          read = NativeUnixSocket.read(fdesc, buf, off, len, opt, ancillaryDataSupport,
+              socketTimeout.get());
+          if (read == -2) {
+            if (virtualBlocking) {
+              // sleep again
+              park = true;
+              continue virtualThreadLoop;
+            } else {
+              read = 0;
+            }
+          }
+        } catch (SocketTimeoutException e) {
+          if (virtualBlocking) {
+            // sleep again
+            park = true;
+            continue virtualThreadLoop;
+          } else {
+            throw e;
+          }
+        } catch (EOFException e) {
+          eofReached.set(true);
+          throw e;
+        } finally {
+          if (virtualBlocking) {
+            core.configureVirtualBlocking(false);
+          }
+        }
+        break; // NOPMD.AvoidBranchingStatementAsLastInLoop virtualThreadLoop
+      } while (true); // NOPMD.WhileLoopWithLiteralBoolean
+
+      return read;
     }
 
+    @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
     public int read() throws IOException {
       FileDescriptor fdesc = core.validFdOrException();
@@ -514,21 +708,78 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
         return -1;
       }
 
-      int byteRead = NativeUnixSocket.read(fdesc, null, 0, 1, opt, ancillaryDataSupport,
-          socketTimeout.get());
-      if (byteRead < 0) {
-        eofReached.set(true);
-        return -1;
+      // CPD-OFF
+      final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+          .isVirtualBlocking();
+      final long now;
+      final int opt;
+      if (virtualBlocking) {
+        now = System.currentTimeMillis();
+        opt = defaultOpt | NativeUnixSocket.OPT_NON_BLOCKING;
       } else {
-        return byteRead;
+        now = 0;
+        opt = defaultOpt;
       }
+
+      boolean park = false;
+      virtualThreadLoop : do {
+        if (virtualBlocking) {
+          if (park) {
+            VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_READ, now,
+                socketTimeout::get, this::forceCloseSocket);
+          }
+          core.configureVirtualBlocking(true);
+        }
+
+        try {
+          int byteRead = NativeUnixSocket.read(fdesc, null, 0, 1, opt, ancillaryDataSupport,
+              socketTimeout.get());
+          if (byteRead < 0) {
+            if (byteRead == -2) {
+              if (virtualBlocking) {
+                // sleep again
+                park = true;
+                continue virtualThreadLoop;
+              } else {
+                byteRead = -1;
+              }
+            }
+            eofReached.set(true);
+            return -1;
+          } else {
+            return byteRead;
+          }
+        } catch (SocketTimeoutException e) {
+          if (virtualBlocking) {
+            // sleep again
+            park = true;
+            continue virtualThreadLoop;
+          } else {
+            throw e;
+          }
+        } finally {
+          if (virtualBlocking) {
+            core.configureVirtualBlocking(false);
+          }
+        }
+      } while (true); // NOPMD.WhileLoopWithLiteralBoolean
+
+      // CPD-ON
+    }
+
+    private void forceCloseSocket() throws IOException {
+      closedOutputStream = true;
+      close();
     }
 
     @Override
     public synchronized void close() throws IOException {
+      if (streamClosed || isClosed()) {
+        return;
+      }
       streamClosed = true;
       FileDescriptor fdesc = core.validFd();
-      if (fdesc != null) {
+      if (fdesc != null && getCore().isShutdownOnClose()) {
         NativeUnixSocket.shutdown(fdesc, SHUT_RD);
       }
 
@@ -549,14 +800,14 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
     public FileDescriptor getFileDescriptor() throws IOException {
       return getFD();
     }
+
   }
 
   private static boolean checkWriteInterruptedException(int bytesTransferred)
       throws InterruptedIOException {
-    if (Thread.interrupted()) {
-      InterruptedIOException ex = new InterruptedIOException("Thread interrupted during write");
+    if (Thread.currentThread().isInterrupted()) {
+      InterruptedIOException ex = new InterruptedIOException("write");
       ex.bytesTransferred = bytesTransferred;
-      Thread.currentThread().interrupt();
       throw ex;
     }
     return true;
@@ -565,21 +816,73 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   private final class AFOutputStreamImpl extends AFOutputStream {
     private volatile boolean streamClosed = false;
 
-    private final int opt = (core.isBlocking() ? 0 : NativeUnixSocket.OPT_NON_BLOCKING);
+    private final int defaultOpt = (core.isBlocking() ? 0 : NativeUnixSocket.OPT_NON_BLOCKING);
 
+    @SuppressWarnings("PMD.CognitiveComplexity")
     @Override
     public void write(int oneByte) throws IOException {
       FileDescriptor fdesc = core.validFdOrException();
 
-      int written;
-      do {
-        written = NativeUnixSocket.write(fdesc, null, oneByte, 1, opt, ancillaryDataSupport);
-        if (written != 0) {
-          break;
+      final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+          .isVirtualBlocking();
+      final long now;
+      final int opt;
+      if (virtualBlocking) {
+        now = System.currentTimeMillis();
+        opt = defaultOpt | NativeUnixSocket.OPT_NON_BLOCKING;
+      } else {
+        now = 0;
+        opt = defaultOpt;
+      }
+
+      boolean park = false;
+      virtualThreadLoop : do {
+        if (virtualBlocking) {
+          if (park) {
+            VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_WRITE, now,
+                socketTimeout::get, this::forceCloseSocket);
+          }
+          core.configureVirtualBlocking(true);
         }
-      } while (checkWriteInterruptedException(0));
+
+        try {
+          int written;
+          do {
+            written = NativeUnixSocket.write(fdesc, null, oneByte, 1, opt, ancillaryDataSupport);
+            if (written != 0) {
+              break;
+            }
+            if (virtualBlocking) {
+              park = true;
+              continue virtualThreadLoop;
+            }
+          } while (checkWriteInterruptedException(0));
+        } catch (NotConnectedSocketException | SocketClosedException
+            | BrokenPipeSocketException e) {
+          try {
+            forceCloseSocket();
+          } catch (Exception e2) {
+            e.addSuppressed(e2);
+          }
+          throw e;
+        } catch (SocketTimeoutException e) {
+          if (virtualBlocking) {
+            // try again
+            park = true;
+            continue virtualThreadLoop;
+          } else {
+            throw e;
+          }
+        } finally {
+          if (virtualBlocking) {
+            core.configureVirtualBlocking(false);
+          }
+        }
+        break; // NOPMD.AvoidBranchingStatementAsLastInLoop virtualThreadLoop
+      } while (true); // NOPMD.WhileLoopWithLiteralBoolean
     }
 
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.NPathComplexity"})
     @Override
     public void write(byte[] buf, int off, int len) throws IOException {
       if (streamClosed) {
@@ -596,39 +899,97 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
         return;
       }
 
+      final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+          .isVirtualBlocking();
+      final long now;
+      final int opt;
+      if (virtualBlocking) {
+        now = System.currentTimeMillis();
+        opt = defaultOpt | NativeUnixSocket.OPT_NON_BLOCKING;
+      } else {
+        now = 0;
+        opt = defaultOpt;
+      }
+
       int writtenTotal = 0;
-
       do {
-        final int written = NativeUnixSocket.write(fdesc, buf, off, len, opt, ancillaryDataSupport);
-        if (written < 0) {
-          if (len == 0) {
-            // This exception is only useful to detect OS-level bugs that we need to work-around
-            // in native code.
-            // throw new IOException("Error while writing zero-length byte array; try -D"
-            // + AFSocket.PROP_LIBRARY_DISABLE_CAPABILITY_PREFIX
-            // + AFSocketCapability.CAPABILITY_ZERO_LENGTH_SEND.name() + "=true");
-
-            // ignore
-            return;
-          } else {
-            throw new IOException("Unspecific error while writing");
+        boolean park = false;
+        virtualThreadLoop : do {
+          if (virtualBlocking) {
+            if (park) {
+              VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_WRITE, now,
+                  socketTimeout::get, this::forceCloseSocket);
+            }
+            core.configureVirtualBlocking(true);
           }
-        }
 
-        len -= written;
-        off += written;
-        writtenTotal += written;
+          final int written;
+          try {
+            written = NativeUnixSocket.write(fdesc, buf, off, len, opt, ancillaryDataSupport);
+            if (written == 0 && virtualBlocking) {
+              // try again
+              park = true;
+              continue virtualThreadLoop;
+            }
+            if (written < 0) {
+              if (len == 0) {
+                // This exception is only useful to detect OS-level bugs that we need to
+                // work-around
+                // in native code.
+                // throw new IOException("Error while writing zero-length byte array; try -D"
+                // + AFSocket.PROP_LIBRARY_DISABLE_CAPABILITY_PREFIX
+                // + AFSocketCapability.CAPABILITY_ZERO_LENGTH_SEND.name() + "=true");
+
+                // ignore
+                return;
+              } else {
+                throw new IOException("Unspecific error while writing");
+              }
+            }
+          } catch (NotConnectedSocketException | SocketClosedException
+              | BrokenPipeSocketException e) {
+            try {
+              forceCloseSocket();
+            } catch (Exception e2) {
+              e.addSuppressed(e2);
+            }
+            throw e;
+          } catch (SocketTimeoutException e) {
+            if (virtualBlocking) {
+              // try again
+              park = true;
+              continue virtualThreadLoop;
+            } else {
+              throw e;
+            }
+          } finally {
+            if (virtualBlocking) {
+              core.configureVirtualBlocking(false);
+            }
+          }
+
+          len -= written;
+          off += written;
+          writtenTotal += written;
+          break; // NOPMD.AvoidBranchingStatementAsLastInLoop virtualThreadLoop
+        } while (true); // NOPMD.WhileLoopWithLiteralBoolean
+
       } while (len > 0 && checkWriteInterruptedException(writtenTotal));
+    }
+
+    private void forceCloseSocket() throws IOException {
+      closedInputStream = true;
+      close();
     }
 
     @Override
     public synchronized void close() throws IOException {
-      if (streamClosed) {
+      if (streamClosed || isClosed()) {
         return;
       }
       streamClosed = true;
       FileDescriptor fdesc = core.validFd();
-      if (fdesc != null) {
+      if (fdesc != null && getCore().isShutdownOnClose()) {
         NativeUnixSocket.shutdown(fdesc, SHUT_WR);
       }
       closedOutputStream = true;
@@ -681,7 +1042,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
       throw new SocketException("Socket is closed");
     }
     if (optID == SocketOptions.SO_REUSEADDR) {
-      return reuseAddr;
+      return reuseAddr.get();
     }
 
     FileDescriptor fdesc = core.validFdOrException();
@@ -739,7 +1100,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
       throw new SocketException("Socket is closed");
     }
     if (optID == SocketOptions.SO_REUSEADDR) {
-      reuseAddr = (expectBoolean(value) != 0);
+      reuseAddr.set((expectBoolean(value) != 0));
       return;
     }
 
@@ -806,8 +1167,16 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
           return;
         case SocketOptions.SO_TIMEOUT: {
           int timeout = expectInteger(value);
-          NativeUnixSocket.setSocketOptionInt(fdesc, 0x1005, timeout);
-          NativeUnixSocket.setSocketOptionInt(fdesc, 0x1006, timeout);
+          try {
+            NativeUnixSocket.setSocketOptionInt(fdesc, 0x1005, timeout);
+          } catch (InvalidArgumentSocketException e) {
+            // Perhaps the socket is shut down?
+          }
+          try {
+            NativeUnixSocket.setSocketOptionInt(fdesc, 0x1006, timeout);
+          } catch (InvalidArgumentSocketException e) {
+            // Perhaps the socket is shut down?
+          }
           if (acceptTimeout != null) {
             acceptTimeout.set(timeout);
           }
@@ -849,7 +1218,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
    *
    * @throws IOException on error.
    */
-  protected final void shutdown() throws IOException {
+  protected final synchronized void shutdown() throws IOException {
     FileDescriptor fdesc = core.validFd();
     if (fdesc != null) {
       NativeUnixSocket.shutdown(fdesc, SHUT_RD_WR);
@@ -858,7 +1227,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   }
 
   @Override
-  protected final void shutdownInput() throws IOException {
+  protected final synchronized void shutdownInput() throws IOException {
     FileDescriptor fdesc = core.validFd();
     if (fdesc != null) {
       NativeUnixSocket.shutdown(fdesc, SHUT_RD);
@@ -871,7 +1240,7 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   }
 
   @Override
-  protected final void shutdownOutput() throws IOException {
+  protected final synchronized void shutdownOutput() throws IOException {
     FileDescriptor fdesc = core.validFd();
     if (fdesc != null) {
       NativeUnixSocket.shutdown(fdesc, SHUT_WR);
@@ -900,19 +1269,19 @@ public abstract class AFSocketImpl<A extends AFSocketAddress> extends SocketImpl
   }
 
   final SocketAddress receive(ByteBuffer dst) throws IOException {
-    return core.receive(dst);
+    return core.receive(dst, socketTimeout::get);
   }
 
   final int send(ByteBuffer src, SocketAddress target) throws IOException {
-    return core.write(src, target, 0);
+    return core.write(src, socketTimeout::get, target, 0);
   }
 
   final int read(ByteBuffer dst, ByteBuffer socketAddressBuffer) throws IOException {
-    return core.read(dst, socketAddressBuffer, 0);
+    return core.read(dst, socketTimeout::get, socketAddressBuffer, 0);
   }
 
   final int write(ByteBuffer src) throws IOException {
-    return core.write(src);
+    return core.write(src, socketTimeout::get);
   }
 
   @Override

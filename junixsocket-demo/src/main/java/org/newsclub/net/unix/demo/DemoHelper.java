@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,12 @@ import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
 import com.kohlschutter.annotations.compiletime.ExcludeFromCodeCoverageGeneratedReport;
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 /**
  * Just a helper class to simplify controlling the demo from the command line.
  */
+@SuppressFBWarnings({"UNENCRYPTED_SOCKET", "PATH_TRAVERSAL_IN"})
 public final class DemoHelper {
   @ExcludeFromCodeCoverageGeneratedReport(reason = "unreachable")
   private DemoHelper() {
@@ -205,6 +207,7 @@ public final class DemoHelper {
     }
   }
 
+  @SuppressFBWarnings("PATH_TRAVERSAL_IN")
   public static SocketAddress parseAddress(String opt, String val, SocketAddress defaultAddress)
       throws IOException {
     if (opt == null || val == null) {

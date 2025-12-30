@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.newsclub.net.unix.AFSYSTEMSocketAddress.SysAddr;
 import org.newsclub.net.unix.AFSocketCapability;
 import org.newsclub.net.unix.AFSocketCapabilityRequirement;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.ExecutionEnvironmentRequirement;
 import com.kohlschutter.testutil.ExecutionEnvironmentRequirement.Rule;
 
@@ -54,6 +55,7 @@ import com.kohlschutter.testutil.ExecutionEnvironmentRequirement.Rule;
  * @author Christian Kohlschütter
  */
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+@SuppressFBWarnings("COMMAND_INJECTION")
 public class UtunTest {
   private static final Inet4Address UTUN_SRC_IP;
   private static final Inet4Address UTUN_DST_IP;

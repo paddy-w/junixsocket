@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
-import java.rmi.RemoteException;
 
 import org.newsclub.net.unix.demo.rmi.services.StreamService;
 import org.newsclub.net.unix.rmi.AFUNIXRMISocketFactory;
@@ -45,10 +44,9 @@ public class StreamServiceImpl implements StreamService, Closeable {
    * Creates a new instance.
    *
    * @param socketFactory The socket factory to use.
-   * @throws RemoteException on error.
    */
   @SuppressFBWarnings("EI_EXPOSE_REP")
-  public StreamServiceImpl(AFUNIXRMISocketFactory socketFactory) throws RemoteException {
+  public StreamServiceImpl(AFUNIXRMISocketFactory socketFactory) {
     this.socketFactory = socketFactory;
   }
 

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,18 @@
  */
 package org.newsclub.net.unix;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.ProtocolFamily;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.net.StandardProtocolFamily;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MembershipKey;
@@ -42,7 +46,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @param <A> The supported address type.
  */
 public abstract class AFDatagramChannel<A extends AFSocketAddress> extends DatagramChannel
-    implements AFSomeSocket, AFSocketExtensions {
+    implements AFSomeSocket, AFSocketExtensions, AFSomeSocketChannel {
   private final AFDatagramSocket<A> afSocket;
 
   /**
@@ -138,17 +142,53 @@ public abstract class AFDatagramChannel<A extends AFSocketAddress> extends Datag
 
   @Override
   public final A receive(ByteBuffer dst) throws IOException {
-    return afSocket.getAFImpl().receive(dst);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      A ret = afSocket.getAFImpl().receive(dst);
+      complete = true;
+      return ret;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
+    }
   }
 
   @Override
   public final int send(ByteBuffer src, SocketAddress target) throws IOException {
-    return afSocket.getAFImpl().send(src, target);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      int ret = afSocket.getAFImpl().send(src, target);
+      complete = true;
+      return ret;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
+    }
   }
 
   @Override
   public final int read(ByteBuffer dst) throws IOException {
-    return afSocket.getAFImpl().read(dst, null);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      int ret = afSocket.getAFImpl().read(dst, null);
+      complete = true;
+      return ret;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
+    }
   }
 
   @Override
@@ -162,7 +202,19 @@ public abstract class AFDatagramChannel<A extends AFSocketAddress> extends Datag
 
   @Override
   public final int write(ByteBuffer src) throws IOException {
-    return afSocket.getAFImpl().write(src);
+    boolean complete = false;
+    Exception exception = null;
+    try {
+      begin();
+      int ret = afSocket.getAFImpl().write(src);
+      complete = true;
+      return ret;
+    } catch (IOException e) {
+      throw InterruptibleChannelUtil.ioExceptionOrThrowRuntimeException( // NOPMD.PreserveStackTrace
+          (exception = InterruptibleChannelUtil.handleException(this, e)));
+    } finally {
+      InterruptibleChannelUtil.endInterruptable(this, this::end, complete, exception);
+    }
   }
 
   @Override
@@ -265,5 +317,37 @@ public abstract class AFDatagramChannel<A extends AFSocketAddress> extends Datag
    */
   public final void setDeleteOnClose(boolean b) {
     afSocket.setDeleteOnClose(b);
+  }
+
+  @Override
+  public void setShutdownOnClose(boolean enabled) {
+    getAFCore().setShutdownOnClose(enabled);
+  }
+
+  /**
+   * Opens a datagram channel. The {@code family} parameter specifies the {@link ProtocolFamily
+   * protocol family} of the channel's socket.
+   * <p>
+   * If the {@link ProtocolFamily} is of an {@link AFProtocolFamily}, or {@code UNIX}, the
+   * corresponding junixsocket implementation is used. In all other cases, the call is delegated to
+   * {@link DatagramChannel#open()}.
+   *
+   * @param family The protocol family.
+   * @return The new {@link DatagramChannel}.
+   * @throws IOException on error.
+   */
+  @SuppressFBWarnings("HSM_HIDING_METHOD")
+  public static DatagramChannel open(ProtocolFamily family) throws IOException {
+    requireNonNull(family);
+
+    if (family instanceof AFProtocolFamily) {
+      return ((AFProtocolFamily) family).openDatagramChannel();
+    } else if ("UNIX".equals(family.name())) {
+      return AFUNIXDatagramChannel.open();
+    } else if (family instanceof StandardProtocolFamily) {
+      return DatagramChannel.open();
+    } else {
+      throw new UnsupportedOperationException("Protocol family not supported");
+    }
   }
 }

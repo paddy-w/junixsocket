@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@
 #include "vsock.h"
 
 #if __TOS_MVS__
+#  include <sched.h>
+#elif __TANDEM
 #  include <sched.h>
 #else
 #  if __has_include(<pthread/pthread.h>)

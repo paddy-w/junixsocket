@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 cd "$(dirname $0)/../"
+nativeGraalVmDir="$(pwd)"
 
 [[ -n "$GRAALVM_HOME" ]] && export PATH="$GRAALVM_HOME"/bin:$PATH
 
@@ -75,8 +76,36 @@ jar=$(cd $(dirname "$jar"); pwd)/$(basename "$jar")
 echo jar: $jar
 
 echo
+echo Checking availability of additional dependencies required for coverage
+
+mysqlDepVersion=$(grep -A2 mysql-connector "${nativeGraalVmDir}/../pom.xml" | grep '<version>' | grep '</version>' | tr -d ' ' | sed -E 's|</?version>||g')
+if [[ -n "$mysqlDepVersion" ]]; then
+  echo "Detected version for mysql-connector-j dependency: $mysqlDepVersion"
+else
+  mysqlDepVersion=8.3.0
+  echo "[WARNING] could not detect version for mysql-connector-j dependency, using ${mysqlDepVersion}"
+fi
+
+mysqlDep="$HOME/.m2/repository/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar"
+if [[ -f "$mysqlDep" ]]; then
+  echo "Using mysql-connector-j dependency from: $mysqlDep"
+else
+  echo "[WARNING] mysql-connector-j dependency is missing: $mysqlDep" >&2
+fi
+
+selftestArgs=(
+  -Dselftest.enable-module.junixsocket-common.JavaInet=true
+  -Dselftest.enable-module.junixsocket-common.JEP380=true
+  -cp "$jar":"$mysqlDep"
+)
+
+echo
 echo Running junixsocket-selftest with GraalVM native-image-agent...
-( set -x ; java -agentlib:native-image-agent=config-output-dir=${tmpDir}/native-image.{pid} -Dselftest.skip.junixsocket-rmi=force -jar "$jar" >/dev/null )
+(
+  set -x
+  java -agentlib:native-image-agent=config-output-dir=${tmpDir}/native-image.{pid} \
+	  ${selftestArgs[@]} org.newsclub.net.unix.selftest.Selftest
+)
 
 if [[ $? -ne 0 ]]; then
     echo "Error: junixsocket-selftest failed" >&2
@@ -93,13 +122,18 @@ cd bin
 
 echo
 echo Running native-image...
-( set -x ; native-image -cp "$tmpDir" --initialize-at-build-time=sun.rmi.transport.GC --report-unsupported-elements-at-runtime --no-fallback -jar "$jar" )
+(
+  set -x
+  native-image -cp "$tmpDir" --initialize-at-build-time=sun.rmi.transport.GC --report-unsupported-elements-at-runtime --no-fallback \
+	  ${selftestArgs[@]} org.newsclub.net.unix.selftest.Selftest
+)
 if [[ $? -ne 0 ]]; then
     echo "Error: Failed to run native-image" >&2
     exit 1
 fi
 
-nativeBinary="$(pwd)/${$(basename "$jar")%%.jar}"
+#nativeBinary="$(pwd)/${$(basename "$jar")%%.jar}"
+nativeBinary="$(pwd)/org.newsclub.net.unix.selftest.selftest"
 if [[ ! -e "$nativeBinary" ]]; then
     echo "Error: Native binary expected but not found at: $nativeBinary" >&2
     exit 1

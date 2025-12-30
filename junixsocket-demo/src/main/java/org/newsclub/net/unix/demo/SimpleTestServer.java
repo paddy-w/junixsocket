@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.newsclub.net.unix.AFUNIXServerSocket;
 import org.newsclub.net.unix.AFUNIXSocket;
@@ -103,7 +104,7 @@ public final class SimpleTestServer {
           }
 
           System.out.println("Saying hello to client " + sock);
-          os.write("Hello, dear Client".getBytes("UTF-8"));
+          os.write("Hello, dear Client".getBytes(StandardCharsets.UTF_8));
           os.flush();
 
           byte[] buf = new byte[128];

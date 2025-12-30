@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,17 +33,18 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
+import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
 
 @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_UNIX_DATAGRAMS)
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class DatagramSocketTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected DatagramSocketTest(AddressSpecifics<A> asp) {
     super(asp);
@@ -166,11 +167,64 @@ public abstract class DatagramSocketTest<A extends SocketAddress> extends Socket
       assertEquals(12, dp1.getLength());
       assertEquals(ds2Addr.wrapAddress(), dp1.getAddress());
 
+      ByteBuffer bb1 = ByteBuffer.allocate(512);
+      ByteBuffer bb2 = ByteBuffer.allocateDirect(512);
+
+      bb1.putLong(0xF00BAA);
+      bb1.flip();
+
+      ds1.getChannel().send(bb1, null); // can specify null here but no address, since it's already
+                                        // connected
+
+      SocketAddress receivedFrom = ds2.getChannel().receive(bb2);
+      assertEquals(ds1Addr, receivedFrom);
+      bb2.flip();
+      assertEquals(0xF00BAA, bb2.getLong());
+
       ds1.close();
       assertClosedDatagramSocket(ds1);
 
       ds2.close();
       assertClosedDatagramSocket(ds2);
+    }
+  }
+
+  @Test
+  public void testChannelSendTo() throws Exception {
+    AFSocketAddress ds1Addr = (AFSocketAddress) newTempAddressForDatagram();
+    AFSocketAddress ds2Addr = (AFSocketAddress) newTempAddressForDatagram();
+    try (DatagramChannel dc1 = newDatagramChannel(); //
+        DatagramChannel dc2 = newDatagramChannel()) {
+
+      // dc1 is neither connected nor bound
+      dc1.bind(ds1Addr);
+      dc2.bind(ds2Addr);
+
+      ByteBuffer bb1 = ByteBuffer.allocate(512);
+      ByteBuffer bb2 = ByteBuffer.allocateDirect(512);
+
+      bb1.putLong(0xF00BAA);
+      bb1.flip();
+
+      dc1.send(bb1, ds2Addr);
+
+      SocketAddress receivedFrom = dc2.receive(bb2);
+      bb2.flip();
+      assertEquals(0xF00BAA, bb2.getLong());
+
+      assertExpectedSocketAddressFromDatagramChannelReceive(ds1Addr, receivedFrom);
+    }
+  }
+
+  @SuppressWarnings("PMD.PreserveStackTrace")
+  protected void assertExpectedSocketAddressFromDatagramChannelReceive(SocketAddress expected,
+      SocketAddress received) {
+    try {
+      assertEquals(expected, received);
+    } catch (AssertionFailedError e) {
+      throw new TestAbortedWithImportantMessageException(MessageType.TEST_ABORTED_SHORT_WITH_ISSUES,
+          "DatagramChannel.receive did not return expected the sender address; "
+              + "this may be a limitation of your system environment.");
     }
   }
 

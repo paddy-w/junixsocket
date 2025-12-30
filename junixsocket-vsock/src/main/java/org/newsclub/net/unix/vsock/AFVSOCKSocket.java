@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.newsclub.net.unix.AFSocketCapability;
 import org.newsclub.net.unix.AFSocketFactory;
 import org.newsclub.net.unix.AFVSOCKSocketAddress;
 import org.newsclub.net.unix.AFVSOCKSocketImplExtensions;
+
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 /**
  * Implementation of an {@code AF_VSOCK} socket.
@@ -64,6 +66,7 @@ public final class AFVSOCKSocket extends AFSocket<AFVSOCKSocketAddress> implemen
    *
    * @return {@code true} iff supported.
    */
+  @SuppressFBWarnings("HSM_HIDING_METHOD")
   public static boolean isSupported() {
     return AFSocket.isSupported() && AFSocket.supports(AFSocketCapability.CAPABILITY_VSOCK);
   }

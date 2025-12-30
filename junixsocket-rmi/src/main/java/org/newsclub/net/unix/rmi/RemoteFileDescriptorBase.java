@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,8 @@ public abstract class RemoteFileDescriptorBase<T> implements Externalizable, Clo
 
   @Override
   @SuppressWarnings("PMD.ExceptionAsFlowControl")
-  public final void writeExternal(ObjectOutput objOut) throws IOException {
+  @SuppressFBWarnings("PREDICTABLE_RANDOM")
+  public final synchronized void writeExternal(ObjectOutput objOut) throws IOException {
     if (fd == null || !fd.valid()) {
       throw new IOException("No or invalid file descriptor");
     }
@@ -169,8 +170,9 @@ public abstract class RemoteFileDescriptorBase<T> implements Externalizable, Clo
   }
 
   @SuppressWarnings("resource")
+  @SuppressFBWarnings("OBJECT_DESERIALIZATION")
   @Override
-  public final void readExternal(ObjectInput objIn) throws IOException, ClassNotFoundException {
+  public final synchronized void readExternal(ObjectInput objIn) throws IOException, ClassNotFoundException {
     DataInputStream in1 = remoteConnection.getAndSet(null);
     if (in1 != null) {
       in1.close();

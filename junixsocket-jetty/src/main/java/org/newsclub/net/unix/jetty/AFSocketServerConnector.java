@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,13 +93,13 @@ public class AFSocketServerConnector extends AbstractConnector {
   private final SelectorManager selectorManager;
   private ServerSocketChannel serverChannel;
   private AFSocketAddress listenSocketAddress;
-  private boolean inheritChannel;
-  private int acceptQueueSize;
-  private int acceptedReceiveBufferSize;
-  private int acceptedSendBufferSize;
-
-  private boolean mayStopServer = false;
-  private boolean mayStopServerForce = false;
+  private volatile boolean inheritChannel;
+  private volatile int acceptQueueSize;
+  private volatile int acceptedReceiveBufferSize;
+  private volatile int acceptedSendBufferSize;
+  private volatile boolean mayStopServer = false;
+  private volatile boolean mayStopServerForce = false;
+  
   private final Class<? extends EventListener> selectorManagerListenerClass;
   private final Server server;
 
@@ -182,6 +182,7 @@ public class AFSocketServerConnector extends AbstractConnector {
    */
   @ManagedAttribute("The Unix-Domain path this connector listens to")
   @Deprecated
+  @SuppressWarnings("PatternMatchingInstanceof") // ErrorProne
   public Path getUnixDomainPath() {
     if (listenSocketAddress instanceof AFUNIXSocketAddress) {
       AFUNIXSocketAddress addr = (AFUNIXSocketAddress) listenSocketAddress;
@@ -220,7 +221,6 @@ public class AFSocketServerConnector extends AbstractConnector {
    * @return The socket address, or {@code null} if none set.
    */
   @ManagedAttribute("The socket address this connector listens to")
-  @SuppressFBWarnings("EI_EXPOSE_REP")
   public AFSocketAddress getListenSocketAddress() {
     return listenSocketAddress;
   }
@@ -230,7 +230,6 @@ public class AFSocketServerConnector extends AbstractConnector {
    *
    * @param addr The socket address, or {@code null}.
    */
-  @SuppressFBWarnings("EI_EXPOSE_REP2")
   public void setListenSocketAddress(AFSocketAddress addr) {
     this.listenSocketAddress = addr;
   }
@@ -339,8 +338,9 @@ public class AFSocketServerConnector extends AbstractConnector {
       try {
         SocketChannel channel = sc.accept();
         accepted(channel);
-      } catch (SocketException e) {
+      } catch (IOException e) {
         boolean takenOver = !sc.isOpen() || sc.getLocalAddress() == null;
+
         if (!takenOver && sc instanceof AFServerSocketChannel<?>) {
           takenOver = !((AFServerSocketChannel<?>) sc).isLocalSocketAddressValid();
         }
@@ -349,6 +349,8 @@ public class AFSocketServerConnector extends AbstractConnector {
           LOG.warn("Another server has taken over our address");
           ForkJoinPool.commonPool().execute(this::checkServerStop);
         }
+
+        Thread.currentThread().interrupt();
         throw (ClosedByInterruptException) new ClosedByInterruptException().initCause(e);
       }
     }

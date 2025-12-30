@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -36,14 +38,12 @@ import org.junit.jupiter.api.Test;
 import org.newsclub.net.unix.AFSocketCapability;
 import org.newsclub.net.unix.AFSocketCapabilityRequirement;
 import org.newsclub.net.unix.AFTIPCSocketAddress;
+import org.opentest4j.AssertionFailedError;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
 
 @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_TIPC)
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public final class AFTIPCTopologyWatcherTest extends
     org.newsclub.net.unix.SocketTestBase<AFTIPCSocketAddress> {
 
@@ -71,7 +71,7 @@ public final class AFTIPCTopologyWatcherTest extends
         @Override
         protected void onEvent(AFTIPCTopologyEvent event) throws IOException {
           assertTrue(isRunning());
-          assertThrows(IllegalStateException.class, () -> runLoop());
+          assertThrows(IllegalStateException.class, this::runLoop);
 
           if (event.isPublished()) {
             if (event.isPort()) {
@@ -179,7 +179,16 @@ public final class AFTIPCTopologyWatcherTest extends
 
     }) {
       watcher.addLinkStateSubscription();
-      watcher.runLoop();
+
+      try {
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+          watcher.runLoop();
+        });
+      } catch (AssertionFailedError e) {
+        throw new TestAbortedWithImportantMessageException(
+            MessageType.TEST_ABORTED_SHORT_WITH_ISSUES,
+            "Kernel may be too old for full TIPC support", e);
+      }
     }
   }
 }

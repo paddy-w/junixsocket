@@ -22,7 +22,7 @@ If you have certain business reasons to not upgrade but still need something fix
 
 #[[##]]# Supported Java versions
 
-junixsocket ${project.version} is fully compatible with Java 8 and newer (tested up to Java 20).
+junixsocket ${project.version} is fully compatible with Java 8 and newer (tested up to Java 24).
 
 #[[##]]# Supported Java VMs
 
@@ -34,6 +34,23 @@ and (since version 2.6.0, partially) in Native Image mode with Substrate VM.
 More [details here](graalvm.html).
 
 Since version 2.7.0, junixsocket runs on Android, too.
+
+#[[##]]# Java 24 warnings
+
+Java 24 introduced a warning when a library calls System.loadLibrary to load some native JNI code,
+something like:
+
+    WARNING: A restricted method in java.lang.System has been called
+    WARNING: java.lang.System::loadLibrary has been called by org.newsclub.net.unix.NativeLibraryLoader$StandardLibraryCandidate in an unnamed module
+    WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+    WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+For now, you can ignore this warning, but can also explicitly allow native access by adding a
+corresponding `--enable-native-access=` statement when invoking your JVM that uses junixsocket.
+
+If junixsocket is referenced by a modularized project, you could add
+`--enable-native-access=org.newsclub.net.unix`. Otherwise (and this includes the selftest jar),
+simplify specify `--enable-native-access=ALL-UNNAMED`
 
 #[[##]]# Supported Platforms
 
@@ -47,6 +64,7 @@ The minimum set of supported (out of the box) platforms and processor architectu
 * Linux s390x ("Linux on IBM Z", "Linux on zSystems")
 * Linux RISC-V 64-bit (rv64ifd / lp64d)
 * Linux ppc64le (POWER 64-bit Little Endian)
+* Linux loongarch64 (Loongson 64-bit)
 * Solaris x86 64-bit / OpenIndiana
 * Windows 10 Intel 64-bit and ARM 64-bit
 * Windows Server 2019
@@ -56,25 +74,30 @@ The minimum set of supported (out of the box) platforms and processor architectu
 * NetBSD (amd64)
 * DragonFlyBSD (amd64)
 * IBM AIX 7 (POWER 64-bit)
-* IBM i 7 (POWER 64-bit)
+* IBM i 7 (POWER 64-bit) via PASE
 * Android (SDK version 26 or newer), aarch64/x86_64/i686/arm
 
 Additional platforms known to work (after the JNI library has been compiled manually):
 
 * Solaris SPARC64
 * IBM z/OS OS/390 64-bit
+* Haiku, recommended R1/beta5 or newer. AF_UNIX datagram support is available since Haiku hrev57155,
+  but you should use hrev57200 or newer:
+  - Thanks to junixsocket selftests, a bug related to socket addresses/connection state was found
+    and [fixed in hrev57189](https://dev.haiku-os.org/ticket/18534).
+  - A use-after-free bug in the kernel related to datagrams was found and
+    [fixed in hrev57194](https://dev.haiku-os.org/ticket/18535).
+  - An unexpected blocking situation was found and
+    [fixed in hrev57200](https://dev.haiku-os.org/ticket/18539).
 
 Additional platforms that should work (after the JNI library has been compiled manually):
 
 * Any other processor architecture with Linux, FreeBSD, OpenBSD, NetBSD, DragonFlyBSD
-* Haiku, recommended R1/beta5 or newer. AF_UNIX datagram support is available since Haiku hrev57155.
-  Thanks to junixsocket selftests, a bug related to socket addresses/connection state was found and
-  [fixed in hrev57189](https://dev.haiku-os.org/ticket/18534); a use-after-free bug in the kernel
-  related to datagrams was found and [reported here](https://dev.haiku-os.org/ticket/18535).
 
 Additional platforms known to compile (but untested):
 
 * IBM z/TPF OS/390 with s390x-ibm-tpf-gcc version tpf-17r1-6
+* Minix
 
 #[[###]]# Remarks
 
@@ -119,7 +142,8 @@ Please reach out if you have some feature in mind that may be supported on these
 #[[##]]# Additional Platforms and Architectures
 
 Upon request, support for additional systems, platforms and architectures may be added,
-such as OpenVMS, FUJITSU BS2000/OSD, Unisys ClearPath OS 2200, QNX, VxWorks, HP-UX, etc.
+such as OpenVMS, FUJITSU BS2000/OSD, Unisys ClearPath OS 2200, QNX, VxWorks, HP-UX,
+Guardian / NonStop OSS, WebAssembly WASI, etc.
 
 If you are interested in using junixsocket on another platform, or willing to sponsor development
 (by providing access to such platforms, covering licensing costs, etc.), feel free to
@@ -162,3 +186,8 @@ specify:
     -Dorg.newsclub.net.unix.library.disable.CAPABILITY_FILE_DESCRIPTORS=true
 
 The set of available capabilities is enumerated in the [AFSocketCapability](https://kohlschutter.github.io/junixsocket/apidocs/org.newsclub.net.unix/org/newsclub/net/unix/AFSocketCapability.html) enum.
+
+#[[##]]# Bugs in other systems
+
+If you're curious about bugs in other systems we could find thanks to junixsocket, take a look
+[here](otherbugs.html).

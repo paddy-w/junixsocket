@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,31 @@
  */
 package org.newsclub.net.unix;
 
-import java.net.ProtocolFamily;
+import java.io.IOException;
 
 /**
  * Describes the protocol family supported by {@link AFUNIXSocketAddress} etc.
  *
  * @author Christian Kohlschütter
  */
-public enum AFUNIXProtocolFamily implements ProtocolFamily {
+public enum AFUNIXProtocolFamily implements AFProtocolFamily {
   /**
    * UNIX domain.
    */
   UNIX;
+
+  @Override
+  public AFDatagramChannel<?> openDatagramChannel() throws IOException {
+    return AFUNIXDatagramChannel.open();
+  }
+
+  @Override
+  public AFServerSocketChannel<?> openServerSocketChannel() throws IOException {
+    return AFUNIXServerSocketChannel.open();
+  }
+
+  @Override
+  public AFSocketChannel<?> openSocketChannel() throws IOException {
+    return AFUNIXSocketChannel.open();
+  }
 }

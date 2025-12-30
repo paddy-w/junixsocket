@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 package org.newsclub.net.unix.tipc;
+
+import java.io.IOException;
 
 import org.newsclub.net.unix.AFSocketChannel;
 import org.newsclub.net.unix.AFTIPCSocketAddress;
@@ -39,5 +41,15 @@ public final class AFTIPCSocketChannel extends AFSocketChannel<AFTIPCSocketAddre
   @Override
   public AFTIPCDestName getDestName() {
     return ((AFTIPCSocketExtensions) getAFSocket()).getDestName();
+  }
+
+  /**
+   * Opens a datagram channel.
+   *
+   * @return The new channel
+   * @throws IOException if an I/O error occurs
+   */
+  public static AFTIPCSocketChannel open() throws IOException {
+    return AFTIPCSelectorProvider.provider().openSocketChannel();
   }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,6 +62,11 @@ public final class AFTIPCAddressSpecifics implements AddressSpecifics<AFTIPCSock
   @Override
   public AFSocket<?> newStrictSocket() throws IOException {
     return AFTIPCSocket.newStrictInstance();
+  }
+
+  @Override
+  public SocketChannel newSocketChannel() throws IOException {
+    return AFTIPCSocketChannel.open();
   }
 
   @Override
@@ -134,5 +140,10 @@ public final class AFTIPCAddressSpecifics implements AddressSpecifics<AFTIPCSock
   @Override
   public String summaryImportantMessage(String message) {
     return message;
+  }
+
+  @Override
+  public ServerSocketChannel newServerSocketChannel() throws IOException {
+    return AFTIPCServerSocketChannel.open();
   }
 }

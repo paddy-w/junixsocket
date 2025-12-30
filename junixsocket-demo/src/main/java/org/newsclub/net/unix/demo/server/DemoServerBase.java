@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,15 @@ import org.newsclub.net.unix.AFSocketAddress;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.server.SocketServer;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * An {@link SocketServer} that's just good for demo purposes.
  *
  * @author Christian Kohlschütter
  */
 @SuppressWarnings("CatchAndPrintStackTrace" /* errorprone */)
+@SuppressFBWarnings("UNENCRYPTED_SERVER_SOCKET")
 abstract class DemoServerBase extends SocketServer<SocketAddress, Socket, ServerSocket> {
   public DemoServerBase(SocketAddress listenAddress) {
     super(listenAddress);
@@ -118,16 +121,16 @@ abstract class DemoServerBase extends SocketServer<SocketAddress, Socket, Server
   }
 
   @Override
-  protected void onServingException(Socket socket, Exception e) {
+  protected void onServingException(Socket socket, Throwable t) {
     if (socket.isClosed()) {
       // "Broken pipe", etc.
-      System.out.println("The other end disconnected (" + e.getMessage() + "): " + socket);
+      System.out.println("The other end disconnected (" + t.getMessage() + "): " + socket);
       return;
     }
     System.err.println("Exception thrown in " + socket + ", connected: " + socket.isConnected()
         + ", " + socket.isBound() + "," + socket.isClosed() + "," + socket.isInputShutdown() + ","
         + socket.isOutputShutdown());
-    e.printStackTrace();
+    t.printStackTrace();
   }
 
   @Override

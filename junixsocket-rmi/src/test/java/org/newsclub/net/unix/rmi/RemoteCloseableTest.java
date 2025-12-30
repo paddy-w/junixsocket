@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 package org.newsclub.net.unix.rmi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.rmi.NoSuchObjectException;
@@ -31,15 +31,11 @@ import org.newsclub.net.unix.AFSocketCapability;
 import org.newsclub.net.unix.rmi.RemoteCloseableThing.IsCloseable;
 import org.newsclub.net.unix.rmi.RemoteCloseableThing.NotCloseable;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
-
 /**
  * Tests {@link RemoteCloseable}.
  *
  * @author Christian Kohlschütter
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 @AFSocketCapabilityRequirement({AFSocketCapability.CAPABILITY_UNIX_DOMAIN})
 public class RemoteCloseableTest extends TestBase {
   public RemoteCloseableTest() throws IOException {
@@ -60,14 +56,19 @@ public class RemoteCloseableTest extends TestBase {
         remoteCloseable.close();
         assertEquals(1, svc.remoteCloseableThingNumberOfCloseCalls(IsCloseable.class));
 
-        assertThrows(NoSuchObjectException.class, () -> {
-          remoteCloseable.close();
-        });
+        remoteCloseable.close();
+        fail("Should have thrown an exception");
       }
     } catch (NoSuchObjectException e) {
       // expected — since the object was forcibly closed above, it was unexported already.
       // ideally, RMI could gracefully handle calling #close() on an proxy that points to an
       // unexported object.
+    } catch (IllegalArgumentException e) {
+      if (e.getCause() instanceof NoSuchMethodException) {
+        // observed with GraalVM 17.0.9; see java.rmi.server.RemoteObjectInvocationHandler
+      } else {
+        throw e;
+      }
     }
     assertEquals(1, svc.remoteCloseableThingNumberOfCloseCalls(IsCloseable.class));
 
@@ -99,13 +100,18 @@ public class RemoteCloseableTest extends TestBase {
       remoteCloseable.close();
       assertEquals(0, svc.remoteCloseableThingNumberOfCloseCalls(NotCloseable.class));
 
-      assertThrows(NoSuchObjectException.class, () -> {
-        remoteCloseable.close();
-      });
+      remoteCloseable.close();
+      fail("Should have thrown an exception");
     } catch (NoSuchObjectException e) {
       // expected — since the object was forcibly closed above, it was unexported already.
       // ideally, RMI could gracefully handle calling #close() on an proxy that points to an
       // unexported object.
+    } catch (IllegalArgumentException e) {
+      if (e.getCause() instanceof NoSuchMethodException) {
+        // observed with GraalVM 17.0.9; see java.rmi.server.RemoteObjectInvocationHandler
+      } else {
+        throw e;
+      }
     }
     assertEquals(0, svc.remoteCloseableThingNumberOfCloseCalls(NotCloseable.class));
 

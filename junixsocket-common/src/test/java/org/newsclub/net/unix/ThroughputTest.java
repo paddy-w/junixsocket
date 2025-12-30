@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.platform.commons.JUnitException;
 import org.opentest4j.AssertionFailedError;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.TestAsyncUtil;
 import com.kohlschutter.testutil.TestStackTraceUtil;
 import com.kohlschutter.util.SystemPropertyUtil;
@@ -81,8 +80,6 @@ import com.kohlschutter.util.SystemPropertyUtil;
  * @author Christian Kohlschütter
  */
 @TestMethodOrder(MethodOrderer.MethodName.class)
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class ThroughputTest<A extends SocketAddress> extends SocketTestBase<A> {
   protected static final int ENABLED = SystemPropertyUtil.getIntSystemProperty(
       "org.newsclub.net.unix.throughput-test.enabled", 1);
@@ -259,7 +256,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
               sc.write(bb);
               bb.clear();
             }
-          } catch (SocketException | SocketTimeoutException e) {
+          } catch (SocketException | ClosedChannelException | SocketTimeoutException e) {
             if (keepRunning.get()) {
               throw e;
             } else {
@@ -450,8 +447,9 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
       assertTimeoutPreemptively(Duration.ofSeconds(NUM_SECONDS + GRACE_TIME_NUM_SECONDS), () -> {
         testDatagramChannel(false, false);
       });
-    } catch (JUnitException e) {
+    } catch (JUnitException | AssertionError e) {
       // Ignore timeout failure (this is a throughput test only)
+      // Notably, NativeUnixSocket.close may hang on AIX and IBM i
       TestStackTraceUtil.printStackTrace(e);
     }
   }
@@ -509,10 +507,16 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
     AtomicBoolean keepRunning = new AtomicBoolean(true);
     TestAsyncUtil.runAsyncDelayed(NUM_MILLISECONDS, TimeUnit.MILLISECONDS, () -> {
       keepRunning.set(false);
+
       try {
         ds.close();
       } catch (IOException e) {
-        // ignore
+        TestStackTraceUtil.printStackTrace(e);
+      }
+      try {
+        dc.close();
+      } catch (IOException e) {
+        TestStackTraceUtil.printStackTrace(e);
       }
     });
 
@@ -538,7 +542,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
             while (!Thread.interrupted() && keepRunning.get() && !bytesRead.isCancelled()) {
               int read;
               if (readSelector != null) {
-                int numReady = readSelector.select();
+                int numReady = readSelector.select(1000);
                 if (numReady == 0) {
                   continue;
                 }
@@ -583,7 +587,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
         }
         while (keepRunning.get()) {
           if (writeSelector != null) {
-            int numReady = writeSelector.select();
+            int numReady = writeSelector.select(1000);
             if (numReady == 0) {
               continue;
             }
@@ -592,7 +596,7 @@ public abstract class ThroughputTest<A extends SocketAddress> extends SocketTest
           int written;
           try {
             written = dc.write(sendBuffer);
-          } catch (SocketException e) {
+          } catch (SocketException | ClosedChannelException | SocketTimeoutException e) {
             if (keepRunning.get()) {
               throw e;
             } else {

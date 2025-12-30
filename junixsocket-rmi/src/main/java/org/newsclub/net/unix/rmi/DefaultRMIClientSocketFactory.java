@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,17 @@ import java.io.Serializable;
 import java.net.Socket;
 import java.rmi.server.RMIClientSocketFactory;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * An implementation of {@link RMIClientSocketFactory}.
  *
  * @see AFRMISocketFactory
  */
+@SuppressFBWarnings("SING_SINGLETON_IMPLEMENTS_SERIALIZABLE")
 public final class DefaultRMIClientSocketFactory implements RMIClientSocketFactory, Serializable {
   private static final long serialVersionUID = 1L;
+
   private static final DefaultRMIClientSocketFactory INSTANCE = new DefaultRMIClientSocketFactory();
 
   private DefaultRMIClientSocketFactory() {
@@ -44,6 +48,7 @@ public final class DefaultRMIClientSocketFactory implements RMIClientSocketFacto
   }
 
   @Override
+  @SuppressFBWarnings("UNENCRYPTED_SOCKET")
   public Socket createSocket(String host, int port) throws IOException {
     Socket socket = new Socket(host, port);
     // socket.setSoTimeout(60 * 60 * 1000);

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public abstract class AFRMISocketFactory extends RMISocketFactory implements Ext
 
   private transient AFRMIService rmiService = null;
 
-  private Externables externables;
+  private transient Externables externables;
   private final transient Map<Integer, AFServerSocket<?>> openServerSockets = new HashMap<>();
   private final transient Set<AFSocket<?>> openSockets = new HashSet<>();
 
@@ -85,7 +85,6 @@ public abstract class AFRMISocketFactory extends RMISocketFactory implements Ext
    * @param defaultClientFactory The default {@link RMIClientSocketFactory}.
    * @param defaultServerFactory The default {@link RMIServerSocketFactory}.
    */
-  @SuppressFBWarnings("EI_EXPOSE_REP2")
   public AFRMISocketFactory(final AFNaming naming,
       final RMIClientSocketFactory defaultClientFactory,
       final RMIServerSocketFactory defaultServerFactory) {
@@ -361,6 +360,7 @@ public abstract class AFRMISocketFactory extends RMISocketFactory implements Ext
   }
 
   @Override
+  @SuppressFBWarnings("OBJECT_DESERIALIZATION")
   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
     setExternable(new Externables(readNamingInstance(in), //
         (RMIClientSocketFactory) in.readObject(), //

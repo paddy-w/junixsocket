@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * @param <A> The concrete {@link AFSocketAddress} that is supported by this type.
  * @author Christian Kohlschütter
  */
-@SuppressWarnings("PMD.CouplingBetweenObjects")
+@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.CyclomaticComplexity"})
 public abstract class AFSocket<A extends AFSocketAddress> extends Socket implements AFSomeSocket,
     AFSocketExtensions {
   static final String PROP_LIBRARY_DISABLE_CAPABILITY_PREFIX =
@@ -68,6 +68,7 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
    * @param afh The conversion helper to get a socket address from an encoded hostname.
    * @throws SocketException on error.
    */
+  @SuppressFBWarnings({"UNENCRYPTED_SOCKET"})
   protected AFSocket(final AFSocketImpl<A> impl, AFSocketAddressFromHostname<A> afh)
       throws SocketException {
     super(impl);
@@ -609,5 +610,19 @@ public abstract class AFSocket<A extends AFSocketAddress> extends Socket impleme
         throw e;
       }
     }
+  }
+
+  /**
+   * Checks if we're running on Android (as far as junixsocket is concerned).
+   *
+   * @return {@code true} if running on Android.
+   */
+  public static boolean isRunningOnAndroid() {
+    return NativeLibraryLoader.isAndroid();
+  }
+
+  @Override
+  public void setShutdownOnClose(boolean enabled) {
+    getAFImpl().getCore().setShutdownOnClose(enabled);
   }
 }

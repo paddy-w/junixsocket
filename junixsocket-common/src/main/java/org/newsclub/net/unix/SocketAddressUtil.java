@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,15 @@ package org.newsclub.net.unix;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnixDomainSocketAddress;
-import java.util.function.Supplier;
+
+import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
 
 /**
  * {@link SocketAddress}-related helper methods.
  *
  * @author Christian Kohlschütter
  */
+@IgnoreJRERequirement // see src/main/java15
 final class SocketAddressUtil {
   private SocketAddressUtil() {
     throw new IllegalStateException("No instances");
@@ -38,7 +40,18 @@ final class SocketAddressUtil {
    * @param address The address.
    * @return A supplier for the given address, or {@code null}.
    */
-  static Supplier<AFUNIXSocketAddress> supplyAFUNIXSocketAddress(SocketAddress address) {
+  static AFSupplier<? extends AFSocketAddress> supplyAFSocketAddress(SocketAddress address) {
+    return supplyAFUNIXSocketAddress(address);
+  }
+
+  /**
+   * Try to convert a {@link SocketAddress} that is not a {@link AFUNIXSocketAddress} to one that
+   * is.
+   *
+   * @param address The address.
+   * @return A supplier for the given address, or {@code null}.
+   */
+  static AFSupplier<AFUNIXSocketAddress> supplyAFUNIXSocketAddress(SocketAddress address) {
     if (address instanceof UnixDomainSocketAddress) {
       UnixDomainSocketAddress udsa = (UnixDomainSocketAddress) address;
 
@@ -46,6 +59,7 @@ final class SocketAddressUtil {
         try {
           return AFUNIXSocketAddress.of(udsa.getPath());
         } catch (SocketException e) {
+          e.printStackTrace();
           return null;
         }
       };

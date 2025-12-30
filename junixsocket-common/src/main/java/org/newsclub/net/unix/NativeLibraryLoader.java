@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,17 +25,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
-@SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
+@SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE", "PATH_TRAVERSAL_IN"})
 final class NativeLibraryLoader implements Closeable {
   private static final String PROP_LIBRARY_DISABLE = "org.newsclub.net.unix.library.disable";
   private static final String PROP_LIBRARY_OVERRIDE = "org.newsclub.net.unix.library.override";
@@ -44,6 +44,8 @@ final class NativeLibraryLoader implements Closeable {
   private static final String PROP_LIBRARY_TMPDIR = "org.newsclub.net.unix.library.tmpdir";
 
   private static final File TEMP_DIR;
+  private static final String OS_NAME_SIMPLIFIED = lookupArchProperty("os.name", "UnknownOS");
+
   private static final List<String> ARCHITECTURE_AND_OS = architectureAndOS();
   private static final String LIBRARY_NAME = "junixsocket-native";
 
@@ -51,7 +53,8 @@ final class NativeLibraryLoader implements Closeable {
   private static final boolean IS_ANDROID = checkAndroid();
 
   static {
-    String dir = System.getProperty(PROP_LIBRARY_TMPDIR, null);
+    String dir = System.getProperty(PROP_LIBRARY_TMPDIR, System.getProperty("java.io.tmpdir",
+        null));
     TEMP_DIR = (dir == null) ? null : new File(dir);
   }
 
@@ -134,7 +137,6 @@ final class NativeLibraryLoader implements Closeable {
     }
 
     @Override
-    @SuppressFBWarnings("THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION")
     String load() throws Exception, LinkageError {
       if (libraryNameAndVersion != null) {
         System.loadLibrary(libraryNameAndVersion);
@@ -166,13 +168,65 @@ final class NativeLibraryLoader implements Closeable {
       this.library = library;
     }
 
+    /**
+     * Even though we ask the JVM to delete the library file upon VM exit, this may not be honored
+     * in all cases (crash, Windows, etc.)
+     *
+     * Therefore, we attempt to delete these files whenever another JVM using junixsocket starts up.
+     * This is simplified by keeping empty marker files next to the temporary shared library file.
+     *
+     * @param libDir The directory to check.
+     */
+    private void deleteLibTmpDelFiles(File libDir) {
+      if (libDir == null) {
+        try {
+          File tempFile = File.createTempFile("libtmp", ".del");
+          libDir = tempFile.getParentFile();
+          tryDelete(tempFile);
+        } catch (IOException e) {
+          return;
+        }
+      }
+      File[] filesToDelete = libDir.listFiles((File f) -> {
+        if (!f.isFile()) {
+          return false;
+        }
+        String name = f.getName();
+        return name.startsWith("libtmp") && name.endsWith(".del");
+      });
+      if (filesToDelete == null || filesToDelete.length == 0) {
+        return;
+      }
+
+      for (File f : filesToDelete) {
+        tryDelete(f);
+        String n = f.getName();
+        n = n.substring(0, n.length() - ".del".length());
+        File libFile = new File(f.getParentFile(), n);
+        tryDelete(libFile);
+      }
+    }
+
     @Override
+    @SuppressWarnings("PMD.CognitiveComplexity")
+    @SuppressFBWarnings("URLCONNECTION_SSRF_FD")
     synchronized String load() throws IOException, LinkageError {
       if (libraryNameAndVersion == null) {
         return null;
       }
 
       File libDir = TEMP_DIR;
+      File userHomeDir = new File(System.getProperty("user.home", "."));
+      File userDirOrNull = new File(System.getProperty("user.dir", "."));
+      if (userHomeDir.equals(userDirOrNull)) {
+        userDirOrNull = null;
+      }
+
+      deleteLibTmpDelFiles(libDir);
+      deleteLibTmpDelFiles(userHomeDir);
+      if (userDirOrNull != null) {
+        deleteLibTmpDelFiles(userDirOrNull);
+      }
 
       for (int attempt = 0; attempt < 3; attempt++) {
         File libFile;
@@ -194,29 +248,39 @@ final class NativeLibraryLoader implements Closeable {
         try {
           System.load(libFile.getAbsolutePath());
         } catch (UnsatisfiedLinkError e) {
-          String message = e.getMessage().toLowerCase(Locale.getDefault());
-          if (!message.contains("perm")) {
-            throw e;
-          }
-
           // Operation not permitted; permission denied; EPERM...
           // -> tmp directory may be mounted with "noexec", try loading from user.home, user.dir
 
           switch (attempt) {
             case 0:
-              libDir = new File(System.getProperty("user.home", "."));
+              libDir = userHomeDir;
               break;
             case 1:
-              libDir = new File(System.getProperty("user.dir", "."));
-              break;
+              if (userDirOrNull != null) {
+                libDir = userDirOrNull;
+                break;
+              }
+              // fall-through
             default:
               throw e;
           }
 
           continue;
         } finally {
-          if (!libFile.delete()) {
+          if (!libFile.delete() && libFile.exists()) {
             libFile.deleteOnExit();
+
+            File markerFile = new File(libFile.getParentFile(), libFile.getName() + ".del");
+            try {
+              Files.createFile(markerFile.toPath());
+              Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (!libFile.exists() || libFile.delete()) {
+                  tryDelete(markerFile);
+                }
+              }));
+            } catch (IOException | UnsupportedOperationException e) {
+              // ignore
+            }
           }
         }
 
@@ -224,6 +288,11 @@ final class NativeLibraryLoader implements Closeable {
         break; // NOPMD.AvoidBranchingStatementAsLastInLoop
       }
       return artifactName + "/" + libraryNameAndVersion;
+    }
+
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
+    private static void tryDelete(File f) {
+      f.delete(); // NOPMD
     }
 
     @Override
@@ -259,7 +328,18 @@ final class NativeLibraryLoader implements Closeable {
     String libraryOverride = System.getProperty(PROP_LIBRARY_OVERRIDE, "");
     String libraryOverrideForce = System.getProperty(PROP_LIBRARY_OVERRIDE_FORCE, "false");
 
-    if (libraryOverride.isEmpty() && libraryOverrideForce.startsWith("/")) {
+    boolean overrideIsAbsolute;
+    try {
+      if (libraryOverrideForce.length() <= 5) { // reasonable simplification
+        overrideIsAbsolute = false;
+      } else {
+        overrideIsAbsolute = new File(libraryOverrideForce).isAbsolute();
+      }
+    } catch (Exception e) {
+      overrideIsAbsolute = false;
+      e.printStackTrace(); // NOPMD
+    }
+    if (libraryOverride.isEmpty() && overrideIsAbsolute) {
       libraryOverride = libraryOverrideForce;
       libraryOverrideForce = "true";
     }
@@ -411,7 +491,6 @@ final class NativeLibraryLoader implements Closeable {
 
   private static List<String> architectureAndOS() {
     String arch = lookupArchProperty("os.arch", "UnknownArch");
-    String osName = lookupArchProperty("os.name", "UnknownOS");
 
     List<String> list = new ArrayList<>();
     if (IS_ANDROID) {
@@ -419,9 +498,13 @@ final class NativeLibraryLoader implements Closeable {
       // let's probe for an Android-specific library first
       list.add(arch + "-Android");
     }
-    list.add(arch + "-" + osName);
-    if (osName.startsWith("Windows") && !"Windows10".equals(osName)) {
+    list.add(arch + "-" + OS_NAME_SIMPLIFIED);
+    if (OS_NAME_SIMPLIFIED.startsWith("Windows") && !"Windows10".equals(OS_NAME_SIMPLIFIED)) {
       list.add(arch + "-" + "Windows10");
+    }
+
+    if ("MacOSX".equals(OS_NAME_SIMPLIFIED) && "x86_64".equals(arch)) {
+      list.add("aarch64-MacOSX"); // Rosetta 2
     }
 
     return list;
@@ -447,16 +530,35 @@ final class NativeLibraryLoader implements Closeable {
     if (url == null) {
       return null;
     }
-    try (InputStream in = url.openStream()) {
+    try (InputStream unused = url.openStream()) {
       return url;
     } catch (IOException e) {
       return null;
     }
   }
 
+  private static String mapLibraryName(String libraryNameAndVersion) {
+    String mappedName = System.mapLibraryName(libraryNameAndVersion);
+    if (mappedName.endsWith(".so")) {
+      // https://github.com/eclipse-openj9/openj9/issues/9788
+      // Many thanks to Fabrice Bourquin for finding this issue!
+      switch (OS_NAME_SIMPLIFIED) {
+        case "AIX":
+          mappedName = mappedName.substring(0, mappedName.length() - 3) + ".a";
+          break;
+        case "OS400":
+          mappedName = mappedName.substring(0, mappedName.length() - 3) + ".srvpgm";
+          break;
+        default:
+          break;
+      }
+    }
+    return mappedName;
+  }
+
   private List<LibraryCandidate> findLibraryCandidates(String artifactName,
       String libraryNameAndVersion, Class<?> providerClass) {
-    String mappedName = System.mapLibraryName(libraryNameAndVersion);
+    String mappedName = mapLibraryName(libraryNameAndVersion);
 
     String[] prefixes = mappedName.startsWith("lib") ? new String[] {""} : new String[] {"", "lib"};
 

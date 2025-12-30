@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
  */
 package org.newsclub.net.unix.domain;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
@@ -25,6 +27,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
+
+import javax.net.SocketFactory;
 
 import org.junit.jupiter.api.Test;
 import org.newsclub.net.unix.AFSocketCapability;
@@ -37,15 +41,14 @@ import org.newsclub.net.unix.SocketTestBase;
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_UNIX_DOMAIN)
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
-    "DMI_HARDCODED_ABSOLUTE_FILENAME"})
+@SuppressFBWarnings({"DMI_HARDCODED_ABSOLUTE_FILENAME"})
 public final class SocketFactoryTest extends SocketTestBase<AFUNIXSocketAddress> {
 
   public SocketFactoryTest() {
     super(AFUNIXAddressSpecifics.INSTANCE);
   }
 
+  @SuppressWarnings("AddressSelection" /* errorprone */)
   @Test
   public void testURISchemeCeateSocketThenConnect() throws Exception {
     AFUNIXSocketFactory.URIScheme factory = new AFUNIXSocketFactory.URIScheme();
@@ -89,6 +92,7 @@ public final class SocketFactoryTest extends SocketTestBase<AFUNIXSocketAddress>
     });
   }
 
+  @SuppressWarnings("AddressSelection" /* errorprone */)
   @Test
   public void testURISchemeCeateSocketWithInvalidHostname() throws Exception {
     AFUNIXSocketFactory.URIScheme factory = new AFUNIXSocketFactory.URIScheme();
@@ -257,5 +261,34 @@ public final class SocketFactoryTest extends SocketTestBase<AFUNIXSocketAddress>
         // not reached
       }
     });
+  }
+
+  @Test
+  public void testReflection() throws Exception {
+    assertEquals(AFUNIXSocketFactory.SystemProperty.class.getName(), Class.forName(
+        "org.newsclub.net.unix.AFUNIXSocketFactory$SystemProperty").getName());
+    assertEquals(AFUNIXSocketFactory.URIScheme.class.getName(), Class.forName(
+        "org.newsclub.net.unix.AFUNIXSocketFactory$URIScheme").getName());
+    assertEquals(AFUNIXSocketFactory.FactoryArg.class.getName(), Class.forName(
+        "org.newsclub.net.unix.AFUNIXSocketFactory$FactoryArg").getName());
+
+    newInstance("org.newsclub.net.unix.AFUNIXSocketFactory$SystemProperty", null);
+    newInstance("org.newsclub.net.unix.AFUNIXSocketFactory$URIScheme", null);
+    newInstance("org.newsclub.net.unix.AFUNIXSocketFactory$FactoryArg", "/");
+    newInstance("org.newsclub.net.unix.AFUNIXSocketFactory$FactoryArg", new File("/"));
+  }
+
+  private static SocketFactory newInstance(String className, Object arg) throws Exception {
+    Class<?> klazz = Class.forName(className);
+    assertTrue(SocketFactory.class.isAssignableFrom(klazz));
+
+    Object instance;
+    if (arg == null) {
+      instance = klazz.getConstructor().newInstance();
+    } else {
+      instance = klazz.getConstructor(arg.getClass()).newInstance(arg);
+    }
+
+    return (SocketFactory) instance;
   }
 }

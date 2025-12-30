@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.newsclub.net.unix.AFVSOCKSocketAddress;
  *
  * @author Christian Kohlschütter
  */
-public class AFVSOCKServerSocket extends AFServerSocket<AFVSOCKSocketAddress> {
+public final class AFVSOCKServerSocket extends AFServerSocket<AFVSOCKSocketAddress> {
   AFVSOCKServerSocket(FileDescriptor fdObj) throws IOException {
     super(fdObj);
   }

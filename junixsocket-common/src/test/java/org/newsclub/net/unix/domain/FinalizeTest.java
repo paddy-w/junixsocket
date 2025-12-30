@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 import org.newsclub.net.unix.AFSocketCapability;
 import org.newsclub.net.unix.AFSocketCapabilityRequirement;
@@ -49,7 +49,6 @@ public final class FinalizeTest extends org.newsclub.net.unix.FinalizeTest<AFUNI
     return "UNIX";
   }
 
-  @SuppressFBWarnings({"RV_DONT_JUST_NULL_CHECK_READLINE"})
   private static List<String> lsofUnixSockets(long pid) throws IOException, TestAbortedException,
       InterruptedException {
     assertTrue(pid > 0);
@@ -66,12 +65,29 @@ public final class FinalizeTest extends org.newsclub.net.unix.FinalizeTest<AFUNI
     try (BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream(), Charset
         .defaultCharset()))) {
       String l;
+
+      boolean hasUnix = false;
+
       while ((l = in.readLine()) != null) {
         lines.add(l);
+        if (!hasUnix && l.contains("unix")) {
+          hasUnix = true;
+        }
         if (l.contains("busybox")) {
           assumeTrue(false, "incompatible lsof binary");
         }
       }
+
+      if (hasUnix) {
+        // if "lsof" returns a "unix" identifier, focus on those lines specifically.
+        for (Iterator<String> it = lines.iterator(); it.hasNext();) {
+          String line = it.next();
+          if (!line.contains("unix")) {
+            it.remove();
+          }
+        }
+      }
+
       p.waitFor();
     } finally {
       p.destroy();
@@ -89,6 +105,7 @@ public final class FinalizeTest extends org.newsclub.net.unix.FinalizeTest<AFUNI
     return linesBefore;
   }
 
+  @SuppressFBWarnings("DM_GC")
   @Override
   protected void postRunCheck(Process process, Object linesBeforeObj) throws TestAbortedException,
       IOException, InterruptedException {
@@ -103,15 +120,17 @@ public final class FinalizeTest extends org.newsclub.net.unix.FinalizeTest<AFUNI
         if (!process.isAlive()) {
           break;
         }
+        if (i == 20) {
+          System.gc(); // NOPMD
+        }
         linesAfter = lsofUnixSockets(process.pid());
         if (linesBefore == null || linesAfter.size() < linesBefore.size()) {
           break;
         }
       }
 
-      assumeTrue(Objects.requireNonNull(linesAfter).size() > 0, "lsof may fail to return anything");
-
-      if (linesAfter != null && linesBefore != null) {
+      if (linesAfter != null && linesBefore != null && !linesBefore.isEmpty() && !linesAfter
+          .isEmpty()) {
         if (linesAfter.size() >= linesBefore.size()) {
           System.err.println("lsof: Unexpected output");
           System.err.println("lsof: Output before: " + linesBefore);

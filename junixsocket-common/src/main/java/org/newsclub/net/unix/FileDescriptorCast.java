@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,28 @@
  */
 package org.newsclub.net.unix;
 
+import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.net.DatagramSocket;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -58,22 +64,47 @@ import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
  * OutputStream in = FileDescriptorCast.using(fd).as(OutputStream.class);
  * </code></pre>
  * <p>
- * IMPORTANT: On some platforms (e.g., Solaris, Illumos) you may need to re-apply a read timeout
- * (e.g., using {@link Socket#setSoTimeout(int)}) after obtaining the socket.
- * </p>
+ * <b>Important notes</b>
+ * <ol>
+ * <li>On some platforms (e.g., Solaris, Illumos) you may need to re-apply a read timeout (e.g.,
+ * using {@link Socket#setSoTimeout(int)}) after obtaining the socket.</li>
+ * <li>You may lose Java port information for {@link AFSocketAddress} implementations that do not
+ * encode this information directly (such as {@link AFUNIXSocketAddress} and
+ * {@link AFTIPCSocketAddress}).</li>
+ * <li>The "blocking" state of a socket may be forcibly changed to "blocking" when performing the
+ * cast, especially when casting to {@link Socket}, {@link DatagramSocket} or {@link ServerSocket}
+ * and any of their subclasses where "blocking" is the expected state.</li>
+ * <li>When calling {@link #using(FileDescriptor)} for a {@link FileDescriptor} obtained from
+ * another socket or other resource in the same JVM (i.e., not from another process), especially for
+ * sockets provided by junixsocket itself, there is a chance that the garbage collector may clean up
+ * the original socket at an opportune moment, thereby closing the resource underlying the shared
+ * {@link FileDescriptor} prematurely.
  * <p>
- * Note that you may also lose Java port information for {@link AFSocketAddress} implementations
- * that do not encode this information directly (such as {@link AFUNIXSocketAddress} and
- * {@link AFTIPCSocketAddress}).
- * </p>
+ * This is considered an edge-case, and deliberately not handled automatically for performance and
+ * portability reasons: We would have to do additional reference counting on all FileDescriptor
+ * instances, either through patching {@code FileCleanable} or a shared data structure.
+ * <p>
+ * The issue can be prevented by keeping a reference to the original object, such as keeping it in
+ * an enclosing try-with-resources block or as a member variable, for example. Alternatively, using
+ * a "duplicate" file descriptor (via {@link #duplicating(FileDescriptor)}) circumvents this
+ * problem, at the cost of using additional system resources.</li>
+ * <li>As a consequence of the previous point: For {@link #using(FileDescriptor)}: when casting file
+ * descriptors that belong to a junixsocket-controlled sockets, the target socket is configured in a
+ * way such that garbage collection will not automatically close the target's underlying file
+ * descriptor (but still potentially any file descriptors received from other processes via
+ * ancillary messages).</li>
+ * <li>The same restrictions as for {@link #using(FileDescriptor)} apply to
+ * {@link #unsafeUsing(int)} as well.</li>
+ * </ol>
  *
  * @author Christian Kohlschütter
  */
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class FileDescriptorCast implements FileDescriptorAccess {
   private static final Map<Class<?>, CastingProviderMap> PRIMARY_TYPE_PROVIDERS_MAP = Collections
       .synchronizedMap(new HashMap<>());
 
-  private static final Function<FileDescriptor, FileInputStream> FD_IS_PROVIDER = System
+  private static final AFFunction<FileDescriptor, FileInputStream> FD_IS_PROVIDER = System
       .getProperty("osv.version") != null ? LenientFileInputStream::new : FileInputStream::new;
 
   private static final CastingProviderMap GLOBAL_PROVIDERS_FINAL = new CastingProviderMap() {
@@ -118,6 +149,15 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
         }
       });
 
+      addProvider(FileChannelSupplier.ReadOnly.class, (fdc,
+          desiredType) -> new FileChannelSupplier.ReadOnly(fdc.getFileDescriptor()));
+
+      addProvider(FileChannelSupplier.WriteOnly.class, (fdc,
+          desiredType) -> new FileChannelSupplier.WriteOnly(fdc.getFileDescriptor()));
+
+      addProvider(FileChannelSupplier.ReadWrite.class, (fdc,
+          desiredType) -> new FileChannelSupplier.ReadWrite(fdc.getFileDescriptor()));
+
       addProvider(FileOutputStream.class, new CastingProvider<FileOutputStream>() {
         @Override
         public FileOutputStream provideAs(FileDescriptorCast fdc,
@@ -125,6 +165,7 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
           return new FileOutputStream(fdc.getFileDescriptor());
         }
       });
+
       addProvider(FileInputStream.class, new CastingProvider<FileInputStream>() {
         @Override
         public FileInputStream provideAs(FileDescriptorCast fdc,
@@ -173,6 +214,10 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
   private static final int FD_OUT = getFdIfPossible(FileDescriptor.out);
   private static final int FD_ERR = getFdIfPossible(FileDescriptor.err);
 
+  static {
+    registerGenericSocketSupport();
+  }
+
   private final FileDescriptor fdObj;
 
   private int localPort = 0;
@@ -220,20 +265,24 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
       protected void addProviders() {
         addProviders(GLOBAL_PROVIDERS);
 
-        final CastingProvider<AFSocket<A>> cpSocket = (fdc, desiredType) -> AFSocket.newInstance(
-            config.socketConstructor(), (AFSocketFactory<A>) null, fdc.getFileDescriptor(),
-            fdc.localPort, fdc.remotePort);
-        final CastingProvider<AFServerSocket<A>> cpServerSocket = (fdc,
-            desiredType) -> AFServerSocket.newInstance(config.serverSocketConstructor(), fdc
-                .getFileDescriptor(), fdc.localPort, fdc.remotePort);
+        final CastingProviderSocketOrChannel<AFSocket<A>> cpSocketOrChannel = (fdc, desiredType,
+            isChannel) -> reconfigure(isChannel, AFSocket.newInstance(config.socketConstructor(),
+                (AFSocketFactory<A>) null, fdc.getFileDescriptor(), fdc.localPort, fdc.remotePort));
+        final CastingProviderSocketOrChannel<AFServerSocket<A>> cpServerSocketOrChannel = (fdc,
+            desiredType, isChannel) -> reconfigure(isChannel, AFServerSocket.newInstance(config
+                .serverSocketConstructor(), fdc.getFileDescriptor(), fdc.localPort,
+                fdc.remotePort));
 
-        addProvider(socketClass, cpSocket);
-        addProvider(config.serverSocketClass(), cpServerSocket);
+        registerGenericSocketProviders();
 
-        addProvider(config.socketChannelClass(), (fdc, desiredType) -> cpSocket.provideAs(fdc,
-            AFSocket.class).getChannel());
-        addProvider(config.serverSocketChannelClass(), (fdc, desiredType) -> cpServerSocket
-            .provideAs(fdc, AFServerSocket.class).getChannel());
+        addProvider(socketClass, (fdc, desiredType) -> cpSocketOrChannel.provideAs(fdc, desiredType,
+            false));
+        addProvider(config.serverSocketClass(), (fdc, desiredType) -> cpServerSocketOrChannel
+            .provideAs(fdc, desiredType, false));
+        addProvider(config.socketChannelClass(), (fdc, desiredType) -> cpSocketOrChannel.provideAs(
+            fdc, AFSocket.class, true).getChannel());
+        addProvider(config.serverSocketChannelClass(), (fdc, desiredType) -> cpServerSocketOrChannel
+            .provideAs(fdc, AFServerSocket.class, true).getChannel());
       }
     });
 
@@ -244,14 +293,17 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
       protected void addProviders() {
         addProviders(GLOBAL_PROVIDERS);
 
-        final CastingProvider<AFDatagramSocket<A>> cpDatagramSocket = (fdc,
-            desiredType) -> AFDatagramSocket.newInstance(config.datagramSocketConstructor(), fdc
-                .getFileDescriptor(), fdc.localPort, fdc.remotePort);
+        final CastingProviderSocketOrChannel<AFDatagramSocket<A>> cpDatagramSocketOrChannel = (fdc,
+            desiredType, isChannel) -> reconfigure(isChannel, AFDatagramSocket.newInstance(config
+                .datagramSocketConstructor(), fdc.getFileDescriptor(), fdc.localPort,
+                fdc.remotePort));
 
-        addProvider(datagramSocketClass, cpDatagramSocket);
+        registerGenericDatagramSocketProviders();
 
-        addProvider(config.datagramChannelClass(), (fdc, desiredType) -> cpDatagramSocket.provideAs(
-            fdc, AFDatagramSocket.class).getChannel());
+        addProvider(datagramSocketClass, (fdc, desiredType) -> cpDatagramSocketOrChannel.provideAs(
+            fdc, desiredType, false));
+        addProvider(config.datagramChannelClass(), (fdc, desiredType) -> cpDatagramSocketOrChannel
+            .provideAs(fdc, AFDatagramSocket.class, true).getChannel());
       }
     });
   }
@@ -265,6 +317,40 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
       addProviders();
 
       addProviders(GLOBAL_PROVIDERS_FINAL);
+    }
+
+    @SuppressWarnings("null")
+    protected void registerGenericSocketProviders() {
+      final CastingProviderSocketOrChannel<AFSocket<AFGenericSocketAddress>> cpSocketOrChannelGeneric =
+          (fdc, desiredType, isChannel) -> reconfigure(isChannel, AFSocket.newInstance(
+              AFGenericSocket::new, (AFSocketFactory<AFGenericSocketAddress>) null, fdc
+                  .getFileDescriptor(), fdc.localPort, fdc.remotePort));
+      final CastingProviderSocketOrChannel<AFServerSocket<AFGenericSocketAddress>> cpServerSocketOrChannelGeneric =
+          (fdc, desiredType, isChannel) -> reconfigure(isChannel, AFServerSocket.newInstance(
+              AFGenericServerSocket::new, fdc.getFileDescriptor(), fdc.localPort, fdc.remotePort));
+
+      addProvider(AFGenericSocket.class, (fdc, desiredType) -> cpSocketOrChannelGeneric.provideAs(
+          fdc, desiredType, false));
+      addProvider(AFGenericServerSocket.class, (fdc, desiredType) -> cpServerSocketOrChannelGeneric
+          .provideAs(fdc, desiredType, false));
+      addProvider(AFGenericSocketChannel.class, (fdc, desiredType) -> cpSocketOrChannelGeneric
+          .provideAs(fdc, AFSocket.class, true).getChannel());
+      addProvider(AFGenericServerSocketChannel.class, (fdc,
+          desiredType) -> cpServerSocketOrChannelGeneric.provideAs(fdc, AFServerSocket.class, true)
+              .getChannel());
+    }
+
+    @SuppressWarnings("null")
+    protected void registerGenericDatagramSocketProviders() {
+      final CastingProviderSocketOrChannel<AFDatagramSocket<AFGenericSocketAddress>> cpDatagramSocketOrChannelGeneric =
+          (fdc, desiredType, isChannel) -> reconfigure(isChannel, AFDatagramSocket.newInstance(
+              AFGenericDatagramSocket::new, fdc.getFileDescriptor(), fdc.localPort,
+              fdc.remotePort));
+
+      addProvider(AFDatagramSocket.class, (fdc, desiredType) -> cpDatagramSocketOrChannelGeneric
+          .provideAs(fdc, desiredType, false));
+      addProvider(AFDatagramChannel.class, (fdc, desiredType) -> cpDatagramSocketOrChannelGeneric
+          .provideAs(fdc, AFDatagramSocket.class, true).getChannel());
     }
 
     protected abstract void addProviders();
@@ -305,8 +391,19 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
     T provideAs(FileDescriptorCast fdc, Class<? super T> desiredType) throws IOException;
   }
 
+  @FunctionalInterface
+  private interface CastingProviderSocketOrChannel<T> {
+    T provideAs(FileDescriptorCast fdc, Class<? super T> desiredType, boolean isChannel)
+        throws IOException;
+  }
+
   /**
    * Creates a {@link FileDescriptorCast} using the given file descriptor.
+   * <p>
+   * Note that if any resource that also references this {@link FileDescriptor} is
+   * garbage-collected, the cleanup for that object may close the referenced {@link FileDescriptor},
+   * thereby resulting in premature connection losses, etc. See {@link #duplicating(FileDescriptor)}
+   * for a solution to this problem.
    *
    * @param fdObj The file descriptor.
    * @return The {@link FileDescriptorCast} instance.
@@ -317,6 +414,7 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
     if (!fdObj.valid()) {
       throw new IOException("Not a valid file descriptor");
     }
+
     Class<?> primaryType = NativeUnixSocket.isLoaded() ? NativeUnixSocket.primaryType(fdObj) : null;
     if (primaryType == null) {
       primaryType = FileDescriptor.class;
@@ -326,6 +424,34 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
 
     CastingProviderMap map = PRIMARY_TYPE_PROVIDERS_MAP.get(primaryType);
     return new FileDescriptorCast(fdObj, map == null ? GLOBAL_PROVIDERS : map);
+  }
+
+  /**
+   * Creates a {@link FileDescriptorCast} using a <em>duplicate</em> of the given file descriptor.
+   * <p>
+   * Duplicating a file descriptor is performed at the system-level, which means an additional file
+   * descriptor pointing to the same resource as the original is created by the operating system.
+   * <p>
+   * The advantage of using {@link #duplicating(FileDescriptor)} over {@link #using(FileDescriptor)}
+   * is that neither implicit garbage collection nor an explicit call to {@link Closeable#close()}
+   * on a resource owning the original {@link FileDescriptor} affects the availability of the
+   * resource from the target of the cast.
+   *
+   * @param fdObj The file descriptor to duplicate.
+   * @return The {@link FileDescriptorCast} instance.
+   * @throws IOException on error, especially if the given file descriptor is invalid or
+   *           unsupported, or if duplicating fails or is unsupported.
+   */
+  public static FileDescriptorCast duplicating(FileDescriptor fdObj) throws IOException {
+    if (!fdObj.valid()) {
+      throw new IOException("Not a valid file descriptor");
+    }
+
+    FileDescriptor duplicate = NativeUnixSocket.duplicate(fdObj, new FileDescriptor());
+    if (duplicate == null) {
+      throw new IOException("Could not duplicate file descriptor");
+    }
+    return using(duplicate);
   }
 
   /**
@@ -493,5 +619,131 @@ public final class FileDescriptorCast implements FileDescriptorAccess {
         throw e;
       }
     }
+  }
+
+  /**
+   * Add support for otherwise unsupported sockets.
+   */
+  private static void registerGenericSocketSupport() {
+    registerCastingProviders(Socket.class, new CastingProviderMap() {
+
+      @Override
+      protected void addProviders() {
+        addProviders(GLOBAL_PROVIDERS);
+
+        registerGenericSocketProviders();
+      }
+    });
+
+    registerCastingProviders(DatagramSocket.class, new CastingProviderMap() {
+      @Override
+      protected void addProviders() {
+        addProviders(GLOBAL_PROVIDERS);
+
+        registerGenericDatagramSocketProviders();
+      }
+    });
+  }
+
+  @SuppressWarnings("null")
+  private static <S extends AFSocket<?>> S reconfigure(boolean isChannel, S socket)
+      throws IOException {
+    reconfigure(isChannel, socket.getChannel());
+    socket.getAFImpl().getCore().disableCleanFd();
+    return socket;
+  }
+
+  @SuppressWarnings("null")
+  private static <S extends AFServerSocket<?>> S reconfigure(boolean isChannel, S socket)
+      throws IOException {
+    reconfigure(isChannel, socket.getChannel());
+    socket.getAFImpl().getCore().disableCleanFd();
+    return socket;
+  }
+
+  @SuppressWarnings("null")
+  private static <S extends AFDatagramSocket<?>> S reconfigure(boolean isChannel, S socket)
+      throws IOException {
+    reconfigure(isChannel, socket.getChannel());
+    socket.getAFImpl().getCore().disableCleanFd();
+    return socket;
+  }
+
+  /**
+   * Reconfigures the Java-side of the socket/socket channel such that its state is compatible with
+   * the native socket's state. This is necessary to properly configure blocking/non-blocking state,
+   * as that is cached on the Java side.
+   * <p>
+   * If {@code isChannel} is false, then we want to cast to a {@link Socket}, {@link DatagramSocket}
+   * or {@link ServerSocket}, which means blocking I/O is desired. If the underlying native socket
+   * is configured non-blocking, we need to reset the state to "blocking" accordingly.
+   * <p>
+   * If {@code isChannel} is true, then we want to cast to a {@link SocketChannel},
+   * {@link DatagramChannel} or {@link ServerSocketChannel}, in which case the blocking state should
+   * be preserved, if possible. It is then up to the user to check blocking state via
+   * {@link AbstractSelectableChannel#isBlocking()} prior to using the socket.
+   * <p>
+   * Note that on Windows, it may be impossible to query the blocking state from an external socket,
+   * so the state is always forcibly set to "blocking".
+   *
+   * @param <S> The type.
+   * @param isChannel The desired cast type (socket=set to blocking, or channel=preserve state).
+   * @param socketChannel The channel.
+   * @throws IOException on error.
+   */
+  private static <@NonNull S extends AFSomeSocketChannel> void reconfigure(boolean isChannel,
+      S socketChannel) throws IOException {
+    if (isChannel) {
+      reconfigureKeepBlockingState(socketChannel);
+    } else {
+      reconfigureSetBlocking(socketChannel);
+    }
+  }
+
+  private static <@NonNull S extends AFSomeSocketChannel> void reconfigureKeepBlockingState(
+      S socketChannel) throws IOException {
+    int result = NativeUnixSocket.checkBlocking(socketChannel.getFileDescriptor());
+
+    boolean blocking;
+    switch (result) {
+      case 0:
+        blocking = false;
+        break;
+      case 1:
+        blocking = true;
+        break;
+      case 2:
+        // need to reconfigure/forcibly override any cached result -> set to blocking by default
+        socketChannel.configureBlocking(false);
+        socketChannel.configureBlocking(true);
+        return;
+      default:
+        throw new OperationNotSupportedSocketException("Invalid blocking state");
+    }
+
+    socketChannel.configureBlocking(blocking);
+  }
+
+  private static <@NonNull S extends AFSomeSocketChannel> void reconfigureSetBlocking(
+      S socketChannel) throws IOException {
+    int result = NativeUnixSocket.checkBlocking(socketChannel.getFileDescriptor());
+
+    switch (result) {
+      case 0:
+        // see below
+        break;
+      case 1:
+        // already blocking, nothing to do
+        return;
+      case 2:
+        // need to reconfigure/forcibly override any cached result -> set to blocking by default
+        // see below
+        break;
+      default:
+        throw new OperationNotSupportedSocketException("Invalid blocking state");
+    }
+
+    socketChannel.configureBlocking(false);
+    socketChannel.configureBlocking(true);
   }
 }

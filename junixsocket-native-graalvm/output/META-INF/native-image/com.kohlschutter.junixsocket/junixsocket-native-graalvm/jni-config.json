@@ -46,6 +46,10 @@
   "methods":[{"name":"getProperty","parameterTypes":["java.lang.String"] }, {"name":"setProperty","parameterTypes":["java.lang.String","java.lang.String"] }]
 },
 {
+  "name":"java.lang.ThreadLocal",
+  "methods":[{"name":"get","parameterTypes":[] }]
+},
+{
   "name":"java.net.DatagramSocket"
 },
 {
@@ -85,6 +89,9 @@
   "methods":[{"name":"removeKey","parameterTypes":["java.nio.channels.SelectionKey"] }]
 },
 {
+  "name":"org.newsclub.net.unix.AFGenericServerSocket"
+},
+{
   "name":"org.newsclub.net.unix.AFSelector$PollFd",
   "fields":[{"name":"fds"}, {"name":"ops"}, {"name":"rops"}]
 },
@@ -115,11 +122,31 @@
   "methods":[{"name":"receiveFileDescriptors","parameterTypes":["int[]"] }, {"name":"setTipcDestName","parameterTypes":["int","int","int"] }, {"name":"setTipcErrorInfo","parameterTypes":["int","int"] }]
 },
 {
+  "name":"org.newsclub.net.unix.BrokenPipeSocketException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.newsclub.net.unix.ConnectionResetSocketException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
   "name":"org.newsclub.net.unix.InvalidArgumentSocketException",
   "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
 },
 {
+  "name":"org.newsclub.net.unix.NoSuchDeviceSocketException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.newsclub.net.unix.NotConnectedSocketException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
   "name":"org.newsclub.net.unix.OperationNotSupportedSocketException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.newsclub.net.unix.SocketClosedException",
   "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
 },
 {
@@ -145,5 +172,13 @@
 },
 {
   "name":"org.newsclub.net.unix.vsock.AFVSOCKSocket"
+},
+{
+  "name":"sun.rmi.transport.tcp.TCPTransport",
+  "fields":[{"name":"threadConnectionHandler"}]
+},
+{
+  "name":"sun.rmi.transport.tcp.TCPTransport$ConnectionHandler",
+  "fields":[{"name":"socket"}]
 }
 ]

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.mysql.cj.conf.PropertyKey;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.conf.RuntimeProperty;
 import com.mysql.cj.protocol.ExportControlled;
@@ -45,10 +46,10 @@ public class AFUNIXDatabaseSocketFactoryCJ implements SocketFactory {
   }
 
   @SuppressWarnings({"unchecked"})
-  @SuppressFBWarnings("EI_EXPOSE_REP")
+  @SuppressFBWarnings({"PATH_TRAVERSAL_IN"})
   @Override
-  public Socket connect(String hostname, int portNumber, PropertySet props, int loginTimeout)
-      throws IOException {
+  public Socket connect(String hostname, int portNumber,
+      @SuppressWarnings("exports") PropertySet props, int loginTimeout) throws IOException {
     // Adjust the path to your MySQL socket by setting the
     // "junixsocket.file" property
     // If no socket path is given, use the default: /tmp/mysql.sock
@@ -61,15 +62,20 @@ public class AFUNIXDatabaseSocketFactoryCJ implements SocketFactory {
     }
     final File socketFile = new File(sock);
 
-    this.rawSocket = AFUNIXSocket.connectTo(AFUNIXSocketAddress.of(socketFile));
-    return rawSocket;
+    AFUNIXSocket socket = AFUNIXSocket.newInstance();
+
+    int connectTimeout = props.getIntegerProperty(PropertyKey.connectTimeout).getValue();
+    int timeout = MysqlHelper.shorterTimeout(connectTimeout, loginTimeout);
+
+    socket.connect(AFUNIXSocketAddress.of(socketFile), timeout);
+
+    return (this.rawSocket = socket);
   }
 
   @SuppressWarnings({"unchecked"})
-  @SuppressFBWarnings("EI_EXPOSE_REP")
   @Override
-  public Socket performTlsHandshake(SocketConnection socketConnection, ServerSession serverSession)
-      throws IOException {
+  public Socket performTlsHandshake(@SuppressWarnings("exports") SocketConnection socketConnection,
+      @SuppressWarnings("exports") ServerSession serverSession) throws IOException {
     return ExportControlled.performTlsHandshake(this.rawSocket, socketConnection,
         serverSession == null ? null : serverSession.getServerVersion(), null);
   }

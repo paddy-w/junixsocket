@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.DatagramSocket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 
 import org.newsclub.net.unix.AFSocketCapability;
@@ -55,4 +56,9 @@ public final class DatagramSocketTest extends
     }
   }
 
+  @Override
+  protected void assertExpectedSocketAddressFromDatagramChannelReceive(SocketAddress expected,
+      SocketAddress received) {
+    // ignore for VSOCK
+  }
 }

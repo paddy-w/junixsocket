@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import org.newsclub.net.unix.AFDatagramSocket;
@@ -33,8 +34,10 @@ import org.newsclub.net.unix.AFSocketAddress;
 import org.newsclub.net.unix.AFUNIXDatagramSocket;
 import org.newsclub.net.unix.AFUNIXSelectorProvider;
 import org.newsclub.net.unix.AFUNIXServerSocket;
+import org.newsclub.net.unix.AFUNIXServerSocketChannel;
 import org.newsclub.net.unix.AFUNIXSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
+import org.newsclub.net.unix.AFUNIXSocketChannel;
 import org.newsclub.net.unix.AFUNIXSocketPair;
 import org.newsclub.net.unix.AddressSpecifics;
 import org.newsclub.net.unix.CloseablePair;
@@ -48,7 +51,7 @@ public final class AFUNIXAddressSpecifics implements AddressSpecifics<AFUNIXSock
 
   @Override
   public AFSocketAddress newTempAddress() throws IOException {
-    return AFUNIXSocketAddress.of(SocketTestBase.socketFile());
+    return AFUNIXSocketAddress.ofNewTempFile();
   }
 
   @Override
@@ -64,6 +67,11 @@ public final class AFUNIXAddressSpecifics implements AddressSpecifics<AFUNIXSock
   @Override
   public AFDatagramSocket<?> newDatagramSocket() throws IOException {
     return AFUNIXDatagramSocket.newInstance();
+  }
+
+  @Override
+  public SocketChannel newSocketChannel() throws IOException {
+    return AFUNIXSocketChannel.open();
   }
 
   @Override
@@ -125,5 +133,10 @@ public final class AFUNIXAddressSpecifics implements AddressSpecifics<AFUNIXSock
   @Override
   public String summaryImportantMessage(String message) {
     return message;
+  }
+
+  @Override
+  public ServerSocketChannel newServerSocketChannel() throws IOException {
+    return AFUNIXServerSocketChannel.open();
   }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.newsclub.net.unix.AFSocket;
 import org.newsclub.net.unix.AFSocketAddress;
 
 // CPD-OFF
-
 public class StreamClient {
   private static void printHelp() {
     System.err.println("Syntax: java " + StreamClient.class.getName() + " <URI>");

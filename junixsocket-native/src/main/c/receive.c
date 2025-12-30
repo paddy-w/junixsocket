@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ static ssize_t recvmsg_wrapper(JNIEnv * env, int handle, jbyte *buf, jint length
     controlLen = msg.msg_controllen;
     control = msg.msg_control;
 
-    if(controlLen <= 0 || control == NULL || ancSupp == NULL) {
+    if(count < 0 || controlLen <= 0 || control == NULL || ancSupp == NULL) {
         return count;
     }
 
@@ -276,8 +276,12 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_read(
     jint returnValue;
     if(count < 0) {
         // read(2) returns -1 on error. Java throws an Exception.
-        _throwErrnumException(env, errno, fd);
-        returnValue = -1;
+        if(errno == EWOULDBLOCK && checkNonBlocking(handle, socket_errno)) {
+            returnValue = -2;
+        } else {
+            _throwErrnumException(env, errno, fd);
+            returnValue = -1;
+        }
     } else if(count == 0) {
         // read(2)/recv return 0 on EOF. Java returns -1.
         returnValue = -1;
@@ -366,18 +370,14 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_receive
     }
 
     if(checkNonBlocking0(handle, theError, opt)) {
-        theError = errno;
-         // no data on non-blocking socket, or terminated connection?
-        if(count == 0 && theError != 0) {
-            _throwException(env, kExceptionClosedChannelException, NULL);
-        } else if(theError == 0 || theError == EAGAIN || theError == ETIMEDOUT
+        if(theError == 0 || theError == EAGAIN || theError == EWOULDBLOCK || theError == ETIMEDOUT
 #if defined(_WIN32)
                   || theError == WSAETIMEDOUT
 #endif
-                  || theError == EINTR) {
+           || theError == EINTR) {
             // just return 0
         } else {
-            _throwErrnumException(env, errno, fd);
+            _throwErrnumException(env, theError, fd);
         }
         return 0;
     } else if(theError == EWOULDBLOCK) {
@@ -391,7 +391,6 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_receive
             _throwErrnumException(env, theError, fd);
         }
     }
-    count = 0;
 
-    return (jint)count;
+    return 0;
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,9 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
+
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 /**
  * An {@link AFSocketAddress} for TIPC sockets.
@@ -109,6 +112,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
  *
  * @author Christian Kohlschütter (documentation credits to Jon Maloy and the TIPC team).
  */
+@SuppressFBWarnings("REDOS")
 public final class AFTIPCSocketAddress extends AFSocketAddress {
   private static final long serialVersionUID = 1L; // do not change!
 
@@ -171,8 +175,8 @@ public final class AFTIPCSocketAddress extends AFSocketAddress {
 
     private AddressType(int id) {
       super(id);
-      this.ds = (a, b, c) -> ":" + Integer.toUnsignedString(a) + ":" + Integer.toUnsignedString(b)
-          + ":" + Integer.toUnsignedString(c);
+      this.ds = (a, b, c) -> ":" + toUnsignedString(a) + ":" + toUnsignedString(b) + ":"
+          + toUnsignedString(c);
     }
 
     private AddressType(String name, int id, DebugStringProvider ds) {
@@ -258,13 +262,13 @@ public final class AFTIPCSocketAddress extends AFSocketAddress {
     }
   }
 
-  private AFTIPCSocketAddress(int port, final byte[] socketAddress, ByteBuffer nativeAddress)
+  private AFTIPCSocketAddress(int port, final byte[] socketAddress, Lease<ByteBuffer> nativeAddress)
       throws SocketException {
     super(port, socketAddress, nativeAddress, addressFamily());
   }
 
   private static AFTIPCSocketAddress newAFSocketAddress(int port, final byte[] socketAddress,
-      ByteBuffer nativeAddress) throws SocketException {
+      Lease<ByteBuffer> nativeAddress) throws SocketException {
     return newDeserializedAFSocketAddress(port, socketAddress, nativeAddress, addressFamily(),
         AFTIPCSocketAddress::new);
   }
@@ -431,9 +435,9 @@ public final class AFTIPCSocketAddress extends AFSocketAddress {
 
   private static int parseUnsignedInt(String v) {
     if (v.startsWith("0x")) {
-      return Integer.parseUnsignedInt(v.substring(2), 16);
+      return parseUnsignedInt(v.substring(2), 16);
     } else {
-      return Integer.parseUnsignedInt(v);
+      return parseUnsignedInt(v, 10);
     }
   }
 
@@ -686,9 +690,9 @@ public final class AFTIPCSocketAddress extends AFSocketAddress {
 
   private String toTipcInt(int v) {
     if (v < 0) {
-      return "0x" + Integer.toUnsignedString(v, 16);
+      return "0x" + toUnsignedString(v, 16);
     } else {
-      return Integer.toUnsignedString(v);
+      return toUnsignedString(v);
     }
   }
 

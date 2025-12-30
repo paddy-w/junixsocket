@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import org.newsclub.net.unix.rmi.AFUNIXNaming;
 import org.newsclub.net.unix.rmi.RemoteCloseable;
 import org.newsclub.net.unix.rmi.RemoteFileInput;
 
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+
 /**
  * Demonstrates how to read files via FileDescriptors that are exchanged via RMI.
  *
@@ -47,6 +49,7 @@ public final class StreamClient {
    * @throws IOException on error.
    * @throws NotBoundException if the server cannot be reached.
    */
+  @SuppressFBWarnings("PATH_TRAVERSAL_IN")
   public static void main(String[] args) throws IOException, NotBoundException {
     if (args.length != 1) {
       System.err.println("Usage: StreamClient <path-to-file>");

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
  */
 package org.newsclub.net.unix;
 
+import static org.newsclub.net.unix.NativeUnixSocket.SHUT_RD_WR;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -28,11 +30,17 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.newsclub.net.unix.pool.MutableHolder;
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
+
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 /**
  * A {@link DatagramSocketImpl} implemented by junixsocket.
@@ -40,6 +48,7 @@ import org.eclipse.jdt.annotation.Nullable;
  * @param <A> The associated address type.
  * @author Christian Kohlschütter
  */
+@SuppressWarnings("PMD.CyclomaticComplexity")
 public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
     DatagramSocketImplShim {
   private final AFSocketType socketType;
@@ -49,7 +58,8 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
   private final AtomicBoolean bound = new AtomicBoolean(false);
 
   private final AtomicInteger socketTimeout = new AtomicInteger(0);
-  private int remotePort = 0;
+  private final AtomicInteger localPort = new AtomicInteger(0);
+  private final AtomicInteger remotePort = new AtomicInteger(0);
   private final AFAddressFamily<@NonNull A> addressFamily;
   private AFSocketImplExtensions<A> implExtensions = null;
 
@@ -60,11 +70,10 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
    * @param addressFamily The address family.
    * @param fd The file descriptor, or {@code null}.
    * @param socketType The socket type.
-   * @throws IOException on error.
    */
   @SuppressWarnings("this-escape")
   protected AFDatagramSocketImpl(AFAddressFamily<@NonNull A> addressFamily, FileDescriptor fd,
-      AFSocketType socketType) throws IOException {
+      AFSocketType socketType) {
     super();
     this.addressFamily = addressFamily;
     // FIXME verify fd
@@ -103,9 +112,11 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
     if (socketAddress == AFSocketAddress.INTERNAL_DUMMY_CONNECT) { // NOPMD
       return;
     }
-    ByteBuffer ab = socketAddress.getNativeAddressDirectBuffer();
-    NativeUnixSocket.connect(ab, ab.limit(), fd, -1);
-    this.remotePort = socketAddress.getPort();
+    try (Lease<ByteBuffer> abLease = socketAddress.getNativeAddressDirectBuffer()) {
+      ByteBuffer ab = abLease.get();
+      NativeUnixSocket.connect(ab, ab.limit(), fd, -1);
+    }
+    this.remotePort.set(socketAddress.getPort());
   }
 
   @Override
@@ -113,7 +124,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
     try {
       NativeUnixSocket.disconnect(fd);
       connected.set(false);
-      this.remotePort = 0;
+      this.remotePort.set(0);
     } catch (IOException e) {
       StackTraceUtil.printStackTrace(e);
     }
@@ -141,19 +152,15 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
     if (socketAddress == AFSocketAddress.INTERNAL_DUMMY_BIND) { // NOPMD
       return;
     }
-    try {
-      ByteBuffer ab;
-      if (socketAddress == null) {
-        ab = AFSocketAddress.getNativeAddressDirectBuffer(0);
-      } else {
-        ab = socketAddress.getNativeAddressDirectBuffer();
-      }
+    try (Lease<ByteBuffer> abLease = socketAddress == null ? AFSocketAddress
+        .getNativeAddressDirectBuffer(0) : socketAddress.getNativeAddressDirectBuffer()) {
+      ByteBuffer ab = abLease.get();
       NativeUnixSocket.bind(ab, ab.limit(), fd, NativeUnixSocket.OPT_DGRAM_MODE);
       if (socketAddress == null) {
-        this.localPort = 0;
+        this.localPort.set(0);
         this.bound.set(false);
       } else {
-        this.localPort = socketAddress.getPort();
+        this.localPort.set(socketAddress.getPort());
       }
     } catch (SocketException e) {
       throw e;
@@ -167,45 +174,103 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
     recv(p, 0);
   }
 
+  @SuppressWarnings({
+      "PMD.NcssCount", "PMD.CognitiveComplexity", "PMD.CyclomaticComplexity",
+      "PMD.NPathComplexity"})
   private void recv(DatagramPacket p, int options) throws IOException {
     int len = p.getLength();
     FileDescriptor fdesc = core.validFdOrException();
 
-    ByteBuffer datagramPacketBuffer = core.getThreadLocalDirectByteBuffer(len);
-    len = Math.min(len, datagramPacketBuffer.capacity());
-
-    options |= core.isBlocking() ? 0 : NativeUnixSocket.OPT_NON_BLOCKING;
-
-    ByteBuffer socketAddressBuffer = AFSocketAddress.SOCKETADDRESS_BUFFER_TL.get();
-    int count = NativeUnixSocket.receive(fdesc, datagramPacketBuffer, 0, len, socketAddressBuffer,
-        options, ancillaryDataSupport, socketTimeout.get());
-    if (count > len) {
-      throw new IllegalStateException("count > len: " + count + " > " + len);
-    } else if (count == -1) {
-      throw new SocketTimeoutException();
-    } else if (count < 0) {
-      throw new IllegalStateException("count: " + count + " < 0");
+    final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+        .isVirtualBlocking();
+    final long now;
+    if (virtualBlocking) {
+      now = System.currentTimeMillis();
+    } else {
+      now = 0;
     }
-    datagramPacketBuffer.limit(count);
-    datagramPacketBuffer.rewind();
-    datagramPacketBuffer.get(p.getData(), p.getOffset(), count);
+    if (virtualBlocking || !core.isBlocking()) {
+      options |= NativeUnixSocket.OPT_NON_BLOCKING;
+    }
 
-    p.setLength(count);
+    boolean park = false;
+    virtualThreadLoop : do {
+      if (virtualBlocking) {
+        if (park) {
+          VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_WRITE, now,
+              socketTimeout::get, this::close);
+        }
+        core.configureVirtualBlocking(true);
+      }
 
-    A addr = AFSocketAddress.ofInternal(socketAddressBuffer, getAddressFamily());
-    p.setAddress(addr == null ? null : addr.getInetAddress());
-    p.setPort(remotePort);
+      try (Lease<MutableHolder<ByteBuffer>> lease = core.getPrivateDirectByteBuffer(len);
+          Lease<ByteBuffer> socketAddressBufferLease = AFSocketAddress.SOCKETADDRESS_BUFFER_TL
+              .take()) {
+        ByteBuffer datagramPacketBuffer = Objects.requireNonNull(lease.get().get());
+        len = Math.min(len, datagramPacketBuffer.capacity());
+
+        ByteBuffer socketAddressBuffer = socketAddressBufferLease.get();
+        int count = NativeUnixSocket.receive(fdesc, datagramPacketBuffer, 0, len,
+            socketAddressBuffer, options, ancillaryDataSupport, socketTimeout.get());
+        if (count == 0 && virtualBlocking) {
+          // try again
+          park = true;
+          continue virtualThreadLoop;
+        }
+
+        if (count > len) {
+          throw new IllegalStateException("count > len: " + count + " > " + len);
+        } else if (count == -1) {
+          throw new SocketTimeoutException();
+        } else if (count < 0) {
+          throw new IllegalStateException("count: " + count + " < 0");
+        }
+        datagramPacketBuffer.limit(count);
+        datagramPacketBuffer.rewind();
+        datagramPacketBuffer.get(p.getData(), p.getOffset(), count);
+
+        p.setLength(count);
+
+        A addr = AFSocketAddress.ofInternal(socketAddressBuffer, getAddressFamily());
+        p.setAddress(addr == null ? null : addr.getInetAddress());
+        p.setPort(remotePort.get());
+      } catch (SocketTimeoutException e) { // NOPMD.ExceptionAsFlowControl
+        if (virtualBlocking) {
+          // try again
+          park = true;
+          continue virtualThreadLoop;
+        } else {
+          throw e;
+        }
+      } finally {
+        if (virtualBlocking) {
+          core.configureVirtualBlocking(false);
+        }
+      }
+      break; // NOPMD.AvoidBranchingStatementAsLastInLoop virtualThreadLoop
+    } while (true); // NOPMD.WhileLoopWithLiteralBoolean
   }
 
+  @SuppressWarnings({
+      "PMD.NcssCount", "PMD.CognitiveComplexity", "PMD.CyclomaticComplexity",
+      "PMD.NPathComplexity"})
   @Override
   protected final void send(DatagramPacket p) throws IOException {
     InetAddress addr = p.getAddress();
     ByteBuffer sendToBuf = null;
     int sendToBufLen = 0;
+
+    byte[] addrBytes;
     if (addr != null) {
-      byte[] addrBytes = AFInetAddress.unwrapAddress(addr, getAddressFamily());
-      if (addrBytes != null) {
-        sendToBuf = AFSocketAddress.SOCKETADDRESS_BUFFER_TL.get();
+      addrBytes = AFInetAddress.unwrapAddress(addr, getAddressFamily());
+    } else {
+      addrBytes = null;
+    }
+
+    try (Lease<ByteBuffer> sendToBufLease = addrBytes == null ? null
+        : AFSocketAddress.SOCKETADDRESS_BUFFER_TL.take()) {
+      if (sendToBufLease != null) {
+        sendToBuf = sendToBufLease.get();
         sendToBufLen = NativeUnixSocket.bytesToSockAddr(getAddressFamily().getDomain(), sendToBuf,
             addrBytes);
         sendToBuf.position(0);
@@ -215,17 +280,58 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
       }
     }
     FileDescriptor fdesc = core.validFdOrException();
-
     int len = p.getLength();
 
-    ByteBuffer datagramPacketBuffer = core.getThreadLocalDirectByteBuffer(len);
-    datagramPacketBuffer.clear();
-    datagramPacketBuffer.put(p.getData(), p.getOffset(), p.getLength());
-    datagramPacketBuffer.flip();
+    final boolean virtualBlocking = (ThreadUtil.isVirtualThread() && core.isBlocking()) || core
+        .isVirtualBlocking();
+    final long now;
+    final int opt;
+    if (virtualBlocking) {
+      now = System.currentTimeMillis();
+      opt = NativeUnixSocket.OPT_DGRAM_MODE | NativeUnixSocket.OPT_NON_BLOCKING;
+    } else {
+      now = 0;
+      opt = NativeUnixSocket.OPT_DGRAM_MODE;
+    }
 
-    NativeUnixSocket.send(fdesc, datagramPacketBuffer, 0, len, sendToBuf, sendToBufLen,
-        /* NativeUnixSocket.OPT_NON_BLOCKING | */
-        NativeUnixSocket.OPT_DGRAM_MODE, ancillaryDataSupport);
+    boolean park = false;
+    virtualThreadLoop : do {
+      if (virtualBlocking) {
+        if (park) {
+          VirtualThreadPoller.INSTANCE.parkThreadUntilReady(fdesc, SelectionKey.OP_WRITE, now,
+              socketTimeout::get, this::close);
+        }
+        core.configureVirtualBlocking(true);
+      }
+
+      try (Lease<MutableHolder<ByteBuffer>> lease = core.getPrivateDirectByteBuffer(len)) {
+        ByteBuffer datagramPacketBuffer = Objects.requireNonNull(lease.get().get());
+        datagramPacketBuffer.clear();
+        datagramPacketBuffer.put(p.getData(), p.getOffset(), p.getLength());
+        datagramPacketBuffer.flip();
+
+        int written = NativeUnixSocket.send(fdesc, datagramPacketBuffer, 0, len, sendToBuf,
+            sendToBufLen, opt, ancillaryDataSupport);
+        if (written == 0 && virtualBlocking) {
+          // try again
+          park = true;
+          continue virtualThreadLoop;
+        }
+      } catch (SocketTimeoutException e) {
+        if (virtualBlocking) {
+          // try again
+          park = true;
+          continue virtualThreadLoop;
+        } else {
+          throw e;
+        }
+      } finally {
+        if (virtualBlocking) {
+          core.configureVirtualBlocking(false);
+        }
+      }
+      break; // NOPMD.AvoidBranchingStatementAsLastInLoop virtualThreadLoop
+    } while (true); // NOPMD.WhileLoopWithLiteralBoolean
   }
 
   @Override
@@ -306,7 +412,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
   @SuppressWarnings("unchecked")
   final A receive(ByteBuffer dst) throws IOException {
     try {
-      return (A) core.receive(dst);
+      return (A) core.receive(dst, socketTimeout::get);
     } catch (SocketClosedException e) {
       throw (ClosedChannelException) new ClosedChannelException().initCause(e);
     }
@@ -314,7 +420,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
 
   final int send(ByteBuffer src, SocketAddress target) throws IOException {
     try {
-      return core.write(src, target, 0);
+      return core.write(src, socketTimeout::get, target, 0);
     } catch (SocketClosedException e) {
       throw (ClosedChannelException) new ClosedChannelException().initCause(e);
     }
@@ -322,7 +428,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
 
   final int read(ByteBuffer dst, ByteBuffer socketAddressBuffer) throws IOException {
     try {
-      return core.read(dst, socketAddressBuffer, 0);
+      return core.read(dst, socketTimeout::get, socketAddressBuffer, 0);
     } catch (SocketClosedException e) {
       throw (ClosedChannelException) new ClosedChannelException().initCause(e);
     }
@@ -330,7 +436,7 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
 
   final int write(ByteBuffer src) throws IOException {
     try {
-      return core.write(src);
+      return core.write(src, socketTimeout::get);
     } catch (SocketClosedException e) {
       throw (ClosedChannelException) new ClosedChannelException().initCause(e);
     }
@@ -365,17 +471,17 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
   }
 
   final void updatePorts(int local, int remote) {
-    this.localPort = local;
-    this.remotePort = remote;
+    this.localPort.set(local);
+    this.remotePort.set(remote);
   }
 
   final @Nullable A getLocalSocketAddress() {
-    return AFSocketAddress.getSocketAddress(getFileDescriptor(), false, localPort,
+    return AFSocketAddress.getSocketAddress(getFileDescriptor(), false, localPort.get(),
         getAddressFamily());
   }
 
   final @Nullable A getRemoteSocketAddress() {
-    return AFSocketAddress.getSocketAddress(getFileDescriptor(), true, remotePort,
+    return AFSocketAddress.getSocketAddress(getFileDescriptor(), true, remotePort.get(),
         getAddressFamily());
   }
 
@@ -400,5 +506,91 @@ public abstract class AFDatagramSocketImpl<A extends AFSocketAddress> extends
       implExtensions = addressFamily.initImplExtensions(ancillaryDataSupport);
     }
     return implExtensions;
+  }
+
+  // CPD-OFF
+  @SuppressWarnings("Finally" /* errorprone */)
+  final boolean accept0(AFDatagramSocketImpl<A> socket) throws IOException {
+    FileDescriptor fdesc = core.validFdOrException();
+    if (isClosed()) {
+      throw new SocketException("Socket is closed");
+    } else if (!isBound()) {
+      throw new SocketException("Socket is not bound");
+    }
+
+    AFSocketAddress socketAddress = core.socketAddress;
+    AFSocketAddress boundSocketAddress = getLocalSocketAddress();
+    if (boundSocketAddress != null) {
+      // Always resolve bound address from wildcard address, etc.
+      core.socketAddress = socketAddress = boundSocketAddress;
+    }
+
+    if (socketAddress == null) {
+      throw new SocketException("Socket is not bound");
+    }
+
+    final AFDatagramSocketImpl<A> si = socket;
+    core.incPendingAccepts();
+    try (Lease<ByteBuffer> abLease = socketAddress.getNativeAddressDirectBuffer()) {
+      ByteBuffer ab = abLease.get();
+
+      SocketException caught = null;
+      try {
+        if (!NativeUnixSocket.accept(ab, ab.limit(), fdesc, si.fd, core.inode.get(), socketTimeout
+            .get())) {
+          return false;
+        }
+      } catch (SocketException e) { // NOPMD.ExceptionAsFlowControl
+        caught = e;
+      } finally { // NOPMD.DoNotThrowExceptionInFinally
+        if (!isBound() || isClosed()) {
+          if (getCore().isShutdownOnClose()) {
+            try {
+              NativeUnixSocket.shutdown(si.fd, SHUT_RD_WR);
+            } catch (Exception e) {
+              // ignore
+            }
+          }
+          try {
+            NativeUnixSocket.close(si.fd);
+          } catch (Exception e) {
+            // ignore
+          }
+          if (caught != null) {
+            throw caught;
+          } else {
+            throw new SocketClosedException("Socket is closed");
+          }
+        } else if (caught != null) {
+          throw caught;
+        }
+      }
+    } finally {
+      core.decPendingAccepts();
+    }
+    si.setSocketAddress(socketAddress);
+    si.connected.set(true);
+
+    return true;
+  }
+
+  final int getLocalPort1() {
+    return localPort.get();
+  }
+
+  final int getRemotePort() {
+    return remotePort.get();
+  }
+
+  final void setSocketAddress(AFSocketAddress socketAddress) {
+    if (socketAddress == null) {
+      this.core.socketAddress = null;
+      this.localPort.set(-1);
+    } else {
+      this.core.socketAddress = socketAddress;
+      if (this.localPort.get() <= 0) {
+        this.localPort.set(socketAddress.getPort());
+      }
+    }
   }
 }

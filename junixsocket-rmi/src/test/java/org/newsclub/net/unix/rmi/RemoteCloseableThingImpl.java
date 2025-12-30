@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,11 @@ abstract class RemoteCloseableThingImpl implements RemoteCloseableThing {
   private final AtomicInteger count = new AtomicInteger(0);
 
   protected RemoteCloseableThingImpl() throws RemoteException {
+  }
+
+  @SuppressWarnings("all")
+  @Deprecated
+  protected final void finalize() {
   }
 
   public void close() throws IOException {

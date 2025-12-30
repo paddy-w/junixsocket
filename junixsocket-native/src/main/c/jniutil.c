@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ void callObjectSetter(JNIEnv *env, jobject instance, char *methodName,
         return;
     }
 
-    __attribute__((aligned(8))) jobject array[] = {value};
+    CK_ALIGNED_8 jobject array[] = {value};
     (*env)->CallVoidMethodA(env, instance, methodId, (jvalue*)array);
     if ((*env)->ExceptionCheck(env)) {
         return;
@@ -170,4 +170,24 @@ struct jni_direct_byte_buffer_ref getDirectByteBufferRef(JNIEnv *env, jobject by
     };
 
     return ref;
+}
+
+char* jstring_to_char_if_possible(JNIEnv* env, jstring string, jsize offset, char* targetBuf, size_t targetBufLen) {
+    if(string == NULL) {
+        return NULL;
+    }
+    jsize len = (*env)->GetStringLength(env, string);
+    if((size_t)len >= targetBufLen) {
+        return NULL;
+    }
+    size_t bytes = (*env)->GetStringUTFLength(env, string);
+    if(bytes >= targetBufLen) {
+        return NULL;
+    }
+    if(targetBuf == NULL) {
+        targetBuf = (char*) malloc(bytes + 1);
+    }
+    (*env)->GetStringUTFRegion(env, string, offset, len - offset, targetBuf);
+    targetBuf[bytes] = 0;
+    return targetBuf;
 }

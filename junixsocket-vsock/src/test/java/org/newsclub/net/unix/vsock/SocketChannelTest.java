@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.newsclub.net.unix.vsock;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -49,23 +49,12 @@ public final class SocketChannelTest extends
    * @return An explanation iff this should not cause a test failure but trigger "With issues".
    */
   @Override
-  protected String checkKnownBugAcceptFailure(SocketException e) {
-    if (e instanceof InvalidSocketException) {
+  protected String checkKnownBugAcceptFailure(IOException e) {
+    if (e instanceof InvalidSocketException || e instanceof SocketTimeoutException) {
       return "Server accept failed. VSOCK may not be available";
     } else {
       return null;
     }
-  }
-
-  /**
-   * Subclasses may override this to tell that there is a known issue with "accept".
-   *
-   * @param e The exception
-   * @return An explanation iff this should not cause a test failure but trigger "With issues".
-   */
-  @Override
-  protected String checkKnownBugAcceptFailure(SocketTimeoutException e) {
-    return "Server accept failed. VSOCK may not be available";
   }
 
   @Override
@@ -89,14 +78,26 @@ public final class SocketChannelTest extends
 
   @Override
   protected boolean handleConnect(SocketChannel sc, SocketAddress sa) throws IOException {
+    Exception ex;
     try {
       return super.handleConnect(sc, sa);
+    } catch (NotYetConnectedException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof InvalidSocketException) {
+        ex = e;
+        // continue below
+      } else {
+        throw e;
+      }
     } catch (InvalidSocketException e) {
-      String msg = "Could not connect AF_VSOCK socket to CID=" + ((AFVSOCKSocketAddress) sa)
-          .getVSOCKCID() + "; check kernel capabilities.";
-      throw (TestAbortedWithImportantMessageException) new TestAbortedWithImportantMessageException(
-          MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg)).initCause(
-              e);
+      ex = e;
+      // continue below
     }
+
+    String msg = "Could not connect AF_VSOCK socket to CID=" + ((AFVSOCKSocketAddress) sa)
+        .getVSOCKCID() + "; check kernel capabilities.";
+    throw (TestAbortedWithImportantMessageException) new TestAbortedWithImportantMessageException(
+        MessageType.TEST_ABORTED_SHORT_WITH_ISSUES, msg, summaryImportantMessage(msg)).initCause(
+            ex);
   }
 }

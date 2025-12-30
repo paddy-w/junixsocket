@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,15 +30,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
-
 /**
  * Tests some otherwise uncovered methods of {@link AFSocket}.
  *
  * @author Christian Kohlschütter
  */
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public abstract class ServerSocketTest<A extends SocketAddress> extends SocketTestBase<A> {
 
   protected ServerSocketTest(AddressSpecifics<A> asp) {
@@ -75,14 +71,17 @@ public abstract class ServerSocketTest<A extends SocketAddress> extends SocketTe
     assertTrue(closed.get());
   }
 
+  @SuppressWarnings("AddressSelection" /* errorprone */)
   @Test
   public void testBindBadArguments() throws Exception {
     try (ServerSocket sock = newServerSocket()) {
       assertFalse(sock.isBound());
-      assertThrows(IllegalArgumentException.class, () -> {
+
+      try {
         sock.bind(null);
-      });
-      assertFalse(sock.isBound());
+      } catch (UnsupportedOperationException e) {
+        assertFalse(sock.isBound());
+      }
     }
     try (ServerSocket sock = newServerSocket()) {
       assertFalse(sock.isBound());

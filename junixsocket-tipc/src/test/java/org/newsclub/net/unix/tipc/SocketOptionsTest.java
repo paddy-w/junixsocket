@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,19 @@ package org.newsclub.net.unix.tipc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.Test;
 import org.newsclub.net.unix.AFSocketCapability;
@@ -36,13 +40,15 @@ import org.newsclub.net.unix.AFTIPCSocketAddress;
 import org.newsclub.net.unix.AFTIPCSocketAddress.Scope;
 import org.newsclub.net.unix.tipc.AFTIPCGroupRequest.GroupRequestFlags;
 import org.newsclub.net.unix.tipc.AFTIPCSocketOptions.MessageImportance;
+import org.opentest4j.AssertionFailedError;
 
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
+import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
+import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
 
 @AFSocketCapabilityRequirement(AFSocketCapability.CAPABILITY_TIPC)
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
-    "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS"})
+@SuppressFBWarnings({"NM_SAME_SIMPLE_NAME_AS_SUPERCLASS"})
+@SuppressWarnings("VoidUsed") // ErrorProne
 public final class SocketOptionsTest extends
     org.newsclub.net.unix.SocketOptionsTest<AFTIPCSocketAddress> {
   public SocketOptionsTest() throws IOException {
@@ -65,6 +71,7 @@ public final class SocketOptionsTest extends
     assertEquals(timeout, socket.getOption(AFTIPCSocketOptions.TIPC_CONN_TIMEOUT));
   }
 
+  @SuppressWarnings("resource")
   @Test
   public void testTIPCImportance() throws Exception {
     Socket socket = newSocket();
@@ -118,7 +125,7 @@ public final class SocketOptionsTest extends
     }
   }
 
-  @SuppressWarnings("null")
+  @SuppressWarnings({"null"})
   @Test
   public void testGroupJoinLeave() throws Exception {
     try (DatagramChannel socket = newDatagramChannel()) {
@@ -162,8 +169,14 @@ public final class SocketOptionsTest extends
       assertEquals(4712, socket.getOption(AFTIPCSocketOptions.TIPC_GROUP_JOIN).getType());
 
       ByteBuffer sendBuffer = ByteBuffer.allocate(8192);
-      socket.write(sendBuffer); // should not throw thanks to
-                                // GroupRequestFlags.GROUP_LOOPBACK
+      try {
+        socket.write(sendBuffer); // should not throw thanks to
+                                  // GroupRequestFlags.GROUP_LOOPBACK
+      } catch (NoRouteToHostException e) {
+        throw new TestAbortedWithImportantMessageException(
+            MessageType.TEST_ABORTED_SHORT_WITH_ISSUES,
+            "Kernel may be too old for full TIPC support", e);
+      }
 
       ByteBuffer recvBuffer = ByteBuffer.allocate(16384);
       int len = socket.read(recvBuffer);
@@ -226,7 +239,17 @@ public final class SocketOptionsTest extends
       ByteBuffer recvBuffer = ByteBuffer.allocate(16384);
       int sent = socket1.write(sendBuffer);
 
-      assertEquals(socket1.getLocalAddress(), socket2.receive(recvBuffer));
+      CompletableFuture<SocketAddress> receiveAddrFuture = new CompletableFuture<>();
+      try {
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+          receiveAddrFuture.complete(socket2.receive(recvBuffer));
+        });
+      } catch (AssertionFailedError e) {
+        throw new TestAbortedWithImportantMessageException(
+            MessageType.TEST_ABORTED_SHORT_WITH_ISSUES,
+            "Kernel may be too old for full TIPC support", e);
+      }
+      assertEquals(socket1.getLocalAddress(), receiveAddrFuture.get());
       assertEquals(sent, sendBuffer.position());
       assertEquals(sent, recvBuffer.position());
     }

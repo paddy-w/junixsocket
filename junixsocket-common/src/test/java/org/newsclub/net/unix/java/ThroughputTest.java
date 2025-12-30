@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,7 @@ import org.junit.jupiter.api.Test;
 import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.SystemPropertyRequirement;
 
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
-    "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS"})
+@SuppressFBWarnings({"NM_SAME_SIMPLE_NAME_AS_SUPERCLASS"})
 @JavaInetStackRequirement
 public final class ThroughputTest extends org.newsclub.net.unix.ThroughputTest<InetSocketAddress> {
 
@@ -64,10 +62,10 @@ public final class ThroughputTest extends org.newsclub.net.unix.ThroughputTest<I
   private void runTestTCPLoopback(boolean direct) throws Exception {
     final SocketAddress sa = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
 
-    ServerSocketChannel ssc = ServerSocketChannel.open();
-
-    runTestSocketChannel("TCP-Loopback", sa, ssc, () -> SocketChannel.open(ssc.getLocalAddress()),
-        direct);
+    try (ServerSocketChannel ssc = ServerSocketChannel.open();
+        SocketChannel sc = SocketChannel.open(ssc.getLocalAddress())) {
+      runTestSocketChannel("TCP-Loopback", sa, ssc, () -> sc, direct);
+    }
   }
 
   @Test

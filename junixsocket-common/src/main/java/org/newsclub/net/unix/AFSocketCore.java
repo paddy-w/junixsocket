@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,13 @@ package org.newsclub.net.unix;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
 
 /**
  * A shared core that is common for all AF* sockets (datagrams, streams).
@@ -29,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Christian Kohlschütter
  */
 class AFSocketCore extends AFCore {
+  private final AtomicInteger pendingAccepts = new AtomicInteger(0);
   private static final int SHUT_RD_WR = 2;
 
   /**
@@ -39,6 +45,7 @@ class AFSocketCore extends AFCore {
   AFSocketAddress socketAddress;
 
   private final AFAddressFamily<?> af;
+  private final AtomicBoolean shutdownOnClose = new AtomicBoolean(true);
 
   protected AFSocketCore(Object observed, FileDescriptor fd,
       AncillaryDataSupport ancillaryDataSupport, AFAddressFamily<?> af, boolean datagramMode) {
@@ -53,22 +60,29 @@ class AFSocketCore extends AFCore {
   @Override
   @SuppressWarnings("UnsafeFinalization" /* errorprone */)
   protected void doClose() throws IOException {
-    NativeUnixSocket.shutdown(fd, SHUT_RD_WR);
-    unblockAccepts();
+    if (isShutdownOnClose()) {
+      NativeUnixSocket.shutdown(fd, SHUT_RD_WR);
+      unblockAccepts();
+    }
 
     super.doClose();
   }
 
   protected void unblockAccepts() {
+    // see AFSocketImpl
   }
 
-  AFSocketAddress receive(ByteBuffer dst) throws IOException {
-    ByteBuffer socketAddressBuffer = AFSocketAddress.SOCKETADDRESS_BUFFER_TL.get();
-    int read = read(dst, socketAddressBuffer, 0);
-    if (read > 0) {
-      return AFSocketAddress.ofInternal(socketAddressBuffer, af);
-    } else {
-      return null;
+  AFSocketAddress receive(ByteBuffer dst, AFSupplier<Integer> socketTimeout) throws IOException {
+    try (Lease<ByteBuffer> socketAddressBufferLease = AFSocketAddress.SOCKETADDRESS_BUFFER_TL
+        .take()) {
+      ByteBuffer socketAddressBuffer = socketAddressBufferLease.get();
+
+      int read = read(dst, socketTimeout, socketAddressBuffer, 0);
+      if (read > 0) {
+        return AFSocketAddress.ofInternal(socketAddressBuffer, af);
+      } else {
+        return null;
+      }
     }
   }
 
@@ -133,5 +147,28 @@ class AFSocketCore extends AFCore {
         // ignore
       }
     }
+  }
+
+  protected void incPendingAccepts() throws SocketException {
+    if (pendingAccepts.incrementAndGet() >= Integer.MAX_VALUE) {
+      pendingAccepts.decrementAndGet();
+      throw new SocketException("Too many pending accepts");
+    }
+  }
+
+  protected void decPendingAccepts() {
+    pendingAccepts.decrementAndGet();
+  }
+
+  protected boolean hasPendingAccepts() {
+    return pendingAccepts.get() > 0;
+  }
+
+  boolean isShutdownOnClose() {
+    return shutdownOnClose.get();
+  }
+
+  void setShutdownOnClose(boolean enabled) {
+    this.shutdownOnClose.set(enabled);
   }
 }

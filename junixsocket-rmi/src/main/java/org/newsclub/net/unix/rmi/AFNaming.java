@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,9 +70,8 @@ public abstract class AFNaming extends AFRegistryAccess {
    *
    * @param registryPort The registry port.
    * @param servicePort The port for AFRMIService.
-   * @throws IOException on error.
    */
-  protected AFNaming(final int registryPort, final int servicePort) throws IOException {
+  protected AFNaming(final int registryPort, final int servicePort) {
     super();
     this.registryPort = registryPort;
     this.servicePort = servicePort;

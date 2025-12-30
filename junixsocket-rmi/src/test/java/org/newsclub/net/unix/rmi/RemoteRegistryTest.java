@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,15 +37,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 import com.kohlschutter.testutil.ForkedVM;
 import com.kohlschutter.testutil.ForkedVMRequirement;
 import com.kohlschutter.testutil.OutputBridge;
 import com.kohlschutter.testutil.OutputBridge.ProcessStream;
 import com.kohlschutter.testutil.TestAsyncUtil;
 
-@SuppressFBWarnings({
-    "THROWS_METHOD_THROWS_CLAUSE_THROWABLE", "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"})
 public class RemoteRegistryTest {
   @Test
   @ForkedVMRequirement(forkSupported = true)
@@ -141,14 +138,14 @@ public class RemoteRegistryTest {
         assertThrows(ServerException.class, () -> sra.getRegistry().getNaming().shutdownRegistry());
 
         sra.shutdownAndWait(false);
-        if (!awaitNoRMIFiles(socketDir, 5)) {
+        if (!awaitNoRMIFiles(socketDir)) {
           sra.shutdownAndWait(true);
         }
       } catch (Exception e) {
         throw e;
       }
 
-      assertTrue(awaitNoRMIFiles(socketDir, 5), "There shouldn't be any RMI socket files in "
+      assertTrue(awaitNoRMIFiles(socketDir), "There shouldn't be any RMI socket files in "
           + socketDir);
     } finally {
       assertTrue(deleteDirectory(socketDir), "Should be able to delete temporary directory: "
@@ -156,9 +153,9 @@ public class RemoteRegistryTest {
     }
   }
 
-  private boolean awaitNoRMIFiles(File socketDir, int loops) throws InterruptedException {
+  private boolean awaitNoRMIFiles(File socketDir) throws InterruptedException {
     int count = 0;
-    for (int i = 0; i < loops; i++) {
+    for (int i = 0; i < 100; i++) {
       count = countRMIFiles(socketDir);
       if (count == 0) {
         return true;
@@ -218,6 +215,11 @@ public class RemoteRegistryTest {
 
       watchProcessAsync();
       asyncGetRegistry();
+    }
+
+    @SuppressWarnings("all")
+    @Deprecated
+    protected final void finalize() {
     }
 
     void shutdown() {

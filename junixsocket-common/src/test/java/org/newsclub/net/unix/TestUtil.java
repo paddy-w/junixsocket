@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,12 @@
  */
 package org.newsclub.net.unix;
 
+import java.util.concurrent.Future;
+
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException;
 import com.kohlschutter.testutil.TestAbortedWithImportantMessageException.MessageType;
+import com.kohlschutter.testutil.TestAsyncUtil;
+import com.kohlschutter.testutil.TestStackTraceUtil;
 
 /**
  * Some test-related checks.
@@ -30,6 +34,14 @@ public final class TestUtil {
 
   private TestUtil() {
     throw new IllegalStateException("No instances");
+  }
+
+  public static void printStackTrace(Throwable t) {
+    TestStackTraceUtil.printStackTrace(t);
+  }
+
+  public static void trackFuture(Future<?> future) {
+    TestAsyncUtil.trackFuture(future);
   }
 
   /**

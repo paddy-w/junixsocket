@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2021 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,6 +105,9 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_getSocketOpti
         // Unsupported on z/OS
         return -1;
 #endif
+#if __TANDEM
+        return -1;
+#else
         struct timeval optVal;
         socklen_t optLen = sizeof(optVal);
         int ret = getsockopt(handle, SOL_SOCKET, optID, &optVal, &optLen);
@@ -113,6 +116,7 @@ JNIEXPORT jint JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_getSocketOpti
             return -1;
         }
         return (jint)(optVal.tv_sec * 1000 + optVal.tv_usec / 1000);
+#endif
     } else
 #endif
         if(optID == SO_LINGER) {
@@ -167,7 +171,8 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_setSocketOpti
         // Unsupported on z/OS
         return;
 #endif
-
+#if __TANDEM
+#else
         // NOTE: SO_RCVTIMEO == SocketOptions.SO_TIMEOUT = 0x1006
         struct timeval optVal;
         optVal.tv_sec = value / 1000;
@@ -179,6 +184,7 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_setSocketOpti
             _throwSockoptErrnumException(env, socket_errno, fd);
             return;
         }
+#endif
         return;
     } else
 #endif
@@ -351,10 +357,11 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_setSocketOpti
         return;
     }
 
+    long dummy = 0;
     void* valPtr;
     socklen_t valLen;
     if(value == NULL) {
-        valPtr = NULL;
+        valPtr = &dummy;
         valLen = 0;
     } else {
         jclass objClass = (*env)->GetObjectClass(env, value);
@@ -383,9 +390,18 @@ JNIEXPORT void JNICALL Java_org_newsclub_net_unix_NativeUnixSocket_setSocketOpti
     int ret = setsockopt(handle, domain, optionName,
                          WIN32_NEEDS_CHARP valPtr, valLen);
     if(ret == -1) {
-        _throwSockoptErrnumException(env, socket_errno, fd);
+        int errnum = socket_errno;
+        if(errnum == EINVAL) {
+            if(domain == 271 /* SOL_TIPC */ && optionName == 136 /* TIPC_GROUP_LEAVE */) {
+                // ignore EINVAL
+                goto end;
+            }
+        }
+        _throwSockoptErrnumException(env, errnum, fd);
     }
 
 end:
-    free(valPtr);
+    if(valLen) {
+        free(valPtr);
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,11 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.newsclub.net.unix.pool.ObjectPool.Lease;
+
+import com.kohlschutter.annotations.compiletime.SuppressFBWarnings;
 
 /**
  * Describes an {@link InetSocketAddress} that actually uses AF_UNIX sockets instead of AF_INET.
@@ -48,6 +50,7 @@ import org.eclipse.jdt.annotation.NonNull;
  * @author Christian Kohlschütter
  */
 @SuppressWarnings("PMD.ShortMethodName")
+@SuppressFBWarnings("PATH_TRAVERSAL_IN")
 public final class AFUNIXSocketAddress extends AFSocketAddress {
   private static final long serialVersionUID = 1L; // do not change!
 
@@ -81,9 +84,14 @@ public final class AFUNIXSocketAddress extends AFSocketAddress {
             protected Set<String> uriSchemes() {
               return new HashSet<>(Arrays.asList("unix", "http+unix", "https+unix"));
             }
+
+            @Override
+            protected SocketAddress nullBindAddress() throws IOException {
+              return AFUNIXSocketAddress.ofNewTempFile();
+            }
           });
 
-  private AFUNIXSocketAddress(int port, final byte[] socketAddress, ByteBuffer nativeAddress)
+  private AFUNIXSocketAddress(int port, final byte[] socketAddress, Lease<ByteBuffer> nativeAddress)
       throws SocketException {
     super(port, socketAddress, nativeAddress, AF_UNIX);
   }
@@ -118,8 +126,8 @@ public final class AFUNIXSocketAddress extends AFSocketAddress {
         .getNativeAddressDirectBuffer());
   }
 
-  private static AFUNIXSocketAddress newAFSocketAddress(int port, final byte[] socketAddress,
-      ByteBuffer nativeAddress) throws SocketException {
+  static AFUNIXSocketAddress newAFSocketAddress(int port, final byte[] socketAddress,
+      Lease<ByteBuffer> nativeAddress) throws SocketException {
     return newDeserializedAFSocketAddress(port, socketAddress, nativeAddress, AF_UNIX,
         AFUNIXSocketAddress::new);
   }
@@ -329,9 +337,8 @@ public final class AFUNIXSocketAddress extends AFSocketAddress {
    *           specified.
    */
   public static AFUNIXSocketAddress unwrap(SocketAddress address) throws SocketException {
-    // FIXME: add support for UnixDomainSocketAddress
     Objects.requireNonNull(address);
-    Supplier<AFUNIXSocketAddress> supplier = supportedAddressSupplier(address);
+    AFSupplier<AFUNIXSocketAddress> supplier = supportedAddressSupplier(address);
     if (supplier == null) {
       throw new SocketException("Unsupported address");
     }
@@ -527,7 +534,7 @@ public final class AFUNIXSocketAddress extends AFSocketAddress {
    * @param addr The address.
    * @return The supplier, or {@code null}.
    */
-  static Supplier<AFUNIXSocketAddress> supportedAddressSupplier(SocketAddress addr) {
+  static AFSupplier<AFUNIXSocketAddress> supportedAddressSupplier(SocketAddress addr) {
     if (addr == null) {
       return null;
     } else if (addr instanceof AFUNIXSocketAddress) {

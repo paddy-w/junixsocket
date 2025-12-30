@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.newsclub.net.unix.AFServerSocket;
@@ -58,8 +59,10 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
 
   private int maxConcurrentConnections = Runtime.getRuntime().availableProcessors();
   private int serverTimeout = 0; // by default, the server doesn't timeout.
-  private int socketTimeout = (int) TimeUnit.SECONDS.toMillis(60);
-  private int serverBusyTimeout = (int) TimeUnit.SECONDS.toMillis(1);
+  private final AtomicInteger socketTimeout = new AtomicInteger((int) TimeUnit.SECONDS.toMillis(
+      60));
+  private final AtomicInteger serverBusyTimeout = new AtomicInteger((int) TimeUnit.SECONDS.toMillis(
+      1));
 
   private Thread listenThread = null;
   private V serverSocket;
@@ -114,6 +117,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    *
    * @param maxConcurrentConnections The new maximum.
    */
+  @SuppressFBWarnings("AT_STALE_THREAD_WRITE_OF_PRIMITIVE")
   public void setMaxConcurrentConnections(int maxConcurrentConnections) {
     if (isRunning()) {
       throw new IllegalStateException("Already configured");
@@ -135,6 +139,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    *
    * @param timeout The new timeout in milliseconds (0 = no timeout).
    */
+  @SuppressFBWarnings("AT_STALE_THREAD_WRITE_OF_PRIMITIVE")
   public void setServerTimeout(int timeout) {
     if (isRunning()) {
       throw new IllegalStateException("Already configured");
@@ -148,7 +153,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * @return The socket timeout in milliseconds (0 = no timeout).
    */
   public int getSocketTimeout() {
-    return socketTimeout;
+    return socketTimeout.get();
   }
 
   /**
@@ -157,7 +162,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * @param timeout The new timeout in milliseconds (0 = no timeout).
    */
   public void setSocketTimeout(int timeout) {
-    this.socketTimeout = timeout;
+    this.socketTimeout.set(timeout);
   }
 
   /**
@@ -166,7 +171,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * @return The server-busy timeout in milliseconds (0 = no timeout).
    */
   public int getServerBusyTimeout() {
-    return serverBusyTimeout;
+    return serverBusyTimeout.get();
   }
 
   /**
@@ -175,7 +180,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * @param timeout The new timeout in milliseconds (0 = no timeout).
    */
   public void setServerBusyTimeout(int timeout) {
-    this.serverBusyTimeout = timeout;
+    this.serverBusyTimeout.set(timeout);
   }
 
   /**
@@ -220,6 +225,8 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
             listen();
           } catch (Exception e) {
             onListenException(e);
+          } catch (Throwable e) { // NOPMD
+            onListenException(e);
           }
         }
       };
@@ -230,7 +237,21 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
   }
 
   /**
-   * Starts the server and waits until it is ready or had to shop due to an error.
+   * Starts the server and waits until it is ready or had to stop due to an error.
+   *
+   * @throws InterruptedException If the wait was interrupted.
+   */
+  public void startAndWaitToBecomeReady() throws InterruptedException {
+    synchronized (this) {
+      start();
+      while (!ready.get() && !stopRequested.get()) {
+        this.wait(1000);
+      }
+    }
+  }
+
+  /**
+   * Starts the server and waits until it is ready or had to stop due to an error.
    *
    * @param duration The duration wait.
    * @param unit The duration's time unit.
@@ -264,22 +285,26 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
 
   @SuppressWarnings("null")
   private void listen() throws IOException {
-    V server;
-
-    synchronized (this) {
-      if (reuseSocket != null) {
-        serverSocket = reuseSocket;
-      } else {
+    V server = null;
+    try {
+      synchronized (this) {
+        if (reuseSocket != null) {
+          server = reuseSocket;
+        } else {
+          server = null;
+        }
+      }
+      if (server == null) {
+        server = newServerSocket();
+      }
+      synchronized (this) {
         if (serverSocket != null) {
           throw new IllegalStateException("The server is already listening");
         }
-        serverSocket = newServerSocket();
+        serverSocket = server;
       }
-      server = serverSocket;
-    }
-    onServerStarting();
+      onServerStarting();
 
-    try {
       if (!server.isBound()) {
         server.bind(listenAddress);
         onServerBound(listenAddress);
@@ -311,7 +336,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
 
           synchronized (connectionsMonitor) {
             try {
-              connectionsMonitor.wait(serverBusyTimeout);
+              connectionsMonitor.wait(getServerBusyTimeout());
             } catch (InterruptedException e) {
               throw (InterruptedIOException) new InterruptedIOException(
                   "Interrupted while waiting on server resources").initCause(e);
@@ -344,7 +369,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
           }
         }
         try {
-          socket.setSoTimeout(socketTimeout);
+          socket.setSoTimeout(getSocketTimeout());
         } catch (SocketException e) {
           // Connection closed before we could do anything
           onSocketExceptionAfterAccept(socket, e);
@@ -372,7 +397,6 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * @throws IOException If there was an error.
    */
   @SuppressWarnings("null")
-  @SuppressFBWarnings("NN_NAKED_NOTIFY")
   public void stop() throws IOException {
     stopRequested.set(true);
     ready.set(false);
@@ -406,22 +430,38 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
 
         try { // NOPMD
           doServeSocket(socket);
-        } catch (Exception e) {
-          onServingException(socket, e);
+        } catch (Exception e) { // NOPMD
+          onServingException(socket, e); // NOPMD
+        } catch (Throwable t) { // NOPMD
+          onServingException(socket, t); // NOPMD
         } finally {
           // Notify the server's accept thread that we handled the connection
           synchronized (connectionsMonitor) {
             connectionsMonitor.notifyAll();
           }
-          try {
-            socket.close();
-          } catch (IOException e) {
-            // ignore
-          }
+
+          doSocketClose(socket);
           onAfterServingSocket(socket);
         }
       }
     });
+  }
+
+  /**
+   * Called upon closing a socket after serving the connection.
+   * <p>
+   * The default implementation closes the socket directly, ignoring any {@link IOException}s. You
+   * may override this method to close the socket in a separate thread, for example.
+   *
+   * @param socket The socket to close.
+   */
+  @SuppressWarnings("null")
+  protected void doSocketClose(S socket) {
+    try {
+      socket.close();
+    } catch (IOException e) {
+      // ignore
+    }
   }
 
   /**
@@ -446,7 +486,6 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
       }
 
       return (this.timeoutFuture = TIMEOUTS.schedule(new Callable<IOException>() {
-        @SuppressFBWarnings("THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION")
         @Override
         public IOException call() throws Exception {
           try {
@@ -506,7 +545,7 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
   /**
    * Called when the server has been stopped.
    *
-   * @param socket The server's socket that stopped.
+   * @param socket The server's socket that stopped, or {@code null}.
    */
   protected void onServerStopped(V socket) {
   }
@@ -557,8 +596,21 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    *
    * @param socket The socket.
    * @param e The exception.
+   * @deprecated Use {@link #onServingException(Socket, Throwable)}
+   * @see #onServingException(Socket, Throwable)
    */
+  @Deprecated
   protected void onServingException(S socket, Exception e) {
+    onServingException(socket, (Throwable) e);
+  }
+
+  /**
+   * Called when a throwable was thrown while serving a socket.
+   *
+   * @param socket The socket.
+   * @param t The throwable.
+   */
+  protected void onServingException(S socket, Throwable t) {
   }
 
   /**
@@ -573,8 +625,20 @@ public abstract class SocketServer<A extends SocketAddress, S extends Socket, V 
    * Called when an exception was thrown while listening on the server socket.
    *
    * @param e The exception.
+   * @deprecated Use {@link #onListenException(Throwable)}
+   * @see #onListenException(Throwable)
    */
+  @Deprecated
   protected void onListenException(Exception e) {
+    onListenException((Throwable) e);
+  }
+
+  /**
+   * Called when an exception was thrown while listening on the server socket.
+   *
+   * @param t The throwable.
+   */
+  protected void onListenException(Throwable t) {
   }
 
   /**

@@ -46,13 +46,16 @@ public class ScrollingActivity extends AppCompatActivity {
         public void write(char[] cbuf, int off, int len) throws IOException {
             String s = new String(cbuf, off, len);
             tv.post(() -> tv.append(s));
+
+            // Also write to log
+            System.err.print(s);
         }
 
         @Override
         public void flush() {
-//            sv.post(() -> {
-//                sv.fullScroll(View.FOCUS_DOWN);
-//            });
+            sv.post(() -> {
+                sv.fullScroll(View.FOCUS_DOWN);
+            });
         }
 
         @Override

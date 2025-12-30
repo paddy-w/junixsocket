@@ -1,7 +1,7 @@
 /*
  * junixsocket
  *
- * Copyright 2009-2023 Christian Kohlschütter
+ * Copyright 2009-2024 Christian Kohlschütter
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public abstract class AFRegistry implements Registry {
 
   private AFRMIService rmiService = null;
 
-  AFRegistry(AFNaming naming, Registry impl) throws RemoteException {
+  AFRegistry(AFNaming naming, Registry impl) {
     this.naming = naming;
     this.impl = impl;
     this.boundCloser = new RemoteCloseable<Void>() {
